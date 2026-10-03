@@ -21,7 +21,7 @@ From the repo root (uses the root `requirements.txt`):
 pip install -r requirements.txt
 ```
 
-Put `ASI_ONE_API_KEY=...` and `CURRICULUM_SEED=<long secret phrase>` in a `.env` file (gitignored), then:
+Copy `uagents-python/.env.example` to `uagents-python/.env` and fill in `ASI_ONE_API_KEY` and `CURRICULUM_SEED` (the file is gitignored), then:
 
 ```bash
 cd uagents-python/curriculum
