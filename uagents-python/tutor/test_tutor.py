@@ -6,8 +6,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from cards import feedback_card, home_card, parse_selection, question_card, snapshot_image, snapshot_rows
-from content import clean_question
+from cards import (feedback_card, flashcard_back, flashcard_front, flashcard_summary, home_card, lesson_card, parse_selection,
+                   question_card, snapshot_image, snapshot_rows)
+from content import clean_question, parse_lesson, plain_math, qa_pairs
 from learning import days_until, format_insight
 
 SNAP = {"concepts": [{"name": "Big-O", "p": 0.35, "attempts": 2}, {"name": "Arrays", "p": 0.92, "attempts": 4},
@@ -30,6 +31,80 @@ class QuestionTest(unittest.TestCase):
                     {"question": "q", "choices": ["a", "a", "c"], "correct_index": 0}):
             with self.assertRaises(ValueError):
                 clean_question(raw)
+
+
+class MathTest(unittest.TestCase):
+    def test_latex_becomes_plain_text(self):
+        self.assertEqual(plain_math(r"total is $O(n \times n) = O(n^2)$, and $\log_2 n \le n$"),
+                         "total is O(n × n) = O(n^2), and log_2 n ≤ n")
+        self.assertEqual(plain_math("unbalanced $n$$ here"), "unbalanced n here")
+
+    def test_leaves_diagrams_and_prices_alone(self):
+        self.assertEqual(plain_math("  /  \\\n a    b"), "  /  \\\n a    b")
+        self.assertEqual(plain_math("costs $5"), "costs $5")
+
+
+LESSON = """## The big idea
+Big-O says how running time grows.
+
+## How it works
+Count the steps as n grows, then keep the fastest-growing term.
+
+## Worked example
+1. Two nested loops over n run $n \\times n$ times.
+
+## Common mistakes
+- Adding nested loops instead of multiplying.
+
+## Key takeaways
+- Nested loops multiply.
+- Sequential steps add.
+- Keep the dominant term.
+
+## Quick check
+**Q:** What is the cost of two nested loops over n?
+**A:** O(n^2).
+2. Q: What do sequential steps do?
+A: They add.
+"""
+
+
+class FlashcardCardTest(unittest.TestCase):
+    def test_buttons_carry_the_card_index(self):
+        front = json.loads(flashcard_front("Big-O", {"front": "f", "back": "b"}, 2, 5).content[1].metadata["card_payload"])
+        flip = front["root"]["children"][-1]["children"][0]["action"]["selection"]
+        self.assertEqual(flip, {"action": "flip", "i": 2})
+        back = json.loads(flashcard_back("Big-O", {"front": "f", "back": "b"}, 2, 5).content[1].metadata["card_payload"])
+        marks = [b["action"]["selection"] for b in back["root"]["children"][-1]["children"]]
+        self.assertEqual(marks, [{"action": "mark", "i": 2, "knew": "yes"}, {"action": "mark", "i": 2, "knew": "no"}])
+
+    def test_lesson_offers_practice_when_there_is_a_deck(self):
+        payload = json.loads(lesson_card("Big-O", "worked_example", parse_lesson(LESSON, "worked_example")).content[1].metadata["card_payload"])
+        self.assertIn("Practice 2 flashcards", json.dumps(payload))
+
+
+class LessonTest(unittest.TestCase):
+    def test_splits_chat_text_from_card_parts(self):
+        lesson = parse_lesson(LESSON, "worked_example")
+        self.assertIn("### Worked example\n1. Two nested loops over n run n × n times.", lesson["markdown"])
+        self.assertIn("### Common mistakes", lesson["markdown"])
+        self.assertNotIn("Key takeaways", lesson["markdown"])  # those go on the card
+        self.assertEqual(lesson["takeaways"], ["Nested loops multiply.", "Sequential steps add.", "Keep the dominant term."])
+        self.assertEqual(lesson["deck"][1], {"front": "What do sequential steps do?", "back": "They add."})
+
+    def test_flashcards_move_to_the_card(self):
+        md = LESSON.replace("## Worked example\n1. Two nested loops over n run $n \\times n$ times.",
+                            "## Flashcards\nQ: a?\nA: 1\nQ: b?\nA: 2\nQ: c?\nA: 3")
+        lesson = parse_lesson(md, "flashcards")
+        self.assertNotIn("Flashcards", lesson["markdown"])
+        self.assertEqual([c["front"] for c in lesson["deck"]], ["a?", "b?", "c?"])  # quick check isn't appended
+
+    def test_rejects_a_lesson_without_its_core(self):
+        with self.assertRaises(ValueError):
+            parse_lesson(LESSON, "diagram")
+
+    def test_qa_pairs_ignore_unpaired_lines(self):
+        self.assertEqual(qa_pairs("Q: one?\nnoise\nQ: two?\nA: 2"), [{"front": "two?", "back": "2"}])
 
 
 class InsightTest(unittest.TestCase):
@@ -56,7 +131,11 @@ class CardTest(unittest.TestCase):
     def test_cards_are_valid(self):
         q = {"question": "Which is O(1)?", "choices": ["a", "b", "c", "d"], "correct_index": 2, "explanation": "e"}
         for msg in (home_card("DS", SNAP, 3, "Insight."), question_card("Big-O", "diagnostic", q, 1, 5),
-                    feedback_card(q, 1, 0.35, 0.2, "Big-O", "Next question", "next")):
+                    feedback_card(q, 1, 0.35, 0.2, "Big-O", "Next question", "next"),
+                    lesson_card("Big-O", "worked_example", parse_lesson(LESSON, "worked_example")),
+                    flashcard_front("Big-O", {"front": "f", "back": "b"}, 0, 3, "Knew it · mastery 20% → 40%"),
+                    flashcard_back("Big-O", {"front": "f", "back": "b"}, 0, 3),
+                    flashcard_summary("Big-O", 2, 3, 1, 0.2, 0.6)):
             payload = json.loads(msg.content[1].metadata["card_payload"])
             self.assertIn("root", payload)
             self.assertNotIn(None, payload["root"]["children"])

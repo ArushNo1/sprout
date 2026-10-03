@@ -12,6 +12,7 @@ SPROUT_CARDS_URL, SPACETIMEDB_HOST / SPACETIMEDB_DB / SPACETIMEDB_TOKEN.
 
 import asyncio
 import os
+import random
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,9 +31,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # shared sprout
 
 from sprout_db import DbError, enabled
 from relay import relay_protocol
-from cards import course_picker_card, feedback_card, home_card, lesson_card, parse_selection, question_card, text_message
+from cards import (course_picker_card, feedback_card, flashcard_back, flashcard_front, flashcard_summary, home_card,
+                   lesson_card, parse_selection, question_card, text_message)
 from content import make_lesson, make_question
-from learning import (active_courses, concept, course, days_until, end_session, format_insight, format_stats,
+from learning import (FORMATS, active_courses, concept, course, days_until, end_session, format_insight, format_stats,
                       next_step, record, snapshot, start_session)
 
 load_dotenv()
@@ -101,6 +103,14 @@ async def handle(ctx: Context, sender: str, action: str, sel: dict):
         await ask(ctx, sender, state)
     elif action == "teach":
         await teach(ctx, sender, state)
+    elif action == "reteach" and state.get("concept_id"):
+        await teach(ctx, sender, state, again=True)
+    elif action in ("flash", "flash_misses") and state.get("deck"):
+        await start_flashcards(ctx, sender, state, misses_only=action == "flash_misses")
+    elif action == "flip" and state.get("deck"):
+        await flip_flashcard(ctx, sender, state, sel.get("i"))
+    elif action == "mark" and state.get("deck"):
+        await mark_flashcard(ctx, sender, state, sel.get("i"), sel.get("knew"))
     elif action == "check":
         state.update(mode="check", number=0, total=QUESTIONS["check"])
         await ask(ctx, sender, state)
@@ -148,16 +158,77 @@ async def show_home(ctx: Context, sender: str, state: dict, welcome: bool = Fals
     await ctx.send(sender, home_card(c["name"], snap, days, insight, opener))
 
 
-async def teach(ctx: Context, sender: str, state: dict):
-    step = await run(next_step, sender, state["course_id"], "teach")
-    if step["mode"] == "complete":
-        await ctx.send(sender, text_message("You've mastered every concept in this course. Try a review instead."))
-        return
-    con = await run(concept, step["concept_id"])
-    lesson = await run(make_lesson, state["course_name"], con, step["format"])
-    state.update(concept_id=con["id"], concept_name=con["name"], fmt=step["format"])
+async def teach(ctx: Context, sender: str, state: dict, again: bool = False):
+    """The next concept the database picks, in the format it picks; again=True re-teaches the same concept another way."""
+    if again:
+        con = await run(concept, state["concept_id"])
+        fmt = random.choice([f for f in FORMATS if f != state.get("fmt")])
+    else:
+        step = await run(next_step, sender, state["course_id"], "teach")
+        if step["mode"] == "complete":
+            await ctx.send(sender, text_message("You've mastered every concept in this course. Try a review instead."))
+            return
+        con, fmt = await run(concept, step["concept_id"]), step["format"]
+    lesson = await run(make_lesson, state["course_name"], con, fmt)
+    state.update(concept_id=con["id"], concept_name=con["name"], fmt=fmt, deck=lesson["deck"], card=0)
     save(ctx, sender, state)
-    await ctx.send(sender, lesson_card(con["name"], step["format"], lesson))
+    await ctx.send(sender, lesson_card(con["name"], fmt, lesson))
+
+
+def card_index(i) -> int:
+    try:
+        return int(i)
+    except (TypeError, ValueError):
+        return -1
+
+
+async def start_flashcards(ctx: Context, sender: str, state: dict, misses_only: bool = False):
+    """Goes through the lesson's deck one card at a time (or just the ones missed last round)."""
+    if misses_only and state.get("missed"):
+        state["deck"] = [state["deck"][i] for i in state["missed"] if i < len(state["deck"])]
+    state.update(card=0, known=0, missed=[], flash_before=None, flash_after=None)
+    save(ctx, sender, state)
+    await ctx.send(sender, flashcard_front(state["concept_name"], state["deck"][0], 0, len(state["deck"])))
+
+
+async def flip_flashcard(ctx: Context, sender: str, state: dict, i):
+    i, deck = card_index(i), state["deck"]
+    if not 0 <= i < len(deck):
+        i = min(state.get("card", 0), len(deck) - 1)
+    await ctx.send(sender, flashcard_back(state["concept_name"], deck[i], i, len(deck)))
+
+
+async def mark_flashcard(ctx: Context, sender: str, state: dict, i, knew):
+    """Knew it / didn't know counts as practice evidence for the concept; skipping just moves on."""
+    i, deck = card_index(i), state["deck"]
+    if i != state.get("card", 0):  # a tap on an old card: show where they actually are
+        if state.get("card", 0) < len(deck):
+            j = state.get("card", 0)
+            await ctx.send(sender, flashcard_front(state["concept_name"], deck[j], j, len(deck)))
+        return
+    if knew in ("yes", "no"):
+        correct = knew == "yes"
+        before, after = await run(record, sender, state["concept_id"], correct, "practice", None,
+                                  state["session_id"], deck[i]["front"])
+        if state.get("flash_before") is None:
+            state["flash_before"] = before
+        state["flash_after"] = after
+        state["known"] = state.get("known", 0) + int(correct)
+        note = f"{'Knew it' if correct else 'Not yet'} · mastery {before:.0%} → {after:.0%}"
+        state["studied"] = list(dict.fromkeys(state.get("studied", []) + [state["concept_name"]]))
+        state["last_concept_id"] = state["concept_id"]
+    else:
+        note = "Skipped"
+    if knew != "yes":
+        state["missed"] = state.get("missed", []) + [i]
+    state["card"] = i + 1
+    save(ctx, sender, state)
+    if state["card"] < len(deck):
+        await ctx.send(sender, flashcard_front(state["concept_name"], deck[i + 1], i + 1, len(deck), note))
+    else:
+        await ctx.send(sender, flashcard_summary(state["concept_name"], state.get("known", 0), len(deck),
+                                                 len(state.get("missed", [])), state.get("flash_before"),
+                                                 state.get("flash_after")))
 
 
 async def ask(ctx: Context, sender: str, state: dict):

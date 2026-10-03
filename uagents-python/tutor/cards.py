@@ -133,13 +133,59 @@ def question_card(concept_name: str, kind: str, q: dict, number: int, total: int
     return _card(q["question"], root)
 
 
-def lesson_card(concept_name: str, fmt: str, lesson: str) -> ChatMessage:
+def lesson_card(concept_name: str, fmt: str, lesson: dict) -> ChatMessage:
+    """The lesson itself goes in the chat as Markdown; the card recaps it and holds the next steps."""
+    takeaways, n = lesson.get("takeaways") or [], len(lesson.get("deck") or [])
+    practice = _button(f"Practice {n} flashcards", "flash", True) if n else None
     root = _section(
         {"type": "heading", "value": concept_name, "level": 2},
-        {"type": "badge", "label": FORMAT_LABELS.get(fmt, "Lesson"), "variant": "info"},
-        _row(_button("Check my understanding", "check", True), _button("Back to overview", "home")),
+        {"type": "group", "direction": "row", "gap": 8, "children": [
+            {"type": "badge", "label": FORMAT_LABELS.get(fmt, "Lesson"), "variant": "info"},
+            {"type": "badge", "label": f"~{lesson.get('minutes', 3)} min read", "variant": "success"}]},
+        {"type": "heading", "value": "Key takeaways", "level": 3} if takeaways else None,
+        {"type": "group", "direction": "column", "gap": 6,
+         "children": [{"type": "text", "style": "body", "value": f"• {t}"} for t in takeaways]} if takeaways else None,
+        _row(practice, _button("Check my understanding", "check", not practice)),
+        _row(_button("Explain it another way", "reteach"), _button("Back to overview", "home")),
     )
-    return _card(lesson, root)
+    return _card(lesson["markdown"], root)
+
+
+def flashcard_front(concept_name: str, card: dict, i: int, n: int, note: str = "") -> ChatMessage:
+    """One card, question side up. Answer it in your head, then flip."""
+    root = _section(
+        {"type": "heading", "value": concept_name, "level": 2},
+        {"type": "badge", "label": f"Flashcard {i + 1} of {n}", "variant": "info"},
+        {"type": "text", "style": "muted", "value": note} if note else None,
+        {"type": "text", "style": "emphasis", "value": card["front"]},
+        _row(_button("Show answer", "flip", True, i=i), _button("Skip", "mark", i=i, knew="skip")),
+    )
+    return _card(f"Flashcard {i + 1} of {n}", root)
+
+
+def flashcard_back(concept_name: str, card: dict, i: int, n: int) -> ChatMessage:
+    """The same card flipped: was the answer you had in mind right?"""
+    root = _section(
+        {"type": "heading", "value": concept_name, "level": 2},
+        {"type": "badge", "label": f"Flashcard {i + 1} of {n}", "variant": "info"},
+        {"type": "text", "style": "muted", "value": card["front"]},
+        {"type": "divider"},
+        {"type": "text", "style": "body", "value": card["back"]},
+        _row(_button("Knew it", "mark", True, i=i, knew="yes"), _button("Didn't know", "mark", i=i, knew="no")),
+    )
+    return _card("Did you know it?", root)
+
+
+def flashcard_summary(concept_name: str, known: int, n: int, missed: int, before, after) -> ChatMessage:
+    root = _section(
+        {"type": "heading", "value": concept_name, "level": 2},
+        {"type": "badge", "label": f"Knew {known} of {n}", "variant": "success" if known * 2 >= n else "warning"},
+        {"type": "text", "style": "muted", "value": f"Mastery {before:.0%} → {after:.0%}"} if before is not None else None,
+        _row(_button("Check my understanding", "check", True),
+             _button(f"Go over the {missed} I missed", "flash_misses") if missed else None),
+        _row(_button("Back to overview", "home")),
+    )
+    return _card(f"Done: you knew {known} of {n} flashcards.", root)
 
 
 def feedback_card(q: dict, choice: int, before: float, after: float, concept_name: str,
