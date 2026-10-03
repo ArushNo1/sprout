@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ArushNo1/sprout/curriculum/concept_map.schema.json",
+  "title": "Sprout concept map",
+  "description": "A course's concepts (nodes) and prerequisite links (edges). Edges point from the prerequisite to the concept that depends on it, so the graph reads root-to-leaf in learning order. Must be acyclic.",
+  "type": "object",
+  "required": ["version", "course", "units", "concepts", "edges"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "course": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "code": { "type": ["string", "null"] },
+        "exam_date": { "type": ["string", "null"], "format": "date" }
+      }
+    },
+    "units": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "order"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/slug" },
+          "name": { "type": "string", "minLength": 1 },
+          "order": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "concepts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "summary", "unit"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/slug" },
+          "name": { "type": "string", "minLength": 1 },
+          "summary": { "type": "string", "description": "One sentence a student could check themselves against." },
+          "unit": { "$ref": "#/$defs/slug", "description": "id of the unit this concept belongs to" },
+          "kind": { "enum": ["concept", "skill", "fact"], "description": "concept = idea to understand, skill = procedure to practice, fact = thing to memorize. Hints the tutor's starting format." },
+          "source": { "type": ["string", "null"], "description": "Short phrase from the syllabus this concept came from." },
+          "depth": { "type": "integer", "minimum": 0, "description": "Filled by the validator: longest prerequisite chain above this concept. 0 = no prerequisites." }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to"],
+        "additionalProperties": false,
+        "properties": {
+          "from": { "$ref": "#/$defs/slug", "description": "Prerequisite concept id" },
+          "to": { "$ref": "#/$defs/slug", "description": "Concept that requires it" },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "reason": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "order": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/slug" },
+      "description": "Filled by the validator: every concept id in a valid teaching order (prerequisites first)."
+    }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" }
+  }
+}

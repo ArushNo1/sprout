@@ -1,3 +1,5 @@
 .venv
 .env*
 *.pyc
+__pycache__/
+uagents-python/curriculum/dist/

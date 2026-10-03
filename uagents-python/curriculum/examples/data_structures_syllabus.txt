@@ -1,0 +1,29 @@
+CS 1332 Data Structures and Algorithms (sample syllabus for Sprout demo)
+
+Unit 1: Foundations
+Week 1: Big-O notation, asymptotic analysis, recursion review
+Week 2: Arrays and ArrayLists, amortized analysis of resizing
+Week 3: Singly and doubly linked lists, circular linked lists
+
+Unit 2: Linear ADTs
+Week 4: Stacks and queues (array-backed and linked), deques
+Week 5: Iterators and the Iterable interface
+
+Unit 3: Trees
+Week 6: Binary trees, tree traversals (preorder, inorder, postorder, level-order)
+Week 7: Binary search trees: search, add, remove
+Week 8: Heaps and priority queues, heapify (build heap in O(n))
+Week 9: AVL trees and rotations; 2-4 trees
+
+Midterm: October 22
+
+Unit 4: Hashing and Sorting
+Week 10: HashMaps, hash functions, collision handling (external chaining, linear probing)
+Week 11: Simple sorts (bubble, insertion, selection); merge sort, quick sort; stability
+Week 12: Pattern matching (Boyer-Moore, KMP)
+
+Unit 5: Graphs
+Week 13: Graph representations, BFS, DFS
+Week 14: Dijkstra's shortest path, minimum spanning trees (Prim, Kruskal)
+
+Grading: homework 30%, quizzes 10%, midterm 25%, final 35%. Office hours posted on Canvas.

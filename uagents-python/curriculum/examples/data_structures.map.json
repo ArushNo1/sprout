@@ -1,0 +1,347 @@
+{
+  "version": 1,
+  "course": {
+    "name": "Data Structures and Algorithms",
+    "code": "CS 1332",
+    "exam_date": "2026-10-22"
+  },
+  "units": [
+    {
+      "id": "foundations",
+      "name": "Foundations",
+      "order": 1
+    },
+    {
+      "id": "linear-adts",
+      "name": "Linear ADTs",
+      "order": 2
+    },
+    {
+      "id": "trees",
+      "name": "Trees",
+      "order": 3
+    },
+    {
+      "id": "hashing-sorting",
+      "name": "Hashing and Sorting",
+      "order": 4
+    },
+    {
+      "id": "graphs",
+      "name": "Graphs",
+      "order": 5
+    }
+  ],
+  "concepts": [
+    {
+      "id": "big-o",
+      "name": "Big-O notation",
+      "summary": "Describe how an algorithm's running time grows with input size, ignoring constants.",
+      "unit": "foundations",
+      "kind": "concept",
+      "source": "Big-O notation, asymptotic analysis",
+      "depth": 0
+    },
+    {
+      "id": "recursion",
+      "name": "Recursion",
+      "summary": "Solve a problem by calling the same method on a smaller input until a base case.",
+      "unit": "foundations",
+      "kind": "skill",
+      "source": "recursion review",
+      "depth": 0
+    },
+    {
+      "id": "arraylists",
+      "name": "ArrayLists",
+      "summary": "A resizable array that doubles capacity when full, giving amortized O(1) adds at the back.",
+      "unit": "foundations",
+      "kind": "concept",
+      "source": "Arrays and ArrayLists",
+      "depth": 0
+    },
+    {
+      "id": "amortized-analysis",
+      "name": "Amortized analysis",
+      "summary": "Average the cost of an operation over a sequence so rare expensive steps are spread out.",
+      "unit": "foundations",
+      "kind": "concept",
+      "source": "amortized analysis of resizing",
+      "depth": 1
+    },
+    {
+      "id": "linked-lists",
+      "name": "Linked lists",
+      "summary": "Nodes holding data and next (and previous) pointers, with O(1) adds at the head.",
+      "unit": "foundations",
+      "kind": "concept",
+      "source": "Singly and doubly linked lists",
+      "depth": 0
+    },
+    {
+      "id": "stacks-queues",
+      "name": "Stacks and queues",
+      "summary": "LIFO and FIFO collections built on arrays or linked lists.",
+      "unit": "linear-adts",
+      "kind": "concept",
+      "source": "Stacks and queues",
+      "depth": 1
+    },
+    {
+      "id": "iterators",
+      "name": "Iterators",
+      "summary": "Objects that step through a collection one element at a time through hasNext and next.",
+      "unit": "linear-adts",
+      "kind": "skill",
+      "source": "Iterators and the Iterable interface",
+      "depth": 1
+    },
+    {
+      "id": "tree-traversals",
+      "name": "Tree traversals",
+      "summary": "Visit every node of a binary tree in preorder, inorder, postorder, or level-order.",
+      "unit": "trees",
+      "kind": "skill",
+      "source": "tree traversals",
+      "depth": 2
+    },
+    {
+      "id": "bst",
+      "name": "Binary search trees",
+      "summary": "A binary tree where left < node < right, supporting search, add and remove in O(log n) on average.",
+      "unit": "trees",
+      "kind": "concept",
+      "source": "Binary search trees: search, add, remove",
+      "depth": 3
+    },
+    {
+      "id": "heaps",
+      "name": "Heaps and priority queues",
+      "summary": "A complete binary tree where each parent is smaller than its children, used as a priority queue.",
+      "unit": "trees",
+      "kind": "concept",
+      "source": "Heaps and priority queues",
+      "depth": 3
+    },
+    {
+      "id": "avl",
+      "name": "AVL trees",
+      "summary": "A self-balancing BST that uses rotations to keep heights within one.",
+      "unit": "trees",
+      "kind": "skill",
+      "source": "AVL trees and rotations",
+      "depth": 4
+    },
+    {
+      "id": "hashmaps",
+      "name": "HashMaps",
+      "summary": "Store key-value pairs in an array indexed by a hash of the key, with a strategy for collisions.",
+      "unit": "hashing-sorting",
+      "kind": "concept",
+      "source": "HashMaps, hash functions, collision handling",
+      "depth": 1
+    },
+    {
+      "id": "simple-sorts",
+      "name": "Simple sorts",
+      "summary": "Bubble, insertion and selection sort, each O(n^2) in the worst case.",
+      "unit": "hashing-sorting",
+      "kind": "skill",
+      "source": "Simple sorts",
+      "depth": 1
+    },
+    {
+      "id": "divide-conquer-sorts",
+      "name": "Merge sort and quick sort",
+      "summary": "Sort by splitting the input, sorting the parts recursively, and combining them in O(n log n).",
+      "unit": "hashing-sorting",
+      "kind": "skill",
+      "source": "merge sort, quick sort",
+      "depth": 2
+    },
+    {
+      "id": "pattern-matching",
+      "name": "Pattern matching",
+      "summary": "Find a pattern in text faster than brute force using Boyer-Moore or KMP tables.",
+      "unit": "hashing-sorting",
+      "kind": "skill",
+      "source": "Boyer-Moore, KMP",
+      "depth": 1
+    },
+    {
+      "id": "graph-traversal",
+      "name": "BFS and DFS",
+      "summary": "Explore a graph level by level with a queue or deeply with a stack or recursion.",
+      "unit": "graphs",
+      "kind": "skill",
+      "source": "Graph representations, BFS, DFS",
+      "depth": 2
+    },
+    {
+      "id": "dijkstra",
+      "name": "Dijkstra's algorithm",
+      "summary": "Find shortest paths from one vertex using a priority queue of tentative distances.",
+      "unit": "graphs",
+      "kind": "skill",
+      "source": "Dijkstra's shortest path",
+      "depth": 4
+    },
+    {
+      "id": "mst",
+      "name": "Minimum spanning trees",
+      "summary": "Connect all vertices with the least total edge weight using Prim's or Kruskal's algorithm.",
+      "unit": "graphs",
+      "kind": "skill",
+      "source": "Prim, Kruskal",
+      "depth": 4
+    }
+  ],
+  "edges": [
+    {
+      "from": "big-o",
+      "to": "amortized-analysis",
+      "confidence": 0.95,
+      "reason": "amortized cost is a Big-O bound"
+    },
+    {
+      "from": "big-o",
+      "to": "simple-sorts",
+      "confidence": 0.7,
+      "reason": "comparing sort costs"
+    },
+    {
+      "from": "big-o",
+      "to": "pattern-matching",
+      "confidence": 0.5,
+      "reason": "why it beats brute force"
+    },
+    {
+      "from": "recursion",
+      "to": "tree-traversals",
+      "confidence": 0.95,
+      "reason": "traversals are recursive"
+    },
+    {
+      "from": "recursion",
+      "to": "divide-conquer-sorts",
+      "confidence": 0.9,
+      "reason": "both sorts recurse"
+    },
+    {
+      "from": "arraylists",
+      "to": "amortized-analysis",
+      "confidence": 0.8,
+      "reason": "resizing is the classic example"
+    },
+    {
+      "from": "arraylists",
+      "to": "stacks-queues",
+      "confidence": 0.85,
+      "reason": "array-backed stacks and queues"
+    },
+    {
+      "from": "arraylists",
+      "to": "hashmaps",
+      "confidence": 0.7,
+      "reason": "backing array"
+    },
+    {
+      "from": "linked-lists",
+      "to": "stacks-queues",
+      "confidence": 0.85,
+      "reason": "linked stacks and queues"
+    },
+    {
+      "from": "linked-lists",
+      "to": "iterators",
+      "confidence": 0.6,
+      "reason": "iterating over nodes"
+    },
+    {
+      "from": "linked-lists",
+      "to": "hashmaps",
+      "confidence": 0.6,
+      "reason": "external chaining"
+    },
+    {
+      "from": "stacks-queues",
+      "to": "tree-traversals",
+      "confidence": 0.6,
+      "reason": "level-order uses a queue"
+    },
+    {
+      "from": "stacks-queues",
+      "to": "graph-traversal",
+      "confidence": 0.9,
+      "reason": "BFS uses a queue, DFS a stack"
+    },
+    {
+      "from": "simple-sorts",
+      "to": "divide-conquer-sorts",
+      "confidence": 0.6,
+      "reason": "baseline to compare against"
+    },
+    {
+      "from": "tree-traversals",
+      "to": "bst",
+      "confidence": 0.85,
+      "reason": "BST operations walk the tree"
+    },
+    {
+      "from": "tree-traversals",
+      "to": "heaps",
+      "confidence": 0.6,
+      "reason": "heaps are binary trees"
+    },
+    {
+      "from": "graph-traversal",
+      "to": "dijkstra",
+      "confidence": 0.85,
+      "reason": "Dijkstra extends BFS"
+    },
+    {
+      "from": "graph-traversal",
+      "to": "mst",
+      "confidence": 0.75,
+      "reason": "explores the graph"
+    },
+    {
+      "from": "bst",
+      "to": "avl",
+      "confidence": 0.95,
+      "reason": "AVL is a balanced BST"
+    },
+    {
+      "from": "heaps",
+      "to": "dijkstra",
+      "confidence": 0.85,
+      "reason": "priority queue of distances"
+    },
+    {
+      "from": "heaps",
+      "to": "mst",
+      "confidence": 0.6,
+      "reason": "Prim's uses a priority queue"
+    }
+  ],
+  "order": [
+    "big-o",
+    "recursion",
+    "arraylists",
+    "linked-lists",
+    "amortized-analysis",
+    "stacks-queues",
+    "iterators",
+    "hashmaps",
+    "simple-sorts",
+    "pattern-matching",
+    "tree-traversals",
+    "divide-conquer-sorts",
+    "graph-traversal",
+    "bst",
+    "heaps",
+    "avl",
+    "dijkstra",
+    "mst"
+  ]
+}
