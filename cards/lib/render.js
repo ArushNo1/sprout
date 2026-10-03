@@ -92,3 +92,41 @@ export function parseCardQuery(params) {
     rows,
   };
 }
+
+// Product tile for the store carousel: 4:3, leaf in the corner, name, price, delivery tag.
+export const PRODUCT_SIZE = { width: 1200, height: 900 };
+const LEAF = `data:image/png;base64,${readFileSync(join(process.cwd(), "public", "leaf.png")).toString("base64")}`;
+
+export function productTree({ name, category, price, tag, desc }) {
+  const nameSize = name.length > 24 ? 84 : 104;
+  return h("div", {
+    display: "flex", width: "100%", height: "100%", backgroundColor: COLORS.card, borderRadius: 40,
+    flexDirection: "column", justifyContent: "space-between", padding: "64px 72px", position: "relative",
+    fontFamily: "Instrument Serif",
+  }, [
+    { type: "img", props: { src: LEAF, width: 260, height: 262, style: { position: "absolute", top: -20, right: -24, transform: "rotate(90deg)" } } },
+    h("div", { display: "flex", flexDirection: "column", width: 820 }, [
+      h("div", { display: "flex", fontSize: 44, fontStyle: "italic", color: COLORS.green }, category),
+      h("div", { display: "flex", fontSize: nameSize, color: COLORS.green, lineHeight: 1.02, marginTop: 18 }, name),
+      ...(desc ? [h("div", { display: "flex", fontSize: 46, color: COLORS.ink, lineHeight: 1.2, marginTop: 30, opacity: 0.85 }, desc)] : []),
+    ]),
+    h("div", { display: "flex", alignItems: "center", justifyContent: "space-between" }, [
+      h("div", { display: "flex", fontSize: 120, color: COLORS.ink, lineHeight: 1 }, price),
+      h("div", {
+        display: "flex", padding: "14px 34px", borderRadius: 40, fontSize: 44,
+        backgroundColor: tag === "Ships" ? COLORS.track : COLORS.primary,
+        color: tag === "Ships" ? COLORS.green : COLORS.card,
+      }, tag),
+    ]),
+  ]);
+}
+
+export function parseProductQuery(params) {
+  return {
+    name: clip(params.get("name") || "Sprout", 40),
+    category: clip(params.get("category") || "", 30),
+    price: clip(params.get("price") || "", 10),
+    tag: params.get("tag") === "Ships" ? "Ships" : "Digital",
+    desc: clip(params.get("desc") || "", 90),
+  };
+}

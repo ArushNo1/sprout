@@ -1,5 +1,5 @@
 {
   "functions": {
-    "api/*.js": { "includeFiles": "fonts/**" }
+    "api/*.js": { "includeFiles": "{fonts,public}/**" }
   }
 }
