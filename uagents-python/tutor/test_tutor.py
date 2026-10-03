@@ -10,7 +10,8 @@ from cards import feedback_card, home_card, parse_selection, question_card, snap
 from content import clean_question
 from learning import days_until, format_insight
 
-SNAP = {"concepts": [{"name": "Big-O", "p": 0.35}, {"name": "Arrays", "p": 0.92}, {"name": "Heaps", "p": 0.1}],
+SNAP = {"concepts": [{"name": "Big-O", "p": 0.35, "attempts": 2}, {"name": "Arrays", "p": 0.92, "attempts": 4},
+                     {"name": "Heaps", "p": 0.1, "attempts": 3}, {"name": "Graphs", "p": None, "attempts": 0}],
         "due": 2, "untested": 1, "recap": "Reviewed Big-O."}
 
 
@@ -45,11 +46,12 @@ class InsightTest(unittest.TestCase):
 
 class CardTest(unittest.TestCase):
     def test_snapshot_weakest_first(self):
-        self.assertEqual([c["name"] for c in snapshot_rows(SNAP["concepts"])], ["Heaps", "Big-O", "Arrays"])
+        self.assertEqual([c["name"] for c in snapshot_rows(SNAP["concepts"])], ["Heaps", "Big-O", "Arrays", "Graphs"])
         url, ratio = snapshot_image("Data Structures", SNAP, 7)
-        self.assertIn("exam%20in%207%20days%20%C2%B7%202%20due%20for%20review", url)
+        self.assertIn("exam%20in%207%20days%20%C2%B7%203%20of%204%20concepts%20tested%20%C2%B7%202%20due%20for%20review", url)
         self.assertIn("r=Heaps~0.10~10%25", url)
-        self.assertEqual(ratio, "1080:402")
+        self.assertIn("r=Graphs~0~%E2%80%93", url)  # untested: empty bar, no made-up percentage
+        self.assertEqual(ratio, "1080:460")
 
     def test_cards_are_valid(self):
         q = {"question": "Which is O(1)?", "choices": ["a", "b", "c", "d"], "correct_index": 2, "explanation": "e"}

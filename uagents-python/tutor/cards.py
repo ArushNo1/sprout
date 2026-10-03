@@ -65,9 +65,20 @@ def _section(*children) -> dict:
     return {"type": "section", "children": [c for c in children if c]}
 
 
+def tested(c: dict) -> bool:
+    return c["p"] is not None and c["attempts"] > 0
+
+
 def snapshot_rows(concepts: list) -> list:
-    """Weakest concepts first, so the card shows what needs work."""
-    return sorted(concepts, key=lambda c: (c["p"], c["name"]))[:MAX_ROWS]
+    """Tested concepts first, weakest first, so the card shows what needs work; then untested ones."""
+    return sorted(concepts, key=lambda c: (not tested(c), c["p"] if tested(c) else 0, c["name"]))[:MAX_ROWS]
+
+
+def snapshot_row(c: dict) -> str:
+    """label~bar~tail. Untested concepts get an empty bar and a dash, not BKT's prior."""
+    if not tested(c):
+        return f"{c['name']}~0~–"
+    return f"{c['name']}~{c['p']:.2f}~{round(c['p'] * 100)}%"
 
 
 def snapshot_image(course_name: str, snap: dict, exam_days) -> tuple:
@@ -75,10 +86,13 @@ def snapshot_image(course_name: str, snap: dict, exam_days) -> tuple:
     bits = []
     if exam_days is not None:
         bits.append("exam today" if exam_days == 0 else f"exam in {exam_days} day{'s' if exam_days != 1 else ''}")
+    n = len(snap["concepts"])
+    done = sum(tested(c) for c in snap["concepts"])
+    bits.append(f"{done} of {n} concepts tested" if done else f"{n} concepts, none tested yet")
     if snap["due"]:
         bits.append(f"{snap['due']} due for review")
-    params = [("title", course_name), ("subtitle", " · ".join(bits) or f"{len(snap['concepts'])} concepts")]
-    params += [("r", f"{c['name']}~{c['p']:.2f}~{round(c['p'] * 100)}%") for c in rows]
+    params = [("title", course_name), ("subtitle", " · ".join(bits))]
+    params += [("r", snapshot_row(c)) for c in rows]
     height = 40 + 80 + 44 + 34 + len(rows) * 58 + 30  # cardSize() in cards/lib/render.js
     return f"{CARDS_URL}/api/card?{urlencode(params, quote_via=quote)}", f"1080:{height}"
 

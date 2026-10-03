@@ -53,7 +53,7 @@ def snapshot(address: str, course_id: int, now=None) -> dict:
         m = rows.get(c["id"], {})
         items.append({
             "id": c["id"], "name": c["name"], "summary": c["summary"],
-            "p": m.get("p_mastered", 0.2), "attempts": m.get("attempts", 0),
+            "p": m.get("p_mastered"), "attempts": m.get("attempts", 0),  # None until the student is tested
             "due": bool(m.get("next_review")) and micros(m.get("next_review")) <= now_us,
         })
     ended = [s for s in sql(f"SELECT started_at, ended_at, summary FROM session WHERE user_address = {sql_str(address)}")
@@ -90,7 +90,9 @@ def concept(concept_id: int) -> dict:
 def record(address: str, concept_id: int, correct: bool, kind: str, fmt, session_id, question: str) -> tuple:
     """Saves one answer and returns (mastery before, mastery after)."""
     key = sql_str(f"{address}:{int(concept_id)}")
-    before = (sql(f"SELECT p_mastered FROM mastery WHERE key = {key}") or [{"p_mastered": 0.2}])[0]["p_mastered"]
+    row = sql(f"SELECT p_mastered FROM mastery WHERE key = {key}")
+    # A first answer starts from the concept's prior, which the database seeds the mastery row with.
+    before = row[0]["p_mastered"] if row else sql(f"SELECT p_init FROM concept WHERE id = {int(concept_id)}")[0]["p_init"]
     call("record_attempt", address, int(concept_id), bool(correct), kind,
          opt(fmt if fmt in FORMATS else None), opt(session_id), opt(question[:500]))
     after = sql(f"SELECT p_mastered FROM mastery WHERE key = {key}")[0]["p_mastered"]
