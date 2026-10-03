@@ -6,59 +6,46 @@ Status vs. the Product Development Plan (Oct 3, 2026). Goal: a brand-new ASI:One
 
 | Plan item | State |
 | --- | --- |
-| Curriculum ingestion (syllabus -> concept map) | Done: `uagents-python/curriculum`, hosted on Agentverse, with cards |
-| Interactive Cards infra | Done: `cards/` on Vercel (map, button, product images) |
-| Paid packs (Payment Protocol + Stripe) | Built: `uagents-python/store`, **not deployed** |
-| Shared DB + schema, reducers | Built: `spacetimedb/` (learner, course, concept, mastery, attempt, session, format_weight, study_card, payment, entitlement) |
-| BKT, SM-2, Thompson bandit, next-concept picker | Built twice: TS in `spacetimedb/.../algorithms.ts` (used by reducers) and Python in `mastery/` |
-| Orchestrator agent (Chat Protocol, routing) | **Missing**: `uagents-python/agent.py` is still the "Sprout heard" template |
-| Diagnostic quiz | **Missing** |
-| Tutor / teaching agent | **Missing** |
-| Quiz agent (quiz, flashcard, worked-example cards) | **Missing** |
-| Knowledge snapshot, review reminder cards | **Missing** |
-| Returning-session recap | **Missing** (only a new/returning check exists) |
-| Garden view | Placeholder `App.tsx` (lists courses and concept counts) |
+| Curriculum ingestion + confirm step | Done: `uagents-python/curriculum` saves draft/confirmed courses to SpacetimeDB |
+| Shared DB (SpacetimeDB) with BKT, SM-2, Thompson bandit, next-concept picker | Done: `spacetimedb/spacetimedb/src` (`record_attempt`, `compute_next_step`, ...) |
+| Tutor agent: progress card, diagnostic, lessons, review, recap | Built: `uagents-python/tutor` |
+| Orchestrator (Chat Protocol, routing, relay) | Built: `uagents-python/orchestrator`; deployment and ASI:One routing unverified |
+| Interactive Cards infra | Done: `cards/` on Vercel |
+| Paid packs (Payment Protocol) | **Removed**: the store agent and the payment tables were deleted upstream |
+| Garden view | Placeholder `spacetimedb/src/App.tsx` (lists courses and concept counts) |
 | Calendar / Canvas sync | Not started (stretch) |
 
-## P0: the core loop (blocks the demo)
+## P0: make the core loop demo-ready
 
-- [ ] **Decide the data layer and delete the loser.** The plan says Supabase; the team built SpacetimeDB, and `mastery/mastery_store.py` still targets Supabase. Pick SpacetimeDB, then remove or archive `mastery/` Supabase code so there is one source of truth for BKT/SM-2/bandit (the TS reducers already run them).
-- [ ] **Curriculum agent writes to the DB.** It only calls `upsert_learner` today. After the user confirms a map, call `create_course` + `ingest_concept_graph` + `confirm_course`. Add the confirm/edit step (the plan's "let users confirm or edit the concept list").
-- [ ] **Orchestrator agent.** Replace the template in `uagents-python/agent.py`: Chat Protocol, identify user by sender address, load state from SpacetimeDB, route to specialists, and handle "let's keep going". This is the only agent users talk to, so ASI:One discovery depends on it.
-- [ ] **Agent-to-agent protocol.** Define message models for orchestrator <-> curriculum / tutor / quiz (the store already has `GetConceptMap`). Keep schemas identical across files, since uAgents matches by schema.
-- [ ] **Diagnostic quiz.** 5-8 adaptive questions generated per concept, tappable quiz cards, each answer calls `record_attempt` (BKT updates live).
-- [ ] **Knowledge snapshot card.** Render per-concept mastery (solid / shaky / not started) in `cards/`; show it after every answer so the live ML update is visible.
-- [ ] **Tutor agent.** Call `compute_next_step`, explain the chosen concept with course context in the picked format, then a two-question check.
-- [ ] **Returning-session recap.** On "let's keep going": last session summary (`end_session` / `start_session`), what's shaky, what's due, days to exam, then the next concept.
-- [ ] **Hosted/persistent deployment.** Deploy each agent to Agentverse (hosted, with `build_hosted.py` bundles) or a persistent host. Verify nothing depends on local `ctx.storage`.
-- [ ] **ASI:One discovery test.** Give the orchestrator a clear Agentverse name, description and keywords; confirm "help me study for my data structures midterm" routes to it. Keep the Agentverse profile link as a backup.
+- [ ] **Deploy and wire all three agents.** Host orchestrator, tutor and curriculum on Agentverse; set `TRUSTED_ORCHESTRATORS`, `CURRICULUM_ADDRESS`, `TUTOR_ADDRESS` and `SPACETIMEDB_*` secrets. Use a registered agent token (`register_agent`), not the owner token.
+- [ ] **ASI:One discovery test.** Clear name, description and keywords on the orchestrator; confirm "help me study for my data structures midterm" routes to it. Keep the Agentverse profile link as a backup.
+- [ ] **End-to-end run in ASI:One:** paste syllabus -> confirm map -> diagnostic -> a wrong answer drops a concept to shaky -> teach -> close the chat -> new chat, "let's keep going" gets the recap (shaky, due, days to exam). Fix whatever breaks.
+- [ ] **Seed the demo account** (`seed_demo`) with two days of history and an exam date; check it matches the CS persona.
+- [ ] **Pre-test extraction** on `curriculum/examples/data_structures_syllabus.txt`.
+- [ ] **Latency check:** "let's keep going" to first content under 10 s, now that the orchestrator relays through a specialist.
+- [ ] **Failure handling:** retries on DB/LLM calls, and a plain message when something fails (a cheap bonus area).
 
-## P1: stretch with the highest value
+## P1: high-value additions
 
-- [ ] **Format adaptation in the loop.** The bandit exists in the DB; log `format_used` per teaching step and show the insight line ("worked examples raised your scores 30% more than flashcards"). Plan says never cut the simplest version.
-- [ ] **Flashcard carousel, worked-example, and review-reminder cards.** Plan lists them as card types; none exist.
-- [ ] **Form card** for onboarding (course name, current unit, exam date) and updating exam dates.
-- [ ] **Spaced review.** SM-2 is in the DB; surface "due today" in the recap and a review reminder card.
-- [ ] **Store integration.** Deploy the store agent, register `Sprout Store` in the README table, and wire the Exam Pack to the real mastery data (weak-spot drill plan, review schedule) instead of only the concept map. Resolve entitlements via `create_payment_request` / `resolve_payment` in the DB so unlocks persist and gate free vs. paid tiers (free = one course).
-- [ ] **Mock-exam paid unlock demo path**: ask for a mock exam -> payment request -> pay -> exam delivered.
-- [ ] **Forget a course.** Wire "forget this course" to `forget_course` (privacy requirement).
-- [ ] **Error handling.** Retry failed tool/DB calls, tell the user plainly when something failed (cheap bonus area).
+- [ ] **Show the format insight** ("worked examples raised your scores 30% more than flashcards"). The tutor surfaces the best format once there's evidence; make sure the demo account has enough data and the line is explicit.
+- [ ] **Form card** for course name / current unit / exam date (the plan's onboarding step 1) and for editing exam dates.
+- [ ] **Forget a course:** the `forget_course` reducer exists but no agent calls it. Add "forget this course" in chat (privacy requirement).
+- [ ] **Decide on monetization.** Payments and the store agent were removed, but the plan scores the Payment Protocol under Fetch.ai technology and wants one paid unlock (mock exam) in the demo. Either restore it (the old code is in git history before commit `6928a1c`) or drop the claim from the pitch and README.
+- [ ] **Retire the Supabase `mastery/` package.** It duplicates the TS reducers and still targets Supabase. Delete it or move its tests to document the algorithms.
 
 ## P2: stretch
 
-- [ ] **Knowledge garden web view** (`spacetimedb/src/App.tsx`): concepts as plants that grow with mastery and wilt when due. Layout hints already exist (`depth` = row, unit = column). Deploy and link it from the chat.
+- [ ] **Knowledge garden view** in `spacetimedb/src/App.tsx`: concepts as plants that grow with mastery and wilt when due (`depth` = row, unit = column). Deploy and link it from chat.
 - [ ] **Calendar / Canvas sync** for exam dates (cut first if time runs short).
-- [ ] **Embedding concept graph** (plan lists embeddings; currently LLM extraction only). Low priority.
-- [ ] **BKT parameter tuning** from real attempts; PDF lecture-slide ingestion.
+- [ ] **Embedding concept graph, BKT tuning, PDF slide ingestion** (post-hackathon roadmap).
 
 ## Submission checklist (missing any of the first six = ineligible)
 
-- [ ] All agents registered on Agentverse (curriculum is; orchestrator and store are not)
-- [ ] Orchestrator implements the Agent Chat Protocol (done in curriculum and store; do it in the orchestrator)
-- [ ] Discoverable and usable through ASI:One
-- [ ] Full primary workflow works inside ASI:One (onboarding -> quiz -> teach -> new-chat recap)
-- [ ] Public GitHub repo with run and test instructions (root README is still the agent template; rewrite it)
-- [ ] README lists every agent's name and address, plus extra resources (cards Vercel URL, SpacetimeDB, Stripe)
+- [ ] All agents registered on Agentverse
+- [ ] Orchestrator implements the Agent Chat Protocol and is usable via ASI:One
+- [ ] Full primary workflow works inside an ASI:One conversation
+- [ ] Public GitHub repo with run and test instructions. The root `README.md` is still the single-agent template (`python agent.py`); rewrite it around the three agents.
+- [ ] README lists every agent's name and address (the table only has curriculum; add orchestrator and tutor) plus extras (cards Vercel URL, SpacetimeDB database)
 - [ ] Innovation Lab and hackathon badges in **each** agent's README (none yet)
 - [ ] Demo video, 3-5 min, plus a recorded backup
 - [ ] Devpost submission
@@ -67,15 +54,11 @@ Status vs. the Product Development Plan (Oct 3, 2026). Goal: a brand-new ASI:One
 
 ## Demo prep
 
-- [ ] Pre-seed a demo account with two days of history (`seed_demo` reducer exists; check it covers the CS persona and an exam date)
-- [ ] Pre-test the concept extraction on the real demo syllabus (`curriculum/examples/data_structures_syllabus.txt`)
 - [ ] Test 3-5 hackers: time to first useful help, and whether the second session needs re-explaining
-- [ ] Rehearse the 4-minute script: hook, onboarding, live ML (wrong answer drops Big-O to shaky), new-chat moment, adaptation, garden
+- [ ] Rehearse the 4-minute script: hook, onboarding, live ML, new-chat moment, adaptation, garden
 
 ## Housekeeping
 
-- [ ] Rewrite root `README.md` (still template deploy steps; keep the agents table)
-- [ ] Remove or repurpose `uagents-python/test-agent.py` and the template `agent.py` once the orchestrator lands
-- [ ] Tests: add integration tests for the DB client and the orchestrator routing; run `mastery/` and `spacetimedb` (`npm test`) tests in CI
-- [ ] Store `SPACETIMEDB_TOKEN` as a registered agent token (`register_agent`), not the owner token, before deploying
-- [ ] Add a short `docs/architecture.md` matching what was actually built (5 agents vs. what shipped)
+- [ ] Remove the template `uagents-python/agent.py` and `test-agent.py`
+- [ ] Add `docs/architecture.md` that matches what shipped (orchestrator + curriculum + tutor + SpacetimeDB, not the plan's five agents)
+- [ ] Run the unit tests (`curriculum`, `tutor`, `orchestrator`, `spacetimedb` via `npm test`) in CI
