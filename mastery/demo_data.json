@@ -1,0 +1,10 @@
+{
+  "_comment": "Demo data for bkt.py. Each concept has a name and a list of answers (true=correct, false=wrong).",
+  "concepts": [
+    { "name": "Matrix Multiplication",  "answers": [true,  true,  false, true,  true ] },
+    { "name": "Dot Product",            "answers": [true,  true,  true,  true        ] },
+    { "name": "Eigenvalues",            "answers": [false, false, true,  false       ] },
+    { "name": "Linear Independence",    "answers": [true,  false, true               ] },
+    { "name": "Gaussian Elimination",   "answers": [false, false                     ] }
+  ]
+}
