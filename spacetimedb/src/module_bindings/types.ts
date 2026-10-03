@@ -79,17 +79,6 @@ export const EdgeInput = __t.object("EdgeInput", {
 });
 export type EdgeInput = __Infer<typeof EdgeInput>;
 
-export const Entitlement = __t.object("Entitlement", {
-  id: __t.u64(),
-  userAddress: __t.string(),
-  product: __t.string(),
-  courseId: __t.option(__t.u64()),
-  paymentRequestId: __t.option(__t.u64()),
-  grantedAt: __t.timestamp(),
-  expiresAt: __t.option(__t.timestamp()),
-});
-export type Entitlement = __Infer<typeof Entitlement>;
-
 export const FormatWeight = __t.object("FormatWeight", {
   key: __t.string(),
   userAddress: __t.string(),
@@ -103,7 +92,6 @@ export type FormatWeight = __Infer<typeof FormatWeight>;
 export const Learner = __t.object("Learner", {
   address: __t.string(),
   displayName: __t.option(__t.string()),
-  plan: __t.string(),
   preferredFormat: __t.option(__t.string()),
   createdAt: __t.timestamp(),
   lastActiveAt: __t.timestamp(),
@@ -137,19 +125,6 @@ export const NextStep = __t.object("NextStep", {
   computedAt: __t.timestamp(),
 });
 export type NextStep = __Infer<typeof NextStep>;
-
-export const PaymentRequest = __t.object("PaymentRequest", {
-  id: __t.u64(),
-  userAddress: __t.string(),
-  product: __t.string(),
-  courseId: __t.option(__t.u64()),
-  amountCents: __t.u32(),
-  status: __t.string(),
-  paymentRef: __t.option(__t.string()),
-  createdAt: __t.timestamp(),
-  resolvedAt: __t.option(__t.timestamp()),
-});
-export type PaymentRequest = __Infer<typeof PaymentRequest>;
 
 export const Prerequisite = __t.object("Prerequisite", {
   id: __t.u64(),

@@ -13,7 +13,6 @@ import {
 export default __t.row({
   address: __t.string().primaryKey(),
   displayName: __t.option(__t.string()).name("display_name"),
-  plan: __t.string(),
   preferredFormat: __t.option(__t.string()).name("preferred_format"),
   createdAt: __t.timestamp().name("created_at"),
   lastActiveAt: __t.timestamp().name("last_active_at"),

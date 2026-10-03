@@ -45,7 +45,7 @@ Reads are open: all tables except `config` and `agent` are public, so learner da
 
 | Table | Key | Holds |
 |---|---|---|
-| `learner` | `address` | display name, plan (`free`/`exam_pack`/`semester`), preferred format |
+| `learner` | `address` | display name, preferred format |
 | `course` | `id` | name, unit, exam date, raw syllabus, status (`draft` until confirmed, then `active`) |
 | `concept` | `id` | knowledge-map node: name, summary, embedding, per-concept BKT parameters |
 | `prerequisite` | `id` | edge: `concept_id` requires `requires_id`, with confidence |
@@ -55,14 +55,13 @@ Reads are open: all tables except `config` and `agent` are public, so learner da
 | `session` | `id` | start/end, recap summary used to open the next chat |
 | `next_step` | `address:course_id` | latest recommendation from `compute_next_step` |
 | `study_card` | `id` | generated quiz / flashcard / worked-example payloads (JSON) |
-| `payment_request`, `entitlement` | `id` | Payment Protocol requests and what they unlocked |
 
 ## Reducers
 
 ### Learners
 | Reducer | Arguments | Notes |
 |---|---|---|
-| `upsert_learner` | `address, display_name?` | Creates on the plan `free`; call at the start of every chat |
+| `upsert_learner` | `address, display_name?` | Creates the learner if new; call at the start of every chat |
 | `set_preferred_format` | `address, format` | Formats: `worked_example`, `flashcards`, `diagram`, `analogy`. Only seeds the bandit's starting weight |
 
 ### Courses and curriculum
@@ -74,7 +73,7 @@ Reads are open: all tables except `config` and `agent` are public, so learner da
 | `add_concept` / `update_concept` / `remove_concept` | see source | For the "confirm or edit the concept list" step |
 | `add_prerequisite` / `remove_prerequisite` | see source | Rejects cycles |
 | `confirm_course` | `address, course_id` | Activates the course and creates a mastery row per concept |
-| `forget_course` | `address, course_id` | Deletes the course and everything tied to it. Billing records stay |
+| `forget_course` | `address, course_id` | Deletes the course and everything tied to it |
 
 ### Learning loop
 | Reducer | Arguments | Notes |
@@ -83,12 +82,6 @@ Reads are open: all tables except `config` and `agent` are public, so learner da
 | `compute_next_step` | `address, course_id, mode` | `mode`: `teach` (weakest concept with prerequisites > 0.7, format by Thompson sampling), `review` (most overdue), `diagnostic` (untested concept most others depend on, skipping ones above a known gap). Result lands in `next_step`; `mode = 'complete'` means nothing left |
 | `start_session` / `end_session` | `address, course_id?` / `address, session_id, summary, last_concept_id?` | The latest `summary` opens the next chat |
 | `save_study_card` / `set_study_card_status` | see source | `kind`: `quiz`/`flashcards`/`worked_example`/`snapshot`/`review_reminder`; `payload_json` must be valid JSON |
-
-### Payments
-| Reducer | Arguments | Notes |
-|---|---|---|
-| `create_payment_request` | `address, product, course_id?, amount_cents` | `product`: `exam_pack` (needs a course) or `semester` |
-| `resolve_payment` | `request_id, success, payment_ref?` | On success grants an entitlement (exam pack: through exam day; semester: 30 days) and updates the learner's plan |
 
 ### Admin and demo
 | Reducer | Arguments | Notes |

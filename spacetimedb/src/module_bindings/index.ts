@@ -39,7 +39,6 @@ import AddPrerequisiteReducer from "./add_prerequisite_reducer";
 import ComputeNextStepReducer from "./compute_next_step_reducer";
 import ConfirmCourseReducer from "./confirm_course_reducer";
 import CreateCourseReducer from "./create_course_reducer";
-import CreatePaymentRequestReducer from "./create_payment_request_reducer";
 import EndSessionReducer from "./end_session_reducer";
 import ForgetCourseReducer from "./forget_course_reducer";
 import IngestConceptGraphReducer from "./ingest_concept_graph_reducer";
@@ -48,7 +47,6 @@ import RegisterAgentReducer from "./register_agent_reducer";
 import RemoveAgentReducer from "./remove_agent_reducer";
 import RemoveConceptReducer from "./remove_concept_reducer";
 import RemovePrerequisiteReducer from "./remove_prerequisite_reducer";
-import ResolvePaymentReducer from "./resolve_payment_reducer";
 import SaveStudyCardReducer from "./save_study_card_reducer";
 import SeedDemoReducer from "./seed_demo_reducer";
 import SetPreferredFormatReducer from "./set_preferred_format_reducer";
@@ -64,12 +62,10 @@ import UpsertLearnerReducer from "./upsert_learner_reducer";
 import AttemptRow from "./attempt_table";
 import ConceptRow from "./concept_table";
 import CourseRow from "./course_table";
-import EntitlementRow from "./entitlement_table";
 import FormatWeightRow from "./format_weight_table";
 import LearnerRow from "./learner_table";
 import MasteryRow from "./mastery_table";
 import NextStepRow from "./next_step_table";
-import PaymentRequestRow from "./payment_request_table";
 import PrerequisiteRow from "./prerequisite_table";
 import SessionRow from "./session_table";
 import StudyCardRow from "./study_card_table";
@@ -126,20 +122,6 @@ const tablesSchema = __schema({
       { name: 'course_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, CourseRow),
-  entitlement: __table({
-    name: 'entitlement',
-    indexes: [
-      { accessor: 'id', name: 'entitlement_id_idx_btree', algorithm: 'btree', columns: [
-        'id',
-      ] },
-      { accessor: 'userAddress', name: 'entitlement_user_address_idx_btree', algorithm: 'btree', columns: [
-        'userAddress',
-      ] },
-    ],
-    constraints: [
-      { name: 'entitlement_id_key', constraint: 'unique', columns: ['id'] },
-    ],
-  }, EntitlementRow),
   formatWeight: __table({
     name: 'format_weight',
     indexes: [
@@ -196,20 +178,6 @@ const tablesSchema = __schema({
       { name: 'next_step_key_key', constraint: 'unique', columns: ['key'] },
     ],
   }, NextStepRow),
-  paymentRequest: __table({
-    name: 'payment_request',
-    indexes: [
-      { accessor: 'id', name: 'payment_request_id_idx_btree', algorithm: 'btree', columns: [
-        'id',
-      ] },
-      { accessor: 'userAddress', name: 'payment_request_user_address_idx_btree', algorithm: 'btree', columns: [
-        'userAddress',
-      ] },
-    ],
-    constraints: [
-      { name: 'payment_request_id_key', constraint: 'unique', columns: ['id'] },
-    ],
-  }, PaymentRequestRow),
   prerequisite: __table({
     name: 'prerequisite',
     indexes: [
@@ -270,7 +238,6 @@ const reducersSchema = __reducers(
   __reducerSchema("compute_next_step", ComputeNextStepReducer),
   __reducerSchema("confirm_course", ConfirmCourseReducer),
   __reducerSchema("create_course", CreateCourseReducer),
-  __reducerSchema("create_payment_request", CreatePaymentRequestReducer),
   __reducerSchema("end_session", EndSessionReducer),
   __reducerSchema("forget_course", ForgetCourseReducer),
   __reducerSchema("ingest_concept_graph", IngestConceptGraphReducer),
@@ -279,7 +246,6 @@ const reducersSchema = __reducers(
   __reducerSchema("remove_agent", RemoveAgentReducer),
   __reducerSchema("remove_concept", RemoveConceptReducer),
   __reducerSchema("remove_prerequisite", RemovePrerequisiteReducer),
-  __reducerSchema("resolve_payment", ResolvePaymentReducer),
   __reducerSchema("save_study_card", SaveStudyCardReducer),
   __reducerSchema("seed_demo", SeedDemoReducer),
   __reducerSchema("set_preferred_format", SetPreferredFormatReducer),

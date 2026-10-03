@@ -23,9 +23,12 @@ Put your logic in `handle_text` in `uagents-python/agent.py`.
 
 | Agent | Address | Code |
 | --- | --- | --- |
+| Sprout orchestrator (the one students talk to) | not deployed yet | [`uagents-python/orchestrator`](uagents-python/orchestrator) |
 | Sprout Curriculum (hosted on Agentverse, @blank-agent-181) | `agent1qtddszc00qe3jgkpsu652wvp0nm4j4tywcpjt554ct5acn09gs3lu3nk8nh` | [`uagents-python/curriculum`](uagents-python/curriculum) |
-| Sprout Store (payments) | not deployed yet | [`uagents-python/store`](uagents-python/store) |
+| Sprout Tutor | not deployed yet | [`uagents-python/tutor`](uagents-python/tutor) |
+
+Students talk to the orchestrator, which routes each message to the curriculum or tutor agent and relays their cards back. See its [README](uagents-python/orchestrator/README.md).
 
 The curriculum agent turns a pasted syllabus into a concept map and replies with interactive cards in ASI:One. See its [README](uagents-python/curriculum/README.md).
 
-The store agent sells exam prep, SAT/ACT/AP practice and school supplies through the Agent Payment Protocol with Stripe test mode, and asks the curriculum agent for course maps. See its [README](uagents-python/store/README.md).
+The tutor agent runs diagnostics, lessons in the format that works for each student, and reviews, reading and writing everything through the shared SpacetimeDB database. See its [README](uagents-python/tutor/README.md).

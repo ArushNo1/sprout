@@ -6,21 +6,17 @@ Turns a pasted syllabus or notes into a concept map: concepts (nodes) and prereq
 - `prompt.py`: the extraction prompt sent to the ASI:One LLM.
 - `concept_map.py`: cleans the LLM output (slug ids, no duplicate or dangling edges, no cycles) and adds `depth` and a teaching `order`.
 - `concept_map.schema.json`: the map format.
-- `spacetime_db.py`: thin HTTP client for the shared SpacetimeDB database (`../../spacetimedb/API.md`). Used on first contact to tell a new user from a returning one via the `learner` table, instead of guessing from the LLM or local storage.
 - `examples/`: a sample data structures syllabus and the map it should produce.
 - `build_hosted.py`: bundles everything into `dist/hosted_agent.py`, the single file pasted into the Agentverse hosted agent "Sprout Curriculum". Re-run it after editing the source files.
 
-## Onboarding
+## Shared database
 
-On the first message of a chat session (`StartSessionContent`), the agent looks up the
-sender's address in SpacetimeDB's `learner` table (`spacetime_db.get_learner`). If no row
-exists, it's a new user: the agent calls `upsert_learner` to create one, then sends a short
-welcome explaining what Sprout does and asking what class or subject to start with, followed
-by the usual upload card. A returning user (a `learner` row already exists) just gets the
-upload card. This check never touches the LLM or this agent's own `ctx.storage` — SpacetimeDB
-is the only source of truth for "have we met this address before." If SpacetimeDB is
-unreachable or `SPACETIMEDB_TOKEN` isn't set, the agent logs a warning and falls back to
-the returning-user behavior rather than blocking the chat.
+When `SPACETIMEDB_TOKEN` is set, the agent saves each student's course to Sprout's SpacetimeDB database through `../sprout_db.py`:
+
+1. Building a map calls `upsert_learner`, `create_course` (status `draft`) and `ingest_concept_graph` with the concepts and prerequisite links. Rebuilding after "Edit" updates the same draft course instead of making a new one.
+2. "Looks right" calls `confirm_course`, which makes the course active and creates the student's mastery rows, so the tutor and knowledge agents can start from it.
+
+Without a token the agent works the same and keeps maps in its own storage only. To test against a local database: `spacetime start`, then `spacetime publish sprout-local --server local --module-path spacetimedb/spacetimedb --no-config`, and set `SPACETIMEDB_HOST=http://127.0.0.1:3000`, `SPACETIMEDB_DB=sprout-local` and the local token from `spacetime login show --token`.
 
 ## Map format
 
