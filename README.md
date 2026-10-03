@@ -19,3 +19,10 @@ The agent keeps running only while `python agent.py` is running, so host it some
 
 Put your logic in `handle_text` in `uagents-python/agent.py`.
 
+## Agents
+
+| Agent | Address | Code |
+| --- | --- | --- |
+| Sprout Curriculum (hosted on Agentverse, @blank-agent-181) | `agent1qtddszc00qe3jgkpsu652wvp0nm4j4tywcpjt554ct5acn09gs3lu3nk8nh` | [`uagents-python/curriculum`](uagents-python/curriculum) |
+
+The curriculum agent turns a pasted syllabus into a concept map and replies with interactive cards in ASI:One. See its [README](uagents-python/curriculum/README.md).
