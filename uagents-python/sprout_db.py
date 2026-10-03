@@ -10,7 +10,7 @@ from datetime import date, datetime, time, timezone
 import requests
 
 HOST = os.getenv("SPACETIMEDB_HOST", "https://maincloud.spacetimedb.com").rstrip("/")
-DB = os.getenv("SPACETIMEDB_DB", "sprout-0gz5d")
+DB = os.getenv("SPACETIMEDB_DB", "sprout-live")
 TIMEOUT = 20
 
 
