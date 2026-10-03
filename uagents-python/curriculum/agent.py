@@ -29,6 +29,7 @@ from uagents_core.contrib.protocols.chat import (
     chat_protocol_spec,
 )
 
+import spacetime_db
 from cards import SAMPLE_COURSE, SAMPLE_SYLLABUS, map_card, parse_selection, text_message, upload_card
 from concept_map import extract_json, mentions_exam_date, normalize, summarize
 from prompt import SYSTEM_PROMPT, user_prompt
@@ -163,12 +164,35 @@ async def reply_with_map(ctx: Context, sender: str, syllabus: str, course_name=N
     await ctx.send(sender, map_card(cmap))
 
 
+async def greet(ctx: Context, sender: str):
+    """First contact in a session. Whether this address is new comes from
+    SpacetimeDB's `learner` table, never from the LLM or local storage."""
+    try:
+        learner = await asyncio.to_thread(spacetime_db.get_learner, sender)
+    except Exception as err:
+        ctx.logger.warning(f"SpacetimeDB lookup failed, skipping onboarding: {err}")
+        await ctx.send(sender, upload_card())
+        return
+    if learner is not None:
+        await ctx.send(sender, upload_card())
+        return
+    try:
+        await asyncio.to_thread(spacetime_db.call, "upsert_learner", sender, spacetime_db.opt(None))
+    except Exception as err:
+        ctx.logger.error(f"upsert_learner failed for {sender[:16]}: {err}")
+    await ctx.send(sender, text_message(
+        "Welcome to Sprout! I turn a syllabus into a map of what to learn and in what order, "
+        "so you always know what's next. Tell me about a class you're taking, or any subject "
+        "you're trying to get better at -- paste a syllabus, a topic list, or just describe it."))
+    await ctx.send(sender, upload_card())
+
+
 @chat.on_message(ChatMessage)
 async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
     await ctx.send(sender, ChatAcknowledgement(
         timestamp=datetime.now(timezone.utc), acknowledged_msg_id=msg.msg_id))
     if any(isinstance(c, StartSessionContent) for c in msg.content):
-        await ctx.send(sender, upload_card())
+        await greet(ctx, sender)
         return
     text = "".join(c.text for c in msg.content if isinstance(c, TextContent)).strip()
     selection = parse_selection(text)
