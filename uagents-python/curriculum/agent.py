@@ -57,8 +57,8 @@ class ConceptMapResponse(Model):
     error: str = ""
 
 
-# Other agents (the Store's Exam Pack) ask for a student's saved map. Keep these two
-# identical to uagents-python/store/messages.py: uAgents matches messages by schema.
+# Other Sprout agents ask for a student's saved map with these. uAgents matches messages
+# by schema, so any agent that sends them must define identical classes.
 class GetConceptMap(Model):
     user: str  # ASI:One address of the student
 
