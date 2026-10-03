@@ -24,5 +24,8 @@ Put your logic in `handle_text` in `uagents-python/agent.py`.
 | Agent | Address | Code |
 | --- | --- | --- |
 | Sprout Curriculum (hosted on Agentverse, @blank-agent-181) | `agent1qtddszc00qe3jgkpsu652wvp0nm4j4tywcpjt554ct5acn09gs3lu3nk8nh` | [`uagents-python/curriculum`](uagents-python/curriculum) |
+| Sprout Store (payments) | not deployed yet | [`uagents-python/store`](uagents-python/store) |
 
 The curriculum agent turns a pasted syllabus into a concept map and replies with interactive cards in ASI:One. See its [README](uagents-python/curriculum/README.md).
+
+The store agent sells exam prep, SAT/ACT/AP practice and school supplies through the Agent Payment Protocol with Stripe test mode, and asks the curriculum agent for course maps. See its [README](uagents-python/store/README.md).

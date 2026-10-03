@@ -57,6 +57,17 @@ class ConceptMapResponse(Model):
     error: str = ""
 
 
+# Other agents (the Store's Exam Pack) ask for a student's saved map. Keep these two
+# identical to uagents-python/store/messages.py: uAgents matches messages by schema.
+class GetConceptMap(Model):
+    user: str  # ASI:One address of the student
+
+
+class ConceptMapReply(Model):
+    found: bool
+    concept_map: str = ""  # JSON matching concept_map.schema.json
+
+
 def call_llm(syllabus: str, course_name: Optional[str]) -> str:
     resp = requests.post(
         ASI_URL,
@@ -125,6 +136,13 @@ chat = Protocol(spec=chat_protocol_spec)
 
 def _key(sender: str, what: str) -> str:
     return f"{what}:{sender}"
+
+
+@agent.on_message(model=GetConceptMap, replies=ConceptMapReply)
+async def on_get_map(ctx: Context, sender: str, req: GetConceptMap):
+    cmap = ctx.storage.get(_key(req.user, "map"))
+    ctx.logger.info(f"map request from {sender[:16]} for {req.user[:16]}: {'found' if cmap else 'none'}")
+    await ctx.send(sender, ConceptMapReply(found=bool(cmap), concept_map=json.dumps(cmap) if cmap else ""))
 
 
 async def reply_with_map(ctx: Context, sender: str, syllabus: str, course_name=None, exam_date=None):
