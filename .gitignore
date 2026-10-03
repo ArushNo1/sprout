@@ -5,3 +5,4 @@
 __pycache__/
 uagents-python/curriculum/dist/
 !.env.example
+node_modules/
