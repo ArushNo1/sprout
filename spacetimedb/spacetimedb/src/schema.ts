@@ -30,8 +30,6 @@ const learner = table(
   {
     address: t.string().primaryKey(),
     displayName: t.option(t.string()),
-    // 'free' | 'exam_pack' | 'semester'
-    plan: t.string(),
     preferredFormat: t.option(t.string()),
     createdAt: t.timestamp(),
     lastActiveAt: t.timestamp(),
@@ -186,38 +184,6 @@ const studyCard = table(
   }
 );
 
-// ── Monetization (Payment Protocol) ──────────────────────────────────────────
-
-const paymentRequest = table(
-  { name: 'payment_request', public: true },
-  {
-    id: t.u64().primaryKey().autoInc(),
-    userAddress: t.string().index('btree'),
-    // 'exam_pack' | 'semester'
-    product: t.string(),
-    courseId: t.option(t.u64()),
-    amountCents: t.u32(),
-    // 'pending' | 'paid' | 'failed'
-    status: t.string(),
-    paymentRef: t.option(t.string()),
-    createdAt: t.timestamp(),
-    resolvedAt: t.option(t.timestamp()),
-  }
-);
-
-const entitlement = table(
-  { name: 'entitlement', public: true },
-  {
-    id: t.u64().primaryKey().autoInc(),
-    userAddress: t.string().index('btree'),
-    product: t.string(),
-    courseId: t.option(t.u64()),
-    paymentRequestId: t.option(t.u64()),
-    grantedAt: t.timestamp(),
-    expiresAt: t.option(t.timestamp()),
-  }
-);
-
 const spacetimedb = schema({
   config,
   agent,
@@ -231,8 +197,6 @@ const spacetimedb = schema({
   session,
   nextStep,
   studyCard,
-  paymentRequest,
-  entitlement,
 });
 
 export default spacetimedb;

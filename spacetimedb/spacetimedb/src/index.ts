@@ -33,7 +33,6 @@ const HOUR = DAY / 24n;
 const ATTEMPT_KINDS = ['diagnostic', 'check', 'practice', 'review'];
 // Only attempts made after teaching in a specific format say anything about it.
 const BANDIT_KINDS = ['check', 'practice', 'review'];
-const PRODUCTS = ['exam_pack', 'semester'];
 const CARD_KINDS = [
   'quiz',
   'flashcards',
@@ -142,8 +141,7 @@ function chooseFormat(ctx: Ctx, address: string): string {
   return thompsonPick(ensureFormatWeights(ctx, address), () => ctx.random());
 }
 
-// Deletes everything tied to a course ("forget this course"). Billing records
-// (payment_request, entitlement) are kept.
+// Deletes everything tied to a course ("forget this course").
 function deleteCourseData(ctx: Ctx, courseId: bigint) {
   for (const r of [...ctx.db.attempt.courseId.filter(courseId)])
     ctx.db.attempt.id.delete(r.id);
@@ -205,7 +203,6 @@ export const upsert_learner = spacetimedb.reducer(
       ctx.db.learner.insert({
         address,
         displayName,
-        plan: 'free',
         preferredFormat: undefined,
         createdAt: ctx.timestamp,
         lastActiveAt: ctx.timestamp,
@@ -757,77 +754,6 @@ export const set_study_card_status = spacetimedb.reducer(
   }
 );
 
-// ── Payments (Payment Protocol) ──────────────────────────────────────────────
-
-export const create_payment_request = spacetimedb.reducer(
-  {
-    address: t.string(),
-    product: t.string(),
-    courseId: t.option(t.u64()),
-    amountCents: t.u32(),
-  },
-  (ctx, { address, product, courseId, amountCents }) => {
-    requireAgent(ctx);
-    requireLearner(ctx, address);
-    oneOf(product, PRODUCTS, 'product');
-    if (product === 'exam_pack') {
-      if (courseId === undefined)
-        throw new SenderError('exam_pack requires a courseId');
-      requireCourse(ctx, courseId, address);
-    }
-    ctx.db.paymentRequest.insert({
-      id: 0n,
-      userAddress: address,
-      product,
-      courseId,
-      amountCents,
-      status: 'pending',
-      paymentRef: undefined,
-      createdAt: ctx.timestamp,
-      resolvedAt: undefined,
-    });
-  }
-);
-
-// Marks a request paid (granting the entitlement) or failed.
-export const resolve_payment = spacetimedb.reducer(
-  { requestId: t.u64(), success: t.bool(), paymentRef: t.option(t.string()) },
-  (ctx, { requestId, success, paymentRef }) => {
-    requireAgent(ctx);
-    const req = ctx.db.paymentRequest.id.find(requestId);
-    if (!req) throw new SenderError(`Payment request ${requestId} not found`);
-    if (req.status !== 'pending')
-      throw new SenderError(`Payment request already ${req.status}`);
-    ctx.db.paymentRequest.id.update({
-      ...req,
-      status: success ? 'paid' : 'failed',
-      paymentRef,
-      resolvedAt: ctx.timestamp,
-    });
-    if (!success) return;
-
-    // Exam pack lasts through exam day; semester is a 30-day subscription.
-    const course = req.courseId !== undefined ? ctx.db.course.id.find(req.courseId) : null;
-    const expiresAt =
-      req.product === 'exam_pack'
-        ? course?.examDate
-          ? addDays(course.examDate, 1)
-          : undefined
-        : addDays(ctx.timestamp, 30);
-    ctx.db.entitlement.insert({
-      id: 0n,
-      userAddress: req.userAddress,
-      product: req.product,
-      courseId: req.courseId,
-      paymentRequestId: requestId,
-      grantedAt: ctx.timestamp,
-      expiresAt,
-    });
-    const learner = ctx.db.learner.address.find(req.userAddress);
-    if (learner) ctx.db.learner.address.update({ ...learner, plan: req.product });
-  }
-);
-
 // ── Demo data ────────────────────────────────────────────────────────────────
 
 // [name, summary, mastery after two days of study]
@@ -878,7 +804,6 @@ export const seed_demo = spacetimedb.reducer(
       ctx.db.learner.insert({
         address,
         displayName,
-        plan: 'free',
         preferredFormat: undefined,
         createdAt: hoursAgo(48),
         lastActiveAt: now,
