@@ -9,6 +9,15 @@ Turns a pasted syllabus or notes into a concept map: concepts (nodes) and prereq
 - `examples/`: a sample data structures syllabus and the map it should produce.
 - `build_hosted.py`: bundles everything into `dist/hosted_agent.py`, the single file pasted into the Agentverse hosted agent "Sprout Curriculum". Re-run it after editing the source files.
 
+## Shared database
+
+When `SPACETIMEDB_TOKEN` is set, the agent saves each student's course to Sprout's SpacetimeDB database through `../sprout_db.py`:
+
+1. Building a map calls `upsert_learner`, `create_course` (status `draft`) and `ingest_concept_graph` with the concepts and prerequisite links. Rebuilding after "Edit" updates the same draft course instead of making a new one.
+2. "Looks right" calls `confirm_course`, which makes the course active and creates the student's mastery rows, so the tutor and knowledge agents can start from it.
+
+Without a token the agent works the same and keeps maps in its own storage only. To test against a local database: `spacetime start`, then `spacetime publish sprout-local --server local --module-path spacetimedb/spacetimedb --no-config`, and set `SPACETIMEDB_HOST=http://127.0.0.1:3000`, `SPACETIMEDB_DB=sprout-local` and the local token from `spacetime login show --token`.
+
 ## Map format
 
 Edges point from the prerequisite to the concept that needs it (`big-o` → `amortized-analysis`). `depth` is the longest prerequisite chain above a concept (0 = none). `order` lists every concept id with prerequisites first. Together they give the knowledge agent its graph and give a future garden view its layout: depth is the row, unit is the column.

@@ -6,14 +6,22 @@ Two ways in:
   syllabus) and a map card with "Looks right" / "Edit". Pasting a syllabus as
   plain text also works. Send "json" to get the last map as JSON.
 
+Courses are saved to Sprout's shared SpacetimeDB database (see ../sprout_db.py):
+a built map becomes a draft course with its concepts and prerequisite links, and
+"Looks right" confirms it, which creates the student's mastery rows. Without
+SPACETIMEDB_TOKEN the agent still works and keeps maps in its own storage only.
+
 Env (from .env): ASI_ONE_API_KEY (required), CURRICULUM_SEED (fixes the
 address), ASI_ONE_MODEL (default "asi1-mini"; "asi1" is slower, similar maps),
-SPROUT_CARDS_URL (card image server).
+SPROUT_CARDS_URL (card image server), SPACETIMEDB_HOST / SPACETIMEDB_DB /
+SPACETIMEDB_TOKEN (shared database).
 """
 
 import asyncio
 import json
 import os
+import sys
+from pathlib import Path
 from typing import Optional
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -29,6 +37,9 @@ from uagents_core.contrib.protocols.chat import (
     chat_protocol_spec,
 )
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # shared sprout_db.py
+
+from sprout_db import NONE, DbError, call, enabled, opt, sql, sql_str, timestamp
 from cards import SAMPLE_COURSE, SAMPLE_SYLLABUS, map_card, parse_selection, text_message, upload_card
 from concept_map import extract_json, mentions_exam_date, normalize, summarize
 from prompt import SYSTEM_PROMPT, user_prompt
@@ -145,6 +156,33 @@ async def on_get_map(ctx: Context, sender: str, req: GetConceptMap):
     await ctx.send(sender, ConceptMapReply(found=bool(cmap), concept_map=json.dumps(cmap) if cmap else ""))
 
 
+def save_course(address: str, cmap: dict, syllabus: str, course_id=None):
+    """Writes the map to the shared database as a draft course. Returns its id.
+
+    Reuses `course_id` while it's still a draft (an edit replaces the earlier
+    extraction); otherwise creates a new draft course.
+    """
+    name = cmap["course"]["name"]
+    exam = cmap["course"].get("exam_date")
+    exam_arg = opt(timestamp(exam)) if exam else NONE
+    call("upsert_learner", address, NONE)
+    draft = course_id and sql(
+        f"SELECT id FROM course WHERE id = {int(course_id)} AND user_address = {sql_str(address)} AND status = 'draft'")
+    if draft:
+        call("update_course", address, int(course_id), opt(name), NONE, exam_arg)
+    else:
+        call("create_course", address, name, NONE, exam_arg, syllabus)
+        drafts = sql(f"SELECT id, created_at FROM course WHERE user_address = {sql_str(address)} AND status = 'draft'")
+        course_id = max(drafts, key=lambda r: r["created_at"])["id"]
+    names = {c["id"]: c["name"] for c in cmap["concepts"]}
+    concepts = [{"name": c["name"], "summary": c["summary"], "embedding": [], "p_init": NONE} for c in cmap["concepts"]]
+    # The database stores "concept requires prerequisite"; our edges point prerequisite -> concept.
+    edges = [{"concept": names[e["to"]], "requires": names[e["from"]], "confidence": e["confidence"]}
+             for e in cmap["edges"]]
+    call("ingest_concept_graph", address, int(course_id), concepts, edges)
+    return int(course_id)
+
+
 async def reply_with_map(ctx: Context, sender: str, syllabus: str, course_name=None, exam_date=None):
     try:
         cmap = await build_map(syllabus, course_name, exam_date)
@@ -155,10 +193,18 @@ async def reply_with_map(ctx: Context, sender: str, syllabus: str, course_name=N
         await ctx.send(sender, upload_card(course_name or "", exam_date or "", syllabus))
         return
     ctx.storage.set(_key(sender, "map"), cmap)
+    previous = ctx.storage.get(_key(sender, "draft")) or {}
+    course_id = None
+    if enabled():
+        try:
+            course_id = await asyncio.to_thread(save_course, sender, cmap, syllabus, previous.get("course_id"))
+        except (DbError, KeyError, ValueError) as err:
+            ctx.logger.error(f"saving course to SpacetimeDB failed: {err}")
     ctx.storage.set(_key(sender, "draft"), {
         "course_name": course_name or cmap["course"]["name"],
         "exam_date": exam_date or cmap["course"].get("exam_date") or "",
         "syllabus": syllabus,
+        "course_id": course_id,
     })
     await ctx.send(sender, map_card(cmap))
 
@@ -185,13 +231,20 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
     elif action == "sample":
         await reply_with_map(ctx, sender, SAMPLE_SYLLABUS, SAMPLE_COURSE, selection.get("exam_date") or None)
     elif action == "edit_map":
-        await ctx.send(sender, upload_card(**(ctx.storage.get(_key(sender, "draft")) or {})))
+        draft = ctx.storage.get(_key(sender, "draft")) or {}
+        await ctx.send(sender, upload_card(draft.get("course_name", ""), draft.get("exam_date", ""), draft.get("syllabus", "")))
     elif action == "confirm_map":
         cmap = ctx.storage.get(_key(sender, "map"))
         if not cmap:
             await ctx.send(sender, upload_card())
             return
         ctx.storage.set(_key(sender, "confirmed"), True)
+        course_id = (ctx.storage.get(_key(sender, "draft")) or {}).get("course_id")
+        if course_id and enabled():
+            try:
+                await asyncio.to_thread(call, "confirm_course", sender, int(course_id))
+            except DbError as err:
+                ctx.logger.error(f"confirming course {course_id} failed: {err}")
         await ctx.send(sender, text_message(
             f"Saved {cmap['course']['name']}: {len(cmap['concepts'])} concepts across {len(cmap['units'])} units. "
             "Next up is a short quiz to see where you're starting from."))
