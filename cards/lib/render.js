@@ -121,6 +121,30 @@ export function productTree({ name, category, price, tag, desc }) {
   ]);
 }
 
+// Wide tile for carousels, which crop to about 16:9 and print the name and price below the image.
+export const PRODUCT_WIDE_SIZE = { width: 1200, height: 675 };
+
+export function productWideTree({ name, category, tag }) {
+  return h("div", {
+    display: "flex", width: "100%", height: "100%", backgroundColor: COLORS.card,
+    flexDirection: "column", justifyContent: "space-between", padding: "56px 64px", position: "relative",
+    fontFamily: "Instrument Serif",
+  }, [
+    { type: "img", props: { src: LEAF, width: 300, height: 302, style: { position: "absolute", bottom: -40, right: -30, transform: "rotate(180deg)" } } },
+    h("div", { display: "flex", flexDirection: "column", width: 860 }, [
+      h("div", { display: "flex", fontSize: 44, fontStyle: "italic", color: COLORS.green }, category),
+      h("div", { display: "flex", fontSize: name.length > 24 ? 92 : 112, color: COLORS.green, lineHeight: 1.02, marginTop: 14 }, name),
+    ]),
+    h("div", { display: "flex" }, [
+      h("div", {
+        display: "flex", padding: "14px 34px", borderRadius: 40, fontSize: 44,
+        backgroundColor: tag === "Ships" ? COLORS.track : COLORS.primary,
+        color: tag === "Ships" ? COLORS.green : COLORS.card,
+      }, tag),
+    ]),
+  ]);
+}
+
 export function parseProductQuery(params) {
   return {
     name: clip(params.get("name") || "Sprout", 40),
