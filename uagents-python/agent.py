@@ -54,6 +54,8 @@ async def on_startup(ctx: Context):
 
 @chat_proto.on_message(ChatMessage)
 async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
+    kinds = [type(c).__name__ for c in msg.content]
+    ctx.logger.info(f"[inbound] ChatMessage from {sender} content={kinds}")
     await ctx.send(
         sender,
         ChatAcknowledgement(timestamp=datetime.now(timezone.utc), acknowledged_msg_id=msg.msg_id),
@@ -61,6 +63,7 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
     text = " ".join(c.text for c in msg.content if isinstance(c, TextContent)).strip()
     if text:
         await ctx.send(sender, reply_to(handle_text(text)))
+        ctx.logger.info(f"[outbound] replied to {sender}")
 
 
 @chat_proto.on_message(ChatAcknowledgement)
