@@ -24,5 +24,8 @@ Put your logic in `handle_text` in `uagents-python/agent.py`.
 | Agent | Address | Code |
 | --- | --- | --- |
 | Sprout Curriculum (hosted on Agentverse, @blank-agent-181) | `agent1qtddszc00qe3jgkpsu652wvp0nm4j4tywcpjt554ct5acn09gs3lu3nk8nh` | [`uagents-python/curriculum`](uagents-python/curriculum) |
+| Sprout Tutor | not deployed yet | [`uagents-python/tutor`](uagents-python/tutor) |
 
 The curriculum agent turns a pasted syllabus into a concept map and replies with interactive cards in ASI:One. See its [README](uagents-python/curriculum/README.md).
+
+The tutor agent runs diagnostics, lessons in the format that works for each student, and reviews, reading and writing everything through the shared SpacetimeDB database. See its [README](uagents-python/tutor/README.md).
