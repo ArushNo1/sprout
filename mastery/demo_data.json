@@ -1,10 +1,18 @@
 {
-  "_comment": "Demo data for bkt.py. Each concept has a name and a list of answers (true=correct, false=wrong).",
+  "_comment": "Demo data for bkt.py, scheduler.py, and srs.py.",
   "concepts": [
-    { "name": "Matrix Multiplication",  "answers": [true,  true,  false, true,  true ] },
-    { "name": "Dot Product",            "answers": [true,  true,  true,  true        ] },
-    { "name": "Eigenvalues",            "answers": [false, false, true,  false       ] },
-    { "name": "Linear Independence",    "answers": [true,  false, true               ] },
-    { "name": "Gaussian Elimination",   "answers": [false, false                     ] }
+    { "name": "Dot Product",             "prereqs": [],                                               "answers": [true,  true,  true,  true        ] },
+    { "name": "Matrix Multiplication",   "prereqs": ["Dot Product"],                                  "answers": [true,  true,  false, true,  true ] },
+    { "name": "Linear Independence",     "prereqs": ["Dot Product"],                                  "answers": [true,  false, true               ] },
+    { "name": "Gaussian Elimination",    "prereqs": ["Linear Independence"],                          "answers": [false, false                     ] },
+    { "name": "Eigenvalues",             "prereqs": ["Matrix Multiplication", "Linear Independence"],  "answers": [false, false, true,  false       ] }
+  ],
+  "quiz_history": [
+    { "concept": "Dot Product",           "date": "2025-07-01", "correct": true,  "grade": 5 },
+    { "concept": "Dot Product",           "date": "2025-07-04", "correct": true,  "grade": 4 },
+    { "concept": "Matrix Multiplication", "date": "2025-07-02", "correct": true,  "grade": 3 },
+    { "concept": "Matrix Multiplication", "date": "2025-07-06", "correct": false, "grade": 1 },
+    { "concept": "Linear Independence",   "date": "2025-07-03", "correct": true,  "grade": 4 },
+    { "concept": "Eigenvalues",           "date": "2025-07-05", "correct": false, "grade": 2 }
   ]
 }
