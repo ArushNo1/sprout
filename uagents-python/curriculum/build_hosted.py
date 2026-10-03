@@ -18,7 +18,7 @@ def body(name: str) -> str:
 
 
 agent = body("agent.py")
-agent = re.sub(r"from cards import .*\nfrom concept_map import .*\nfrom prompt import .*\n", "", agent)
+agent = re.sub(r"import spacetime_db\nfrom cards import .*\nfrom concept_map import .*\nfrom prompt import .*\n", "", agent)
 agent = re.sub(r"agent = Agent\(\n.*?\n\)\n", "agent = Agent()\n", agent, flags=re.DOTALL)
 agent = agent.replace('\nif __name__ == "__main__":\n    agent.run()\n', "")
 agent = agent.replace("from dotenv import load_dotenv\n", "")
@@ -31,6 +31,7 @@ out = (
     "# ---- concept_map.py ----\n" + body("concept_map.py")
     + "\n\n# ---- prompt.py ----\n" + body("prompt.py")
     + "\n\n# ---- cards.py ----\n" + body("cards.py")
+    + "\n\n# ---- spacetime_db.py ----\n" + body("spacetime_db.py")
     + "\n\n# ---- agent.py ----\n" + agent
 )
 (here / "dist").mkdir(exist_ok=True)
