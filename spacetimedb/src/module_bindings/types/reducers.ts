@@ -6,9 +6,51 @@
 import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
-import SendMessageReducer from "../send_message_reducer";
-import SetNameReducer from "../set_name_reducer";
+import AddConceptReducer from "../add_concept_reducer";
+import AddPrerequisiteReducer from "../add_prerequisite_reducer";
+import ComputeNextStepReducer from "../compute_next_step_reducer";
+import ConfirmCourseReducer from "../confirm_course_reducer";
+import CreateCourseReducer from "../create_course_reducer";
+import CreatePaymentRequestReducer from "../create_payment_request_reducer";
+import EndSessionReducer from "../end_session_reducer";
+import ForgetCourseReducer from "../forget_course_reducer";
+import IngestConceptGraphReducer from "../ingest_concept_graph_reducer";
+import RecordAttemptReducer from "../record_attempt_reducer";
+import RegisterAgentReducer from "../register_agent_reducer";
+import RemoveAgentReducer from "../remove_agent_reducer";
+import RemoveConceptReducer from "../remove_concept_reducer";
+import RemovePrerequisiteReducer from "../remove_prerequisite_reducer";
+import ResolvePaymentReducer from "../resolve_payment_reducer";
+import SaveStudyCardReducer from "../save_study_card_reducer";
+import SeedDemoReducer from "../seed_demo_reducer";
+import SetPreferredFormatReducer from "../set_preferred_format_reducer";
+import SetStudyCardStatusReducer from "../set_study_card_status_reducer";
+import StartSessionReducer from "../start_session_reducer";
+import UpdateConceptReducer from "../update_concept_reducer";
+import UpdateCourseReducer from "../update_course_reducer";
+import UpsertLearnerReducer from "../upsert_learner_reducer";
 
-export type SendMessageParams = __Infer<typeof SendMessageReducer>;
-export type SetNameParams = __Infer<typeof SetNameReducer>;
+export type AddConceptParams = __Infer<typeof AddConceptReducer>;
+export type AddPrerequisiteParams = __Infer<typeof AddPrerequisiteReducer>;
+export type ComputeNextStepParams = __Infer<typeof ComputeNextStepReducer>;
+export type ConfirmCourseParams = __Infer<typeof ConfirmCourseReducer>;
+export type CreateCourseParams = __Infer<typeof CreateCourseReducer>;
+export type CreatePaymentRequestParams = __Infer<typeof CreatePaymentRequestReducer>;
+export type EndSessionParams = __Infer<typeof EndSessionReducer>;
+export type ForgetCourseParams = __Infer<typeof ForgetCourseReducer>;
+export type IngestConceptGraphParams = __Infer<typeof IngestConceptGraphReducer>;
+export type RecordAttemptParams = __Infer<typeof RecordAttemptReducer>;
+export type RegisterAgentParams = __Infer<typeof RegisterAgentReducer>;
+export type RemoveAgentParams = __Infer<typeof RemoveAgentReducer>;
+export type RemoveConceptParams = __Infer<typeof RemoveConceptReducer>;
+export type RemovePrerequisiteParams = __Infer<typeof RemovePrerequisiteReducer>;
+export type ResolvePaymentParams = __Infer<typeof ResolvePaymentReducer>;
+export type SaveStudyCardParams = __Infer<typeof SaveStudyCardReducer>;
+export type SeedDemoParams = __Infer<typeof SeedDemoReducer>;
+export type SetPreferredFormatParams = __Infer<typeof SetPreferredFormatReducer>;
+export type SetStudyCardStatusParams = __Infer<typeof SetStudyCardStatusReducer>;
+export type StartSessionParams = __Infer<typeof StartSessionReducer>;
+export type UpdateConceptParams = __Infer<typeof UpdateConceptReducer>;
+export type UpdateCourseParams = __Infer<typeof UpdateCourseReducer>;
+export type UpsertLearnerParams = __Infer<typeof UpsertLearnerReducer>;
 

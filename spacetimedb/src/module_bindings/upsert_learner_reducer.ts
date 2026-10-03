@@ -11,5 +11,6 @@ import {
 } from "spacetimedb";
 
 export default {
-  text: __t.string(),
+  address: __t.string(),
+  displayName: __t.option(__t.string()),
 };

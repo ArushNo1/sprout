@@ -11,7 +11,11 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
-  sender: __t.identity(),
-  sent: __t.timestamp(),
-  text: __t.string(),
+  id: __t.u64().primaryKey(),
+  userAddress: __t.string().name("user_address"),
+  product: __t.string(),
+  courseId: __t.option(__t.u64()).name("course_id"),
+  paymentRequestId: __t.option(__t.u64()).name("payment_request_id"),
+  grantedAt: __t.timestamp().name("granted_at"),
+  expiresAt: __t.option(__t.timestamp()).name("expires_at"),
 });

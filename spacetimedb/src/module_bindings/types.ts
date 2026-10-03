@@ -10,17 +10,176 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export const Message = __t.object("Message", {
-  sender: __t.identity(),
-  sent: __t.timestamp(),
-  text: __t.string(),
-});
-export type Message = __Infer<typeof Message>;
-
-export const User = __t.object("User", {
+export const Agent = __t.object("Agent", {
   identity: __t.identity(),
-  name: __t.option(__t.string()),
-  online: __t.bool(),
+  name: __t.string(),
+  registeredAt: __t.timestamp(),
 });
-export type User = __Infer<typeof User>;
+export type Agent = __Infer<typeof Agent>;
+
+export const Attempt = __t.object("Attempt", {
+  id: __t.u64(),
+  userAddress: __t.string(),
+  courseId: __t.u64(),
+  conceptId: __t.u64(),
+  sessionId: __t.option(__t.u64()),
+  kind: __t.string(),
+  format: __t.option(__t.string()),
+  question: __t.option(__t.string()),
+  correct: __t.bool(),
+  pBefore: __t.f64(),
+  pAfter: __t.f64(),
+  createdAt: __t.timestamp(),
+});
+export type Attempt = __Infer<typeof Attempt>;
+
+export const Concept = __t.object("Concept", {
+  id: __t.u64(),
+  courseId: __t.u64(),
+  name: __t.string(),
+  summary: __t.string(),
+  embedding: __t.array(__t.f32()),
+  pInit: __t.f64(),
+  pLearn: __t.f64(),
+  pSlip: __t.f64(),
+  pGuess: __t.f64(),
+});
+export type Concept = __Infer<typeof Concept>;
+
+export const ConceptInput = __t.object("ConceptInput", {
+  name: __t.string(),
+  summary: __t.string(),
+  embedding: __t.array(__t.f32()),
+  pInit: __t.option(__t.f64()),
+});
+export type ConceptInput = __Infer<typeof ConceptInput>;
+
+export const Config = __t.object("Config", {
+  id: __t.u8(),
+  owner: __t.identity(),
+});
+export type Config = __Infer<typeof Config>;
+
+export const Course = __t.object("Course", {
+  id: __t.u64(),
+  userAddress: __t.string(),
+  name: __t.string(),
+  currentUnit: __t.option(__t.string()),
+  examDate: __t.option(__t.timestamp()),
+  rawSyllabus: __t.string(),
+  status: __t.string(),
+  createdAt: __t.timestamp(),
+});
+export type Course = __Infer<typeof Course>;
+
+export const EdgeInput = __t.object("EdgeInput", {
+  concept: __t.string(),
+  requires: __t.string(),
+  confidence: __t.f64(),
+});
+export type EdgeInput = __Infer<typeof EdgeInput>;
+
+export const Entitlement = __t.object("Entitlement", {
+  id: __t.u64(),
+  userAddress: __t.string(),
+  product: __t.string(),
+  courseId: __t.option(__t.u64()),
+  paymentRequestId: __t.option(__t.u64()),
+  grantedAt: __t.timestamp(),
+  expiresAt: __t.option(__t.timestamp()),
+});
+export type Entitlement = __Infer<typeof Entitlement>;
+
+export const FormatWeight = __t.object("FormatWeight", {
+  key: __t.string(),
+  userAddress: __t.string(),
+  format: __t.string(),
+  alpha: __t.f64(),
+  beta: __t.f64(),
+  uses: __t.u32(),
+});
+export type FormatWeight = __Infer<typeof FormatWeight>;
+
+export const Learner = __t.object("Learner", {
+  address: __t.string(),
+  displayName: __t.option(__t.string()),
+  plan: __t.string(),
+  preferredFormat: __t.option(__t.string()),
+  createdAt: __t.timestamp(),
+  lastActiveAt: __t.timestamp(),
+});
+export type Learner = __Infer<typeof Learner>;
+
+export const Mastery = __t.object("Mastery", {
+  key: __t.string(),
+  userAddress: __t.string(),
+  courseId: __t.u64(),
+  conceptId: __t.u64(),
+  pMastered: __t.f64(),
+  attempts: __t.u32(),
+  correct: __t.u32(),
+  lastSeen: __t.option(__t.timestamp()),
+  nextReview: __t.option(__t.timestamp()),
+  ease: __t.f64(),
+  intervalDays: __t.f64(),
+  repetitions: __t.u32(),
+});
+export type Mastery = __Infer<typeof Mastery>;
+
+export const NextStep = __t.object("NextStep", {
+  key: __t.string(),
+  userAddress: __t.string(),
+  courseId: __t.u64(),
+  conceptId: __t.option(__t.u64()),
+  format: __t.string(),
+  mode: __t.string(),
+  reason: __t.string(),
+  computedAt: __t.timestamp(),
+});
+export type NextStep = __Infer<typeof NextStep>;
+
+export const PaymentRequest = __t.object("PaymentRequest", {
+  id: __t.u64(),
+  userAddress: __t.string(),
+  product: __t.string(),
+  courseId: __t.option(__t.u64()),
+  amountCents: __t.u32(),
+  status: __t.string(),
+  paymentRef: __t.option(__t.string()),
+  createdAt: __t.timestamp(),
+  resolvedAt: __t.option(__t.timestamp()),
+});
+export type PaymentRequest = __Infer<typeof PaymentRequest>;
+
+export const Prerequisite = __t.object("Prerequisite", {
+  id: __t.u64(),
+  courseId: __t.u64(),
+  conceptId: __t.u64(),
+  requiresId: __t.u64(),
+  confidence: __t.f64(),
+});
+export type Prerequisite = __Infer<typeof Prerequisite>;
+
+export const Session = __t.object("Session", {
+  id: __t.u64(),
+  userAddress: __t.string(),
+  courseId: __t.option(__t.u64()),
+  startedAt: __t.timestamp(),
+  endedAt: __t.option(__t.timestamp()),
+  summary: __t.string(),
+  lastConceptId: __t.option(__t.u64()),
+});
+export type Session = __Infer<typeof Session>;
+
+export const StudyCard = __t.object("StudyCard", {
+  id: __t.u64(),
+  userAddress: __t.string(),
+  courseId: __t.u64(),
+  conceptId: __t.option(__t.u64()),
+  kind: __t.string(),
+  payloadJson: __t.string(),
+  status: __t.string(),
+  createdAt: __t.timestamp(),
+});
+export type StudyCard = __Infer<typeof StudyCard>;
 

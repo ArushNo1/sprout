@@ -34,43 +34,260 @@ import {
 } from "spacetimedb";
 
 // Import all reducer arg schemas
-import SendMessageReducer from "./send_message_reducer";
-import SetNameReducer from "./set_name_reducer";
+import AddConceptReducer from "./add_concept_reducer";
+import AddPrerequisiteReducer from "./add_prerequisite_reducer";
+import ComputeNextStepReducer from "./compute_next_step_reducer";
+import ConfirmCourseReducer from "./confirm_course_reducer";
+import CreateCourseReducer from "./create_course_reducer";
+import CreatePaymentRequestReducer from "./create_payment_request_reducer";
+import EndSessionReducer from "./end_session_reducer";
+import ForgetCourseReducer from "./forget_course_reducer";
+import IngestConceptGraphReducer from "./ingest_concept_graph_reducer";
+import RecordAttemptReducer from "./record_attempt_reducer";
+import RegisterAgentReducer from "./register_agent_reducer";
+import RemoveAgentReducer from "./remove_agent_reducer";
+import RemoveConceptReducer from "./remove_concept_reducer";
+import RemovePrerequisiteReducer from "./remove_prerequisite_reducer";
+import ResolvePaymentReducer from "./resolve_payment_reducer";
+import SaveStudyCardReducer from "./save_study_card_reducer";
+import SeedDemoReducer from "./seed_demo_reducer";
+import SetPreferredFormatReducer from "./set_preferred_format_reducer";
+import SetStudyCardStatusReducer from "./set_study_card_status_reducer";
+import StartSessionReducer from "./start_session_reducer";
+import UpdateConceptReducer from "./update_concept_reducer";
+import UpdateCourseReducer from "./update_course_reducer";
+import UpsertLearnerReducer from "./upsert_learner_reducer";
 
 // Import all procedure arg schemas
 
 // Import all table schema definitions
-import MessageRow from "./message_table";
-import UserRow from "./user_table";
+import AttemptRow from "./attempt_table";
+import ConceptRow from "./concept_table";
+import CourseRow from "./course_table";
+import EntitlementRow from "./entitlement_table";
+import FormatWeightRow from "./format_weight_table";
+import LearnerRow from "./learner_table";
+import MasteryRow from "./mastery_table";
+import NextStepRow from "./next_step_table";
+import PaymentRequestRow from "./payment_request_table";
+import PrerequisiteRow from "./prerequisite_table";
+import SessionRow from "./session_table";
+import StudyCardRow from "./study_card_table";
 
 /** Type-only namespace exports for generated type groups. */
 
 /** The schema information for all tables in this module. This is defined the same was as the tables would have been defined in the server. */
 const tablesSchema = __schema({
-  message: __table({
-    name: 'message',
+  attempt: __table({
+    name: 'attempt',
     indexes: [
-    ],
-    constraints: [
-    ],
-  }, MessageRow),
-  user: __table({
-    name: 'user',
-    indexes: [
-      { accessor: 'identity', name: 'user_identity_idx_btree', algorithm: 'btree', columns: [
-        'identity',
+      { accessor: 'conceptId', name: 'attempt_concept_id_idx_btree', algorithm: 'btree', columns: [
+        'conceptId',
+      ] },
+      { accessor: 'courseId', name: 'attempt_course_id_idx_btree', algorithm: 'btree', columns: [
+        'courseId',
+      ] },
+      { accessor: 'id', name: 'attempt_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'userAddress', name: 'attempt_user_address_idx_btree', algorithm: 'btree', columns: [
+        'userAddress',
       ] },
     ],
     constraints: [
-      { name: 'user_identity_key', constraint: 'unique', columns: ['identity'] },
+      { name: 'attempt_id_key', constraint: 'unique', columns: ['id'] },
     ],
-  }, UserRow),
+  }, AttemptRow),
+  concept: __table({
+    name: 'concept',
+    indexes: [
+      { accessor: 'courseId', name: 'concept_course_id_idx_btree', algorithm: 'btree', columns: [
+        'courseId',
+      ] },
+      { accessor: 'id', name: 'concept_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+    ],
+    constraints: [
+      { name: 'concept_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, ConceptRow),
+  course: __table({
+    name: 'course',
+    indexes: [
+      { accessor: 'id', name: 'course_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'userAddress', name: 'course_user_address_idx_btree', algorithm: 'btree', columns: [
+        'userAddress',
+      ] },
+    ],
+    constraints: [
+      { name: 'course_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, CourseRow),
+  entitlement: __table({
+    name: 'entitlement',
+    indexes: [
+      { accessor: 'id', name: 'entitlement_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'userAddress', name: 'entitlement_user_address_idx_btree', algorithm: 'btree', columns: [
+        'userAddress',
+      ] },
+    ],
+    constraints: [
+      { name: 'entitlement_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, EntitlementRow),
+  formatWeight: __table({
+    name: 'format_weight',
+    indexes: [
+      { accessor: 'key', name: 'format_weight_key_idx_btree', algorithm: 'btree', columns: [
+        'key',
+      ] },
+      { accessor: 'userAddress', name: 'format_weight_user_address_idx_btree', algorithm: 'btree', columns: [
+        'userAddress',
+      ] },
+    ],
+    constraints: [
+      { name: 'format_weight_key_key', constraint: 'unique', columns: ['key'] },
+    ],
+  }, FormatWeightRow),
+  learner: __table({
+    name: 'learner',
+    indexes: [
+      { accessor: 'address', name: 'learner_address_idx_btree', algorithm: 'btree', columns: [
+        'address',
+      ] },
+    ],
+    constraints: [
+      { name: 'learner_address_key', constraint: 'unique', columns: ['address'] },
+    ],
+  }, LearnerRow),
+  mastery: __table({
+    name: 'mastery',
+    indexes: [
+      { accessor: 'courseId', name: 'mastery_course_id_idx_btree', algorithm: 'btree', columns: [
+        'courseId',
+      ] },
+      { accessor: 'key', name: 'mastery_key_idx_btree', algorithm: 'btree', columns: [
+        'key',
+      ] },
+      { accessor: 'userAddress', name: 'mastery_user_address_idx_btree', algorithm: 'btree', columns: [
+        'userAddress',
+      ] },
+    ],
+    constraints: [
+      { name: 'mastery_key_key', constraint: 'unique', columns: ['key'] },
+    ],
+  }, MasteryRow),
+  nextStep: __table({
+    name: 'next_step',
+    indexes: [
+      { accessor: 'key', name: 'next_step_key_idx_btree', algorithm: 'btree', columns: [
+        'key',
+      ] },
+      { accessor: 'userAddress', name: 'next_step_user_address_idx_btree', algorithm: 'btree', columns: [
+        'userAddress',
+      ] },
+    ],
+    constraints: [
+      { name: 'next_step_key_key', constraint: 'unique', columns: ['key'] },
+    ],
+  }, NextStepRow),
+  paymentRequest: __table({
+    name: 'payment_request',
+    indexes: [
+      { accessor: 'id', name: 'payment_request_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'userAddress', name: 'payment_request_user_address_idx_btree', algorithm: 'btree', columns: [
+        'userAddress',
+      ] },
+    ],
+    constraints: [
+      { name: 'payment_request_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, PaymentRequestRow),
+  prerequisite: __table({
+    name: 'prerequisite',
+    indexes: [
+      { accessor: 'conceptId', name: 'prerequisite_concept_id_idx_btree', algorithm: 'btree', columns: [
+        'conceptId',
+      ] },
+      { accessor: 'courseId', name: 'prerequisite_course_id_idx_btree', algorithm: 'btree', columns: [
+        'courseId',
+      ] },
+      { accessor: 'id', name: 'prerequisite_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'requiresId', name: 'prerequisite_requires_id_idx_btree', algorithm: 'btree', columns: [
+        'requiresId',
+      ] },
+    ],
+    constraints: [
+      { name: 'prerequisite_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, PrerequisiteRow),
+  session: __table({
+    name: 'session',
+    indexes: [
+      { accessor: 'id', name: 'session_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'userAddress', name: 'session_user_address_idx_btree', algorithm: 'btree', columns: [
+        'userAddress',
+      ] },
+    ],
+    constraints: [
+      { name: 'session_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, SessionRow),
+  studyCard: __table({
+    name: 'study_card',
+    indexes: [
+      { accessor: 'courseId', name: 'study_card_course_id_idx_btree', algorithm: 'btree', columns: [
+        'courseId',
+      ] },
+      { accessor: 'id', name: 'study_card_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'userAddress', name: 'study_card_user_address_idx_btree', algorithm: 'btree', columns: [
+        'userAddress',
+      ] },
+    ],
+    constraints: [
+      { name: 'study_card_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, StudyCardRow),
 });
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
-  __reducerSchema("send_message", SendMessageReducer),
-  __reducerSchema("set_name", SetNameReducer),
+  __reducerSchema("add_concept", AddConceptReducer),
+  __reducerSchema("add_prerequisite", AddPrerequisiteReducer),
+  __reducerSchema("compute_next_step", ComputeNextStepReducer),
+  __reducerSchema("confirm_course", ConfirmCourseReducer),
+  __reducerSchema("create_course", CreateCourseReducer),
+  __reducerSchema("create_payment_request", CreatePaymentRequestReducer),
+  __reducerSchema("end_session", EndSessionReducer),
+  __reducerSchema("forget_course", ForgetCourseReducer),
+  __reducerSchema("ingest_concept_graph", IngestConceptGraphReducer),
+  __reducerSchema("record_attempt", RecordAttemptReducer),
+  __reducerSchema("register_agent", RegisterAgentReducer),
+  __reducerSchema("remove_agent", RemoveAgentReducer),
+  __reducerSchema("remove_concept", RemoveConceptReducer),
+  __reducerSchema("remove_prerequisite", RemovePrerequisiteReducer),
+  __reducerSchema("resolve_payment", ResolvePaymentReducer),
+  __reducerSchema("save_study_card", SaveStudyCardReducer),
+  __reducerSchema("seed_demo", SeedDemoReducer),
+  __reducerSchema("set_preferred_format", SetPreferredFormatReducer),
+  __reducerSchema("set_study_card_status", SetStudyCardStatusReducer),
+  __reducerSchema("start_session", StartSessionReducer),
+  __reducerSchema("update_concept", UpdateConceptReducer),
+  __reducerSchema("update_course", UpdateCourseReducer),
+  __reducerSchema("upsert_learner", UpsertLearnerReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

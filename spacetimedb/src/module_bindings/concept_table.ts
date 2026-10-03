@@ -11,7 +11,13 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
-  identity: __t.identity().primaryKey(),
-  name: __t.option(__t.string()),
-  online: __t.bool(),
+  id: __t.u64().primaryKey(),
+  courseId: __t.u64().name("course_id"),
+  name: __t.string(),
+  summary: __t.string(),
+  embedding: __t.array(__t.f32()),
+  pInit: __t.f64().name("p_init"),
+  pLearn: __t.f64().name("p_learn"),
+  pSlip: __t.f64().name("p_slip"),
+  pGuess: __t.f64().name("p_guess"),
 });
