@@ -1,0 +1,12 @@
+{
+  "name": "sprout-cards",
+  "private": true,
+  "type": "module",
+  "description": "PNG card images for Sprout's ASI:One interactive cards",
+  "scripts": {
+    "preview": "node scripts/preview.js"
+  },
+  "dependencies": {
+    "@vercel/og": "^0.6.8"
+  }
+}
