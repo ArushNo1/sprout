@@ -1,0 +1,39 @@
+import json
+import unittest
+
+from routing import CURRICULUM, TUTOR, card_action, choose_route
+
+tap = lambda action, **extra: "@agent1qx " + json.dumps({"selection": {"action": action, **extra}, "approved": True})
+
+
+class RoutingTest(unittest.TestCase):
+    def test_new_students_go_to_curriculum(self):
+        r = choose_route("", True, None, has_course=False)
+        self.assertEqual((r.specialist, r.start), (CURRICULUM, True))
+        self.assertEqual(choose_route("hi", False, None, False).specialist, CURRICULUM)
+
+    def test_returning_students_go_to_tutor(self):
+        for text in ("", "let's keep going", "quiz me on heaps", "hi"):
+            r = choose_route(text, text == "", "tutor", has_course=True)
+            self.assertEqual((r.specialist, r.start), (TUTOR, True), text)
+
+    def test_course_setup_goes_to_curriculum(self):
+        self.assertEqual(choose_route("I want to add a new course", False, "tutor", True).specialist, CURRICULUM)
+        syllabus = "Week 1: limits. Week 2: derivatives. Unit 2: integrals and the midterm on Oct 9. " * 3
+        r = choose_route(syllabus, False, "tutor", True)
+        self.assertEqual((r.specialist, r.text, r.start), (CURRICULUM, syllabus, False))
+
+    def test_card_taps_go_to_the_card_owner(self):
+        self.assertEqual(choose_route(tap("answer", choice=2), False, TUTOR, True).specialist, TUTOR)
+        r = choose_route(tap("confirm_map"), False, CURRICULUM, True)
+        self.assertEqual((r.specialist, r.then), (CURRICULUM, TUTOR))
+        self.assertEqual(choose_route(tap("edit_map"), False, CURRICULUM, True).then, "")
+
+    def test_card_action(self):
+        self.assertEqual(card_action(tap("sample")), "sample")
+        self.assertIsNone(card_action("hello"))
+        self.assertIsNone(card_action("[1, 2]"))
+
+
+if __name__ == "__main__":
+    unittest.main()

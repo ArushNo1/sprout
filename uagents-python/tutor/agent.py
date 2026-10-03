@@ -29,6 +29,7 @@ from uagents_core.contrib.protocols.chat import (
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # shared sprout_db.py
 
 from sprout_db import DbError, enabled
+from relay import relay_protocol
 from cards import course_picker_card, feedback_card, home_card, lesson_card, parse_selection, question_card, text_message
 from content import make_lesson, make_question
 from learning import (active_courses, concept, course, days_until, end_session, format_insight, format_stats,
@@ -213,6 +214,7 @@ async def finish(ctx: Context, sender: str, state: dict):
 
 
 agent.include(chat, publish_manifest=True)
+agent.include(relay_protocol(on_chat))  # turns relayed by the orchestrator
 
 if __name__ == "__main__":
     agent.run()

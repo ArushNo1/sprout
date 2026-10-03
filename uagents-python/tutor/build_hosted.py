@@ -9,7 +9,7 @@ import re
 from pathlib import Path
 
 here = Path(__file__).parent
-MODULES = ["sprout_db", "learning", "content", "cards"]
+MODULES = ["sprout_db", "relay", "learning", "content", "cards"]
 LOCAL_IMPORT = re.compile(rf"^from ({'|'.join(MODULES)}) import \(?[^)]*?\)?\n(?=\S|\n)", re.M)
 
 

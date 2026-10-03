@@ -40,6 +40,7 @@ from uagents_core.contrib.protocols.chat import (
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # shared sprout_db.py
 
 from sprout_db import NONE, DbError, call, enabled, opt, sql, sql_str, timestamp
+from relay import relay_protocol
 from cards import SAMPLE_COURSE, SAMPLE_SYLLABUS, map_card, parse_selection, text_message, upload_card
 from concept_map import extract_json, mentions_exam_date, normalize, summarize
 from prompt import SYSTEM_PROMPT, user_prompt
@@ -262,6 +263,7 @@ async def on_ack(ctx: Context, sender: str, msg: ChatAcknowledgement):
 
 
 agent.include(chat, publish_manifest=True)
+agent.include(relay_protocol(on_chat))  # turns relayed by the orchestrator
 
 if __name__ == "__main__":
     agent.run()
