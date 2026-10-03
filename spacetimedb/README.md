@@ -6,12 +6,31 @@ It is based directly on the plain React + TypeScript + Vite template. You can fo
 
 You can follow the instructions for creating your own SpacetimeDB module here: [SpacetimeDB Rust Module Quickstart](https://spacetimedb.com/docs/quickstarts/rust). Place the module in the `quickstart-chat/server` directory for compability with this project.
 
-In order to run this example, you need to:
+## Running with npm
 
-- `pnpm build` in the root directory (`spacetimedb-typescriptsdk`)
-- `pnpm install` in this directory
-- `pnpm build` in this directory
-- `pnpm dev` in this directory to run the example
+Prerequisites: [Node.js](https://nodejs.org/) (with npm) and the [SpacetimeDB CLI](https://spacetimedb.com/install).
+
+1. Install dependencies (client, then the module):
+   ```
+   npm install
+   cd spacetimedb
+   npm install
+   cd ..
+   ```
+2. Start a local SpacetimeDB server (in a separate terminal): `spacetime start`
+3. Publish the module and generate the client bindings:
+   ```
+   spacetime publish --module-path spacetimedb --server local <database-name>
+   npm run spacetime:generate
+   ```
+4. Run the dev server: `npm run dev`
+
+Other useful scripts:
+
+- `npm run build` - type-check and build for production
+- `npm run preview` - preview the production build
+- `npm test` - run the tests (Vitest)
+- `npm run lint` / `npm run format` - lint / format the code
 
 Below is copied from the original template README:
 

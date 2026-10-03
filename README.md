@@ -18,3 +18,4 @@
 The agent keeps running only while `python agent.py` is running, so host it somewhere persistent (VM, Railway, Render, etc.) with `AGENT_SEED` set as an env var. Keep the same seed, since it fixes the agent's address.
 
 Put your logic in `handle_text` in `uagents-python/agent.py`.
+
