@@ -106,7 +106,7 @@ def upload_card(course_name: str = "", exam_date: str = "", syllabus: str = "") 
     root = {
         "type": "section",
         "children": [
-            {"type": "image", "src": f"{CARDS_URL}/header.png", "alt": "Sprout, it grows with you", "aspect_ratio": "1080:300"},
+            {"type": "image", "src": f"{CARDS_URL}/header.png", "alt": "Sprout, learning that grows with you", "aspect_ratio": "1080:300"},
             field("course_name", "text", "Course", "CS 1332 Data Structures", course_name),
             field("exam_date", "date", "Next exam", default=exam_date),
             field("syllabus", "text", "Syllabus or topic list",

@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1280, height=720" />
+    <title>Sprout showcase</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+      @font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Italic.ttf") format("truetype"); font-weight: 400; font-style: italic; }
+      :root {
+        --card: #f4eadf; --paper: #fbf6ef; --green: #0b6122; --primary: #0a4d17; --mid: #4e8a5e; --track: #dccbb2;
+        --vein: #a4d7a2; --ink: #222; --bloom: #e8a33d; --wilt: #b0584c;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1280px; height: 720px; overflow: hidden; background: #f3ebdd; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Instrument Serif", Georgia, serif; color: var(--ink); }
+      #bg {
+        position: absolute; inset: 0;
+        background: radial-gradient(900px 600px at 14% 8%, #fff 0%, rgba(255,255,255,0) 70%),
+                    radial-gradient(800px 600px at 96% 100%, #dcebd3 0%, rgba(220,235,211,0) 70%), #f3ebdd;
+      }
+      .scene { position: absolute; inset: 0; }
+      .stage { position: absolute; inset: 0; }
+      .card {
+        position: absolute; background: rgba(244, 234, 223, 0.94); border: 2px solid var(--track); border-radius: 28px;
+        box-shadow: 0 24px 60px rgba(11, 97, 34, 0.14), inset 0 2px 0 rgba(255,255,255,0.85);
+      }
+      .eyebrow { font-style: italic; color: #2f6b40; font-size: 26px; }
+      .tag {
+        position: absolute; left: 0; right: 0; bottom: 26px; text-align: center; font-style: italic; font-size: 26px; color: var(--green);
+      }
+      .chip {
+        display: inline-flex; align-items: center; gap: 8px; padding: 4px 18px 6px; border-radius: 999px; font-size: 24px;
+        border: 2px solid var(--track); background: rgba(255,255,255,0.7); color: var(--green); white-space: nowrap;
+      }
+      .chip.dark { background: var(--primary); border-color: var(--primary); color: var(--card); }
+      .big { font-size: 120px; line-height: 0.9; color: var(--green); letter-spacing: -3px; }
+      .bar { position: relative; height: 20px; border-radius: 10px; background: var(--track); overflow: hidden; }
+      .bar > i { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 10px; background: var(--mid); }
+      svg { overflow: visible; }
+
+      /* clip 1 */
+      #c1-syl { left: 56px; top: 82px; width: 440px; height: 548px; padding: 28px 32px; }
+      #c1-syl h3 { font-weight: 400; font-style: italic; font-size: 28px; color: #2f6b40; margin-bottom: 14px; }
+      .sline { font-size: 27px; line-height: 1.2; padding: 9px 0; border-bottom: 2px dashed var(--track); white-space: nowrap; }
+      .sline em { font-style: italic; color: #2f6b40; display: inline-block; width: 82px; }
+      .sline b { font-weight: 400; background: linear-gradient(var(--vein), var(--vein)) no-repeat left center / 0% 78%; padding: 0 2px; }
+      #c1-map { left: 526px; top: 82px; width: 698px; height: 548px; }
+      /* clip 2 */
+      #c2-q { left: 56px; top: 82px; width: 600px; height: 548px; padding: 34px 38px; }
+      #c2-q .qtext { font-size: 36px; line-height: 1.15; margin: 16px 0 20px; color: var(--ink); min-height: 126px; }
+      .choice { font-size: 28px; padding: 12px 20px 14px; margin-bottom: 12px; border-radius: 18px; border: 2px solid var(--track); background: #fff; }
+      .choice.right { background: #dfe9d3; border-color: var(--mid); }
+      #c2-m { left: 686px; top: 82px; width: 538px; height: 548px; padding: 30px 38px; }
+      #c2-plant { position: absolute; right: 40px; top: 70px; width: 168px; height: 210px; }
+      #c2-plant img { position: absolute; inset: 0; width: 100%; height: 100%; }
+      /* clip 3 */
+      #c3-map { left: 56px; top: 82px; width: 1168px; height: 548px; }
+      .lock { position: absolute; width: 30px; height: 30px; }
+      /* clip 4 */
+      #c4-card { left: 56px; top: 70px; width: 1168px; height: 450px; padding: 26px 40px; }
+      .frow { display: grid; grid-template-columns: 250px 1fr 210px; align-items: center; height: 92px; border-bottom: 2px dashed var(--track); }
+      .frow:last-child { border-bottom: 0; }
+      .frow .name { font-size: 36px; }
+      .frow .stat { font-size: 34px; text-align: right; color: var(--green); }
+      .frow .stat small { font-size: 22px; font-style: italic; color: #2f6b40; }
+      #c4-insight { left: 56px; top: 542px; width: 1168px; height: 120px; padding: 0 44px; display: flex; align-items: center; font-size: 38px; color: var(--green); background: #dfe9d3; border-color: var(--mid); }
+      /* clip 5 */
+      #c5-chart { left: 56px; top: 82px; width: 780px; height: 548px; }
+      #c5-side { left: 866px; top: 82px; width: 358px; height: 548px; padding: 30px 32px; }
+      #c5-plant { position: relative; width: 150px; height: 188px; margin: 6px auto 8px; }
+      #c5-plant img { position: absolute; inset: 0; width: 100%; height: 100%; }
+      .sched { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+      /* clip 6 */
+      #c6-q { left: 56px; top: 82px; width: 680px; height: 548px; padding: 30px 36px; }
+      #c6-q .qtext { font-size: 34px; line-height: 1.15; margin: 12px 0 18px; }
+      .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .tile { height: 112px; border-radius: 20px; color: #fff8ee; font-size: 30px; padding: 14px 20px; display: flex; align-items: center; line-height: 1.1; }
+      #c6-lb { left: 766px; top: 82px; width: 458px; height: 548px; padding: 28px 30px; }
+      .player { position: absolute; left: 30px; right: 30px; height: 78px; display: flex; align-items: center; gap: 16px; padding: 0 18px; background: #fff; border-radius: 20px; border: 2px solid var(--track); font-size: 32px; }
+      .player .av { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 26px; }
+      .player .pts { margin-left: auto; color: var(--green); }
+      #c6-res { left: 56px; top: 82px; width: 1168px; height: 548px; padding: 28px 44px; }
+      .podium { position: absolute; left: 30px; right: 30px; bottom: 120px; height: 300px; display: flex; align-items: flex-end; justify-content: center; gap: 10px; }
+      .podium div { width: 190px; border-radius: 16px 16px 0 0; background: var(--mid); color: #fff; text-align: center; font-size: 30px; padding-top: 8px; transform-origin: 50% 100%; }
+      /* clip 7 */
+      .node { position: absolute; border-radius: 26px; background: rgba(244,234,223,0.96); border: 2px solid var(--track); box-shadow: 0 18px 44px rgba(11,97,34,0.13); padding: 16px 22px; text-align: center; }
+      .node h4 { font-weight: 400; font-size: 34px; color: var(--green); line-height: 1; }
+      .node p { font-size: 22px; color: #2f6b40; font-style: italic; margin-top: 4px; line-height: 1.1; }
+      .node.main { background: var(--primary); border-color: var(--primary); } .node.main h4, .node.main p { color: var(--card); }
+      .bubble { position: absolute; border-radius: 26px; padding: 14px 24px 16px; font-size: 28px; line-height: 1.15; }
+      .bubble.me { background: var(--primary); color: var(--card); border-bottom-right-radius: 6px; }
+      .bubble.bot { background: #fff; border: 2px solid var(--track); border-bottom-left-radius: 6px; color: var(--ink); }
+      .pk { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: var(--bloom); box-shadow: 0 0 0 6px rgba(232,163,61,0.25); }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="42" data-width="1280" data-height="720">
+      <div id="bg"></div>
+
+      <!-- 1. Syllabus in, prerequisite map out -->
+      <section id="c1" class="scene clip" data-start="0" data-duration="6" data-track-index="1">
+        <div class="stage" id="c1-stage">
+          <div class="card" id="c1-syl">
+            <h3>Syllabus</h3>
+            <div class="sline"><em>Week 1</em><b data-n="bigo">Big-O</b>, <b data-n="rec">recursion</b></div>
+            <div class="sline"><em>Week 2</em><b data-n="arr">ArrayLists</b>, <b data-n="ll">linked lists</b></div>
+            <div class="sline"><em>Week 3</em><b data-n="stk">Stacks and queues</b></div>
+            <div class="sline"><em>Week 4</em><b data-n="sort,dc">Sorting</b>, <b data-n="hash">HashMaps</b></div>
+            <div class="sline"><em>Week 6</em><b data-n="tt">Tree traversals</b>, <b data-n="bst">BST</b></div>
+            <div class="sline"><em>Week 7</em><b data-n="heap">Heaps</b>, <b data-n="gr">BFS and DFS</b></div>
+            <div class="sline"><em>Week 9</em><b data-n="dij">Dijkstra</b></div>
+          </div>
+          <div class="card" id="c1-map"><svg id="c1-svg" width="698" height="548"></svg></div>
+          <div class="tag" id="c1-tag">13 concepts · 14 prerequisite links · no cycles</div>
+        </div>
+      </section>
+
+      <!-- 2. Mastery tracing -->
+      <section id="c2" class="scene clip" data-start="6" data-duration="6" data-track-index="1">
+        <div class="stage" id="c2-stage">
+          <div class="card" id="c2-q">
+            <span class="chip" id="c2-chip">Check question 1 of 2</span>
+            <div class="qtext" id="c2-qtext"></div>
+            <div id="c2-choices"></div>
+          </div>
+          <div class="card" id="c2-m">
+            <div class="eyebrow" id="c2-state">Linked lists · not tested yet</div>
+            <div id="c2-plant"><img id="c2-p0" src="assets/plant-0.svg" alt="" /><img id="c2-p2" src="assets/plant-2.svg" alt="" /><img id="c2-p3" src="assets/plant-3.svg" alt="" /></div>
+            <div class="big" id="c2-num" style="position:absolute;left:38px;top:112px">20<span style="font-size:60px">%</span></div>
+            <div class="eyebrow" style="position:absolute;left:40px;top:250px">mastered</div>
+            <div class="bar" style="position:absolute;left:38px;right:38px;top:308px"><i id="c2-bar"></i></div>
+            <div style="position:absolute;left:38px;right:38px;top:358px;display:flex;gap:10px;flex-wrap:wrap"><span class="chip">learn .15</span><span class="chip">slip .10</span><span class="chip">guess .25</span></div>
+          </div>
+          <div class="tag">Bayesian knowledge tracing, updated after every answer</div>
+        </div>
+      </section>
+
+      <!-- 3. Only what you're ready for -->
+      <section id="c3" class="scene clip" data-start="12" data-duration="6" data-track-index="1">
+        <div class="stage" id="c3-stage">
+          <div class="card" id="c3-map"><svg id="c3-svg" width="1168" height="548"></svg></div>
+          <div class="chip dark" id="c3-rule" style="position:absolute;left:92px;top:104px">Every prerequisite at 70% to unlock</div>
+          <div class="chip" id="c3-next" style="position:absolute;right:92px;top:104px;border-color:#e8a33d;color:#8a5a0f;background:#fff4de;opacity:0">Next up: Linked lists · 55%</div>
+          <div class="tag" id="c3-tag">Teaches the weakest concept whose prerequisites are solid</div>
+        </div>
+      </section>
+
+      <!-- 4. Learns how you learn -->
+      <section id="c4" class="scene clip" data-start="18" data-duration="6" data-track-index="1">
+        <div class="stage" id="c4-stage">
+          <div class="card" id="c4-card">
+            <div class="eyebrow" style="margin-bottom:2px">Which format is working for you? <span style="opacity:.7">Beta posterior per format</span></div>
+            <div id="c4-rows"></div>
+          </div>
+          <div class="card" id="c4-insight">Worked examples have worked better for you than flashcards: 67% vs 33%.</div>
+        </div>
+      </section>
+
+      <!-- 5. Review before you forget -->
+      <section id="c5" class="scene clip" data-start="24" data-duration="6" data-track-index="1">
+        <div class="stage" id="c5-stage">
+          <div class="card" id="c5-chart"><svg id="c5-svg" width="780" height="548"></svg></div>
+          <div class="card" id="c5-side">
+            <div class="eyebrow" id="c5-state">Linked lists · fresh</div>
+            <div id="c5-plant"><img id="c5-a" src="assets/plant-3.svg" alt="" /><img id="c5-w" src="assets/plant-3.svg" alt="" style="filter:saturate(.3) brightness(1.04);opacity:.0;transform-origin:50% 90%;transform:rotate(14deg)" /></div>
+            <div class="sched">
+              <span class="chip" id="c5-s1" style="opacity:.0">Review in 1 day</span>
+              <span class="chip" id="c5-s2" style="opacity:.0">then 6 days</span>
+              <span class="chip" id="c5-s3" style="opacity:.0">then 15 days</span>
+              <span class="chip dark" id="c5-s4" style="opacity:.0;white-space:normal;line-height:1.05;border-radius:24px">Never later than the day before your exam</span>
+            </div>
+          </div>
+          <div class="tag">Spaced repetition (SM-2) schedules each review before you forget</div>
+        </div>
+      </section>
+
+      <!-- 6. Games that feed mastery -->
+      <section id="c6" class="scene clip" data-start="30" data-duration="6" data-track-index="1">
+        <div class="stage" id="c6-stage">
+          <div class="card" id="c6-q">
+            <span class="chip dark">Live game · room K7P2QX</span>
+            <div class="qtext">Which structure gives O(1) access to the front and the back?</div>
+            <div class="bar" style="margin-bottom:18px"><i id="c6-timer" style="width:100%;background:var(--bloom)"></i></div>
+            <div class="tiles" id="c6-tiles">
+              <div class="tile" style="background:#0b6122">Singly linked list</div>
+              <div class="tile" style="background:#a8482a">Deque</div>
+              <div class="tile" style="background:#2c5878">Binary heap</div>
+              <div class="tile" style="background:#866311">Hash set</div>
+            </div>
+          </div>
+          <div class="card" id="c6-lb">
+            <div class="eyebrow" id="c6-lbt">Leaderboard</div>
+            <div id="c6-players"></div>
+          </div>
+          <div class="card" id="c6-res" style="opacity:0">
+            <div class="eyebrow">Final standings, and what your answers moved in your own garden:</div>
+            <div class="podium"><div id="c6-p2" style="height:190px;background:#a4b79e">Dev</div><div id="c6-p1" style="height:260px">Maya</div><div id="c6-p3" style="height:140px;background:#c9b48a">Ari</div></div>
+            <div style="position:absolute;left:44px;right:44px;bottom:34px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:center" id="c6-moved"><span class="chip">Heaps +14%</span><span class="chip">Deques +22%</span><span class="chip">Graphs +9%</span></div>
+          </div>
+          <div class="tag">Play with friends, and every answer still updates your own mastery</div>
+        </div>
+      </section>
+
+      <!-- 7. One memory, many agents -->
+      <section id="c7" class="scene clip" data-start="36" data-duration="6" data-track-index="1">
+        <div class="stage" id="c7-stage">
+          <svg id="c7-svg" width="1280" height="720" style="position:absolute;inset:0"></svg>
+          <div class="node" id="c7-chat" style="left:50px;top:132px;width:230px"><h4>ASI:One</h4><p>your chat</p></div>
+          <div class="node main" id="c7-orch" style="left:360px;top:132px;width:250px"><h4>Sprout</h4><p>routes every turn</p></div>
+          <div class="node" id="c7-cur" style="left:700px;top:70px;width:250px"><h4>Curriculum</h4><p>syllabus to concept map</p></div>
+          <div class="node" id="c7-tut" style="left:700px;top:214px;width:250px"><h4>Tutor</h4><p>lessons, quizzes, games</p></div>
+          <div class="node" id="c7-db" style="left:1020px;top:112px;width:220px;height:152px"><h4>SpacetimeDB</h4><p>BKT · SM-2 · bandit</p></div>
+          <div class="bubble me" id="c7-b1" style="left:50px;top:340px">Let&#39;s keep going</div>
+          <div class="bubble bot" id="c7-b2" style="left:360px;top:420px;max-width:700px">Welcome back. You left off at <b style="font-weight:400;color:var(--green)">Recursion</b>. 4 concepts are due, and your exam is in 7 days.</div>
+          <div class="chip" id="c7-chip" style="position:absolute;left:360px;top:575px">New chat, same memory</div>
+          <div class="tag">Three agents on Agentverse sharing one database, so a new chat already knows you</div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      const NS = "http://www.w3.org/2000/svg";
+      const E = { out: "power3.out", expo: "expo.out", back: "back.out(1.7)", soft: "power2.inOut" };
+      const svgEl = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent && parent.appendChild(e); return e; };
+      const el = id => document.getElementById(id);
+      const clipIn = (i, s = i * 6) => {
+        tl.fromTo(`#c${i + 1}-stage`, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.35, ease: E.out }, s);
+        tl.to(`#c${i + 1}-stage`, { opacity: 0, duration: 0.3, ease: "power1.in" }, s + 5.68);
+      };
+
+      /* ---- the 13-concept data structures map (from the curriculum agent's example) ---- */
+      const NODES = [
+        ["bigo", "Big-O", 0], ["rec", "Recursion", 0], ["arr", "ArrayLists", 0], ["ll", "Linked lists", 0],
+        ["sort", "Sorting", 1], ["stk", "Stacks, queues", 1], ["hash", "HashMaps", 1],
+        ["dc", "Merge, quick", 2], ["tt", "Traversals", 2], ["gr", "BFS and DFS", 2],
+        ["bst", "BST", 3], ["heap", "Heaps", 3], ["dij", "Dijkstra", 4],
+      ];
+      const EDGES = [["bigo","sort"],["sort","dc"],["rec","dc"],["rec","tt"],["arr","stk"],["arr","hash"],["ll","stk"],["ll","hash"],["stk","tt"],["stk","gr"],["tt","bst"],["tt","heap"],["gr","dij"],["heap","dij"]];
+      function placeNodes(w, h, padX, padY) {
+        const cols = [0, 1, 2, 3, 4].map(d => NODES.filter(n => n[2] === d));
+        const pos = {};
+        cols.forEach((col, d) => col.forEach((n, i) => {
+          pos[n[0]] = { x: padX + d * ((w - padX * 2) / 4), y: h / 2 + (i - (col.length - 1) / 2) * Math.min(138, (h - padY * 2) / 3) };
+        }));
+        return pos;
+      }
+      function buildMap(svg, w, h, padX, padY, plantW, stageOf) {
+        const pos = placeNodes(w, h, padX, padY);
+        const edgeEls = EDGES.map(([a, b]) => {
+          const len = Math.hypot(pos[b].x - pos[a].x, pos[b].y - pos[a].y);
+          const mx = (pos[a].x + pos[b].x) / 2;
+          const path = svgEl("path", { d: `M${pos[a].x + 24} ${pos[a].y} C${mx} ${pos[a].y} ${mx} ${pos[b].y} ${pos[b].x - 24} ${pos[b].y}`, fill: "none", stroke: "#b8a98d", "stroke-width": 3, "stroke-linecap": "round" }, svg);
+          return path;
+        });
+        const nodeEls = {};
+        NODES.forEach(([id, name]) => {
+          const g = svgEl("g", { id: `${svg.id}-${id}`, transform: `translate(${pos[id].x} ${pos[id].y})` }, svg);
+          const inner = svgEl("g", {}, g);
+          const stage = stageOf(id);
+          const hh = plantW * 1.25;
+          const img = svgEl("image", { href: `assets/plant-${stage}.svg`, x: -plantW / 2, y: -hh / 2 - 6, width: plantW, height: hh }, inner);
+          const t = svgEl("text", { y: hh / 2 + 22, "text-anchor": "middle", "font-family": "Instrument Serif", "font-size": 22, fill: "#222", "paint-order": "stroke", stroke: "#f4eadf", "stroke-width": 5 }, inner);
+          t.textContent = name;
+          nodeEls[id] = { g, inner, img };
+        });
+        return { pos, edgeEls, nodeEls };
+      }
+
+      /* =========== 1. syllabus -> map =========== */
+      (() => {
+        const S = 0;
+        clipIn(0);
+        const m = buildMap(el("c1-svg"), 698, 548, 64, 84, 62, () => 0);
+        EDGES.forEach(([a, b], i) => {
+          const len = m.edgeEls[i].getTotalLength();
+          m.edgeEls[i].setAttribute("stroke-dasharray", len);
+          m.edgeEls[i].setAttribute("stroke-dashoffset", len);
+          m.edgeEls[i].setAttribute("id", `c1-e${i}`);
+        });
+        document.querySelectorAll("#c1-syl .sline").forEach((l, i) => tl.fromTo(l, { x: -26, opacity: 0 }, { x: 0, opacity: 1, duration: 0.32, ease: E.out }, S + 0.3 + i * 0.26));
+        let k = 0;
+        document.querySelectorAll("#c1-syl b").forEach(b => {
+          const t = S + 0.7 + k * 0.2; k++;
+          tl.to(b, { backgroundSize: "100% 78%", duration: 0.22, ease: "power1.out" }, t);
+          b.dataset.n.split(",").forEach((id, j) => {
+            const n = m.nodeEls[id];
+            tl.fromTo(n.inner, { scale: 0, opacity: 0, transformOrigin: "50% 50%" }, { scale: 1, opacity: 1, duration: 0.4, ease: E.back }, t + 0.12 + j * 0.08);
+          });
+        });
+        EDGES.forEach((_, i) => tl.to(`#c1-e${i}`, { strokeDashoffset: 0, duration: 0.45, ease: "power1.out" }, S + 2.9 + i * 0.09));
+        tl.fromTo("#c1-tag", { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: E.out }, S + 4.3);
+      })();
+
+      /* =========== 2. mastery tracing =========== */
+      (() => {
+        const S = 6;
+        clipIn(1);
+        const QS = [
+          ["Inserting at the head of a singly linked list costs…", ["O(1)", "O(log n)", "O(n)", "O(n²)"], 0],
+          ["After deleting the tail, which pointer must change?", ["The head's next", "The new tail's next", "Every node's prev", "Nothing"], 1],
+        ];
+        // both questions exist in the DOM; show one at a time
+        const holder = el("c2-choices");
+        holder.innerHTML = QS.map((q, i) => `<div id="c2-set${i}" style="position:absolute;left:38px;right:38px;top:236px">${q[1].map((c, j) => `<div class="choice" id="c2-ch${i}-${j}">${["A", "B", "C", "D"][j]}&nbsp;&nbsp;${c}</div>`).join("")}</div>`).join("");
+        const q0 = document.createElement("div"); q0.id = "c2-qa"; q0.className = "qtext"; q0.style.cssText = "position:absolute;left:38px;right:38px;top:104px;font-size:36px;line-height:1.15"; q0.textContent = QS[0][0];
+        const q1 = q0.cloneNode(); q1.id = "c2-qb"; q1.textContent = QS[1][0];
+        el("c2-q").append(q0, q1); el("c2-qtext").style.display = "none";
+        tl.fromTo("#c2-set0 .choice", { x: 26, opacity: 0 }, { x: 0, opacity: 1, duration: 0.3, stagger: 0.07, ease: E.out }, S + 0.4);
+        tl.fromTo("#c2-qa", { opacity: 0 }, { opacity: 1, duration: 0.3 }, S + 0.35);
+        tl.set("#c2-qb, #c2-set1", { opacity: 0 }, S);
+        const right = (id, t) => { tl.to(id, { backgroundColor: "#dfe9d3", borderColor: "#4e8a5e", scale: 1.03, duration: 0.2, ease: E.back }, t); };
+        right("#c2-ch0-0", S + 1.4);
+        tl.to("#c2-set0, #c2-qa", { opacity: 0, duration: 0.25 }, S + 2.45);
+        tl.fromTo("#c2-chip", { opacity: 1 }, { opacity: 1, duration: 0.01 }, S + 2.45);
+        tl.set("#c2-chip", { textContent: "Check question 2 of 2" }, S + 2.5);
+        tl.fromTo("#c2-qb", { opacity: 0 }, { opacity: 1, duration: 0.3 }, S + 2.6);
+        tl.fromTo("#c2-set1", { opacity: 0 }, { opacity: 1, duration: 0.01 }, S + 2.6);
+        tl.fromTo("#c2-set1 .choice", { x: 26, opacity: 0 }, { x: 0, opacity: 1, duration: 0.3, stagger: 0.07, ease: E.out }, S + 2.65);
+        right("#c2-ch1-1", S + 4.0);
+        // mastery numbers (real BKT: 0.20 -> 0.55 -> 0.84)
+        const v = { p: 20 };
+        const show = () => { el("c2-num").firstChild.nodeValue = String(Math.round(v.p)); el("c2-bar").style.width = v.p + "%"; };
+        tl.to(v, { p: 55, duration: 0.7, ease: "power2.out", onUpdate: show }, S + 1.5);
+        tl.to(v, { p: 84, duration: 0.7, ease: "power2.out", onUpdate: show }, S + 4.1);
+        tl.set("#c2-state", { textContent: "Linked lists · sapling" }, S + 1.9);
+        tl.set("#c2-state", { textContent: "Linked lists · budding" }, S + 4.5);
+        tl.fromTo("#c2-p0", { opacity: 1 }, { opacity: 0, duration: 0.25 }, S + 1.5);
+        tl.fromTo("#c2-p2", { opacity: 0, scale: 0.7, transformOrigin: "50% 90%" }, { opacity: 1, scale: 1, duration: 0.5, ease: E.back }, S + 1.6);
+        tl.to("#c2-p2", { opacity: 0, duration: 0.25 }, S + 4.1);
+        tl.fromTo("#c2-p3", { opacity: 0, scale: 0.7, transformOrigin: "50% 90%" }, { opacity: 1, scale: 1, duration: 0.5, ease: E.back }, S + 4.2);
+      })();
+
+      /* =========== 3. prerequisites gate what's next =========== */
+      (() => {
+        const S = 12;
+        clipIn(2);
+        const stages = { bigo: 4, rec: 2, arr: 3, ll: 2, sort: 3 };
+        const m = buildMap(el("c3-svg"), 1168, 548, 100, 84, 72, id => stages[id] ?? 0);
+        const open = new Set(["bigo", "rec", "arr", "ll", "sort"]);
+        const locked = NODES.map(n => n[0]).filter(id => !open.has(id));
+        locked.forEach(id => { m.nodeEls[id].inner.setAttribute("opacity", 0.42); });
+        // padlocks on the locked ones
+        const locks = {};
+        locked.forEach(id => {
+          const g = svgEl("g", { transform: "translate(24 -46)" }, m.nodeEls[id].g);
+          const inner = svgEl("g", {}, g);
+          svgEl("rect", { x: -13, y: -4, width: 26, height: 20, rx: 5, fill: "#0a4d17" }, inner);
+          svgEl("path", { d: "M-8 -4 V-10 a8 8 0 0 1 16 0 V-4", fill: "none", stroke: "#0a4d17", "stroke-width": 4 }, inner);
+          locks[id] = inner;
+        });
+        // the picker's choice: weakest tested concept whose prerequisites are solid
+        const ring = svgEl("circle", { cx: m.pos.ll.x, cy: m.pos.ll.y - 6, r: 56, fill: "none", stroke: "#e8a33d", "stroke-width": 5, opacity: 0 }, el("c3-svg"));
+        tl.fromTo("#c3-rule", { y: -16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: E.out }, S + 0.4);
+        tl.fromTo(ring, { opacity: 0, attr: { r: 90 } }, { opacity: 1, attr: { r: 56 }, duration: 0.5, ease: E.out }, S + 1.1);
+        tl.fromTo("#c3-next", { y: -14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: E.out }, S + 1.3);
+        // it gets learned: 55% -> 78%
+        tl.set("#c3-next", { textContent: "Linked lists · 78%, solid" }, S + 2.7);
+        tl.fromTo(m.nodeEls.ll.img, { opacity: 1 }, { opacity: 1, duration: 0.01 }, S + 2.4);
+        tl.set(m.nodeEls.ll.img, { attr: { href: "assets/plant-3.svg" } }, S + 2.6);
+        tl.fromTo(m.nodeEls.ll.inner, { scale: 1, transformOrigin: "50% 60%" }, { scale: 1.18, duration: 0.25, yoyo: true, repeat: 1, ease: "sine.inOut" }, S + 2.6);
+        // gates open on Stacks and HashMaps
+        ["stk", "hash"].forEach((id, k) => {
+          tl.to(locks[id], { scale: 0, rotate: -40, opacity: 0, duration: 0.3, ease: "back.in(2)", transformOrigin: "50% 50%" }, S + 3.2 + k * 0.1);
+          tl.to(m.nodeEls[id].inner, { opacity: 1, duration: 0.4 }, S + 3.3 + k * 0.1);
+          tl.fromTo(m.nodeEls[id].inner, { scale: 0.9, transformOrigin: "50% 60%" }, { scale: 1, duration: 0.5, ease: E.back }, S + 3.3 + k * 0.1);
+        });
+        EDGES.forEach(([a, b], i) => {
+          if ((a === "ll" || a === "arr") && (b === "stk" || b === "hash"))
+            tl.to(m.edgeEls[i], { attr: { stroke: "#4e8a5e", "stroke-width": 5 }, duration: 0.4 }, S + 3.0);
+        });
+        tl.to(ring, { attr: { cx: m.pos.stk.x, cy: m.pos.stk.y - 6 }, duration: 0.6, ease: "power2.inOut" }, S + 3.9);
+        tl.set("#c3-next", { textContent: "Next up: Stacks, queues · now ready" }, S + 4.0);
+      })();
+
+      /* =========== 4. format bandit =========== */
+      (() => {
+        const S = 18;
+        clipIn(3);
+        const FORMATS = [["Worked example", "#0b6122"], ["Flashcards", "#a8482a"], ["Diagram", "#2c5878"], ["Analogy", "#866311"]];
+        const rowsEl = el("c4-rows");
+        const W = 480, H = 74;
+        const lg = x => { // log-gamma (Lanczos)
+          const g = 7, c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+          x -= 1; let a = c[0]; const t = x + g + 0.5;
+          for (let i = 1; i < g + 2; i++) a += c[i] / (x + i);
+          return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+        };
+        const beta = (x, a, b) => Math.exp(lg(a + b) - lg(a) - lg(b) + (a - 1) * Math.log(x) + (b - 1) * Math.log(1 - x));
+        const curve = (a, b) => {
+          const pts = []; let mx = 0;
+          for (let i = 1; i < 60; i++) { const x = i / 60; const y = beta(x, a, b); pts.push([x, y]); if (y > mx) mx = y; }
+          return { pts, mx };
+        };
+        const rows = FORMATS.map(([name, color], i) => {
+          const r = document.createElement("div"); r.className = "frow"; r.id = `c4-r${i}`;
+          r.innerHTML = `<div class="name">${name}</div><svg width="${W}" height="${H}" style="overflow:visible"><line x1="0" y1="${H}" x2="${W}" y2="${H}" stroke="#dccbb2" stroke-width="3"/><path fill="${color}" fill-opacity=".22" stroke="${color}" stroke-width="3.5" stroke-linejoin="round"/></svg><div class="stat"><span class="rate">50%</span> <small class="uses">0 tries</small></div>`;
+          rowsEl.appendChild(r);
+          return { path: r.querySelector("path"), rate: r.querySelector(".rate"), uses: r.querySelector(".uses") };
+        });
+        const state = FORMATS.map(() => ({ a: 1, b: 1 }));
+        const draw = () => rows.forEach((r, i) => {
+          const { a, b } = state[i]; const c = curve(Math.max(a, 1), Math.max(b, 1));
+          const top = Math.min(1, 2.2 / Math.max(c.mx, 2.2));
+          let d = `M0 ${H}`;
+          c.pts.forEach(([x, y]) => { d += ` L${(x * W).toFixed(1)} ${(H - Math.min(H - 4, (y / Math.max(c.mx, 2.2)) * (H - 4))).toFixed(1)}`; });
+          d += ` L${W} ${H} Z`;
+          r.path.setAttribute("d", d);
+          r.rate.textContent = Math.round((a / (a + b)) * 100) + "%";
+          r.uses.textContent = Math.round(a + b - 2) + " tries";
+        });
+        draw();
+        // evidence accumulates: the bandit's posterior per format narrows and separates
+        // The last step is the real posterior from the demo account: worked examples 12/6, flashcards 3/6.
+        const steps = [
+          { t: 0.9, v: [[4, 2], [1, 3], [2, 1], [1, 1]] },
+          { t: 2.0, v: [[8, 3], [2, 4], [3, 2], [2, 2]] },
+          { t: 3.1, v: [[12, 6], [3, 6], [3, 3], [2, 2]] },
+        ];
+        steps.forEach(s => s.v.forEach(([a, b], i) => {
+          tl.to(state[i], { a, b, duration: 0.9, ease: "power2.inOut", onUpdate: draw }, S + s.t);
+        }));
+        rows.forEach((r, i) => tl.fromTo(`#c4-r${i}`, { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.35, ease: E.out }, S + 0.3 + i * 0.1));
+        tl.to("#c4-r0", { backgroundColor: "rgba(164,215,162,0.35)", duration: 0.4 }, S + 4.0);
+        tl.fromTo("#c4-insight", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: E.expo }, S + 4.3);
+      })();
+
+      /* =========== 5. spaced review =========== */
+      (() => {
+        const S = 24;
+        clipIn(4);
+        const svg = el("c5-svg");
+        const X0 = 70, X1 = 730, Y0 = 130, Y1 = 470, DAYS = 30;
+        const xs = d => X0 + (d / DAYS) * (X1 - X0), ys = r => Y1 - r * (Y1 - Y0);
+        const t = svgEl("text", { x: 40, y: 64, "font-family": "Instrument Serif", "font-size": 30, "font-style": "italic", fill: "#4e8a5e" }, svg); t.textContent = "How much you remember";
+        svgEl("line", { x1: X0, y1: Y1, x2: X1, y2: Y1, stroke: "#dccbb2", "stroke-width": 3 }, svg);
+        const thr = svgEl("line", { x1: X0, y1: ys(0.5), x2: X1, y2: ys(0.5), stroke: "#b0584c", "stroke-width": 2.5, "stroke-dasharray": "8 7", opacity: 0.8 }, svg);
+        const tt = svgEl("text", { x: X1, y: ys(0.5) - 10, "text-anchor": "end", "font-family": "Instrument Serif", "font-size": 24, "font-style": "italic", fill: "#b0584c" }, svg); tt.textContent = "time to review";
+        [0, 7, 14, 21, 28].forEach(d => { const a = svgEl("text", { x: xs(d), y: Y1 + 38, "text-anchor": "middle", "font-family": "Instrument Serif", "font-size": 24, fill: "#4e8a5e" }, svg); a.textContent = "day " + d; });
+        const reviews = [0, 1, 7, 22], stab = [2.6, 6.0, 14.0, 34.0];
+        const retention = d => { let i = reviews.length - 1; while (reviews[i] > d) i--; return Math.exp(-(d - reviews[i]) / stab[i]); };
+        const path = svgEl("path", { fill: "none", stroke: "#0b6122", "stroke-width": 6, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+        const dot = svgEl("circle", { r: 11, fill: "#e8a33d", stroke: "#fff", "stroke-width": 4 }, svg);
+        const marks = reviews.slice(1).map(d => {
+          const g = svgEl("g", { transform: `translate(${xs(d)} ${ys(1) - 22})` }, svg);
+          const inner = svgEl("g", {}, g);
+          svgEl("circle", { r: 20, fill: "#0a4d17" }, inner);
+          svgEl("path", { d: "M-9 1 L-3 8 L10 -7", fill: "none", stroke: "#f4eadf", "stroke-width": 4.5, "stroke-linecap": "round", "stroke-linejoin": "round" }, inner);
+          return inner;
+        });
+        const p = { d: 0 };
+        const render = () => {
+          let dstr = "";
+          for (let d = 0; d <= p.d + 1e-6; d += 0.1) {
+            const r = reviews.includes(Math.round(d * 10) / 10) && d > 0 ? 1 : retention(d);
+            // draw the instant jump back to 100% at each review
+            dstr += (dstr ? " L" : "M") + xs(d).toFixed(1) + " " + ys(r).toFixed(1);
+          }
+          path.setAttribute("d", dstr);
+          const cur = retention(p.d);
+          dot.setAttribute("cx", xs(p.d)); dot.setAttribute("cy", ys(cur));
+          const wilted = cur < 0.5;
+          el("c5-w").style.opacity = wilted ? 1 : 0; el("c5-a").style.opacity = wilted ? 0 : 1;
+          el("c5-state").textContent = wilted ? "Linked lists · due for review" : "Linked lists · fresh";
+          marks.forEach((m, i) => m.setAttribute("transform", `scale(${p.d >= reviews[i + 1] ? 1 : 0})`));
+        };
+        render();
+        // time runs from day 0 to day 30; each review resets the curve with a slower decay
+        tl.to(p, { d: 30, duration: 4.5, ease: "none", onUpdate: render }, S + 0.6);
+        ["c5-s1", "c5-s2", "c5-s3", "c5-s4"].forEach((id, i) => tl.fromTo("#" + id, { x: 24, opacity: 0 }, { x: 0, opacity: 1, duration: 0.35, ease: E.out }, S + 0.9 + i * 0.5));
+      })();
+
+      /* =========== 6. games feed mastery =========== */
+      (() => {
+        const S = 30;
+        clipIn(5);
+        const PL = [["Maya", "#0b6122", 940], ["Dev", "#2c5878", 760], ["Ari", "#866311", 610], ["Sam", "#a8482a", 330]];
+        const box = el("c6-players");
+        PL.forEach(([name, color], i) => {
+          const d = document.createElement("div"); d.className = "player"; d.id = `c6-pl${i}`; d.style.top = 100 + i * 96 + "px";
+          d.innerHTML = `<span class="av" style="background:${color}">${name[0]}</span>${name}<span class="pts">0</span>`;
+          box.appendChild(d);
+        });
+        tl.fromTo("#c6-tiles .tile", { y: 24, opacity: 0, scale: 0.94 }, { y: 0, opacity: 1, scale: 1, duration: 0.4, stagger: 0.08, ease: E.back }, S + 0.4);
+        tl.fromTo("#c6-timer", { width: "100%" }, { width: "18%", duration: 2.2, ease: "none" }, S + 0.8);
+        PL.forEach((_, i) => tl.fromTo(`#c6-pl${i}`, { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.35, ease: E.out }, S + 0.5 + i * 0.12));
+        // the right tile lights up, others fade
+        tl.to("#c6-tiles .tile:not(:nth-child(2))", { opacity: 0.28, duration: 0.35 }, S + 3.0);
+        tl.to("#c6-tiles .tile:nth-child(2)", { scale: 1.04, duration: 0.3, ease: E.back }, S + 3.0);
+        PL.forEach(([, , pts], i) => {
+          const o = { v: 0 };
+          tl.to(o, { v: pts, duration: 0.8, ease: "power2.out", onUpdate: () => { el("c6-pl" + i).querySelector(".pts").textContent = Math.round(o.v); } }, S + 3.0 + i * 0.1);
+        });
+        tl.to("#c6-timer", { width: "0%", duration: 0.2 }, S + 3.0);
+        // results: podium and what moved in your own garden
+        tl.to(["#c6-q", "#c6-lb"], { opacity: 0, duration: 0.3 }, S + 4.0);
+        tl.fromTo("#c6-res", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.45, ease: E.out }, S + 4.15);
+        tl.fromTo("#c6-p1,#c6-p2,#c6-p3", { scaleY: 0 }, { scaleY: 1, duration: 0.5, stagger: 0.12, ease: E.back }, S + 4.4);
+        tl.fromTo("#c6-moved .chip", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, stagger: 0.1, ease: E.out }, S + 5.0);
+      })();
+
+      /* =========== 7. one memory, many agents =========== */
+      (() => {
+        const S = 36;
+        clipIn(6);
+        const svg = el("c7-svg");
+        const line = (x1, y1, x2, y2, id) => svgEl("path", { id, d: `M${x1} ${y1} C${(x1 + x2) / 2} ${y1} ${(x1 + x2) / 2} ${y2} ${x2} ${y2}`, fill: "none", stroke: "#b8a98d", "stroke-width": 4, "stroke-linecap": "round" }, svg);
+        const L = [
+          line(280, 172, 360, 172, "c7-l0"), line(610, 160, 700, 108, "c7-l1"), line(610, 190, 700, 254, "c7-l2"),
+          line(950, 108, 1020, 168, "c7-l3"), line(950, 254, 1020, 208, "c7-l4"),
+        ];
+        L.forEach(p => { const n = p.getTotalLength(); p.setAttribute("stroke-dasharray", n); p.setAttribute("stroke-dashoffset", n); });
+        const packet = (path, t, color) => {
+          const dot = document.createElement("div"); dot.className = "pk"; if (color) dot.style.background = color; el("c7-stage").appendChild(dot);
+          const len = path.getTotalLength(); const o = { u: 0 };
+          const set = () => { const pt = path.getPointAtLength(o.u * len); dot.style.left = pt.x - 9 + "px"; dot.style.top = pt.y - 9 + "px"; };
+          set();
+          tl.fromTo(dot, { opacity: 0 }, { opacity: 1, duration: 0.05 }, t);
+          tl.to(o, { u: 1, duration: 0.55, ease: "power1.inOut", onUpdate: set }, t);
+          tl.to(dot, { opacity: 0, duration: 0.08 }, t + 0.52);
+        };
+        ["c7-chat", "c7-orch", "c7-cur", "c7-tut", "c7-db"].forEach((id, i) => tl.fromTo("#" + id, { y: 26, opacity: 0, scale: 0.94 }, { y: 0, opacity: 1, scale: 1, duration: 0.45, ease: E.back }, S + 0.3 + i * 0.12));
+        L.forEach((p, i) => tl.to(p, { strokeDashoffset: 0, duration: 0.4, ease: "power1.out" }, S + 0.8 + i * 0.1));
+        // session 1: syllabus to the Curriculum agent, quizzes through the Tutor, all written to the database
+        packet(L[0], S + 1.3); packet(L[1], S + 1.8); packet(L[3], S + 2.35, "#4e8a5e");
+        packet(L[2], S + 2.0); packet(L[4], S + 2.5, "#4e8a5e");
+        // new chat: the question is answered from stored memory
+        tl.fromTo("#c7-b1", { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: E.out }, S + 3.1);
+        packet(L[0], S + 3.5); packet(L[2], S + 4.0); packet(L[4], S + 4.35, "#4e8a5e");
+        tl.to("#c7-db", { boxShadow: "0 0 0 8px rgba(232,163,61,0.35)", duration: 0.4, yoyo: true, repeat: 1 }, S + 4.3);
+        tl.fromTo("#c7-b2", { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: E.out }, S + 4.7);
+        tl.fromTo("#c7-chip", { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: E.out }, S + 5.05);
+      })();
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

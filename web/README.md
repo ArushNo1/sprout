@@ -4,7 +4,7 @@ The pages that don't fit in an ASI:One card: the garden, the knowledge graph, an
 
 | URL | Page |
 |---|---|
-| `/` | Landing |
+| `/` | Landing: the hero, then a carousel of short demo videos, one per standout capability (syllabus to map, mastery tracing, prerequisite unlocking, format learning, spaced review, live games, shared agent memory). The clips are in `public/showcase/`. |
 | `/<user id>` | The learner's garden: links to the garden and games |
 | `/<user id>/garden` | The garden as one interactive map that fits the screen. Plants sit by prerequisite depth with the lines between them. Tap a plant to light up its whole chain (green = what it builds on, gold = what it unlocks) and open its details. Drag to pan, scroll or pinch to zoom, double-tap to zoom to a chain, **Fit** and the flip button re-lay it out. Filter by due / growing / solid / not started, search by name, or use the arrow keys (up and down follow prerequisites). Switch courses from the dropdown. On a phone the details open as a sheet. |
 | `/<user id>/garden` (several courses) | With two or more active courses and no `?course=`, an overview with one card per course: its plants, solid/tested/due counts and weakest concept, soonest exam first. A card opens that course's map. |
@@ -35,3 +35,15 @@ npm test
 4. Agents link here by building `https://<domain>/<user id>/garden`.
 
 Anyone with a link can view that learner's graph, and the user id is the only secret in it. Treat these links as private.
+
+## Landing-page demo clips
+
+The seven videos in `public/showcase/` (`<id>.mp4` plus a `<id>.jpg` poster) are rendered from one HyperFrames project, `video/showcase/`, which uses Sprout's real numbers (the BKT constants, the Data Structures example map, the demo account's format posteriors). To change them, edit `video/showcase/index.html`, then:
+
+```bash
+cd video/showcase
+npx hyperframes render --fps 30 --output renders/reel.mp4   # 7 clips x 6 s
+# cut clip i (0-6) into web/public/showcase/<id>.mp4 and a poster at i*6+5.3s with ffmpeg
+```
+
+The carousel text lives in `app/page.tsx`. It pauses when scrolled out of view, has a pause button, and does not autoplay or auto-advance for people who prefer reduced motion.
