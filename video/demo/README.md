@@ -21,7 +21,7 @@ The 16 motion graphics for the demo video, built with HyperFrames from the appro
 | G15 | One system | full screen | 26 s | 3:28 |
 | G16 | End card | full screen | 10 s | 3:54 |
 
-Full-screen graphics render as H.264 MP4s. Overlays render as ProRes 4444 `.mov` files with alpha: drop them on the track above your screen recording and they composite with no keying. Overlays sit in the right-hand column (x 1290–1730), so keep the part of the UI you're showing on the left two-thirds of the frame. Every graphic holds its last frame, so you can trim the tail to match the voice-over.
+Full-screen graphics render as H.264 MP4s. Overlays render as ProRes 4444 `.mov` files with alpha, and there are also small VP9 `.webm` copies with alpha (`renders/G07-overlay.webm` and so on). Drop either on the track above your screen recording and it composites with no keying. Overlays sit in the right-hand column (x 1290–1730), so keep the part of the UI you're showing on the left two-thirds of the frame. Every graphic holds its last frame, so you can trim the tail to match the voice-over.
 
 `renders/graphics-reel.mp4` plays everything in order, with labelled slates where your recordings go. Use it as a timing reference.
 
@@ -36,3 +36,9 @@ npx hyperframes@0.8.123 render scenes/G07 --format mov -o renders/G07.mov   # ov
 ```
 
 Edit text, timing, or layout in `build.mjs`. Every scene is generated from it and shares one stylesheet: the Sprout palette, Instrument Serif, and frosted cards. `assets/` holds the fonts, the plant-growth SVGs, and a local copy of GSAP, so renders never need the network.
+
+To make the small overlay copies from a ProRes render:
+
+```bash
+ffmpeg -i renders/G07.mov -c:v libvpx-vp9 -pix_fmt yuva420p -b:v 2M -auto-alt-ref 0 renders/G07-overlay.webm
+```
