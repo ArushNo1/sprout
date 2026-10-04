@@ -72,7 +72,7 @@ class CreateTest(unittest.TestCase):
     def test_creates_and_reads_back_the_newest_code(self):
         rows = [{"code": "OLDOLD", "created_at": [5]}, {"code": "NEWNEW", "created_at": [9]}]
         with mock.patch.object(game, "call") as call, mock.patch.object(game, "sql", return_value=rows), \
-                mock.patch.object(game, "PLAY_URL", "https://play.test"):
+                mock.patch.object(game, "play_url", return_value="https://play.test"):
             g = game.create_game("agent1me", 3, "DSA review", [game.clean_game_question(RAW, 4)])
         reducer, address, course_id, title, mode, template, seconds, key, questions = call.call_args.args
         self.assertEqual((reducer, address, course_id, mode, template, seconds), ("create_game", "agent1me", 3, "live", "", 20))
@@ -85,7 +85,7 @@ class CreateTest(unittest.TestCase):
     def test_arcade_game_links(self):
         rows = [{"code": "ARC234", "created_at": [9]}]
         with mock.patch.object(game, "call") as call, mock.patch.object(game, "sql", return_value=rows) as sql, \
-                mock.patch.object(game, "PLAY_URL", "https://play.test"):
+                mock.patch.object(game, "play_url", return_value="https://play.test"):
             g = game.create_game("agent1me", 3, "DSA review", [], "arcade", "meteor")
         self.assertEqual(call.call_args.args[4:6], ("arcade", "meteor"))
         self.assertIn("status = 'arcade'", sql.call_args.args[0])

@@ -4,11 +4,12 @@ Card images come from the sprout-cards Vercel project; the shared pieces (button
 links) are in cardkit.py. Games, results and the journey map are the arcade and garden agents' cards.
 """
 
+import re
 from urllib.parse import quote, urlencode
 
 from uagents_core.contrib.protocols.chat import ChatMessage
 
-from cardkit import CARDS_URL, _button, _card, _row, _section
+from cardkit import CARDS_URL, _button, _card, _row, _section, clip_label
 
 MAX_ROWS = 8
 FORMAT_LABELS = {"worked_example": "Worked example", "flashcards": "Flashcards",
@@ -55,6 +56,8 @@ def home_card(course_name: str, snap: dict, exam_days, insight=None, opener: str
     src, ratio = snapshot_image(course_name, snap, exam_days)
     root = _section(
         {"type": "image", "src": src, "alt": f"{course_name} progress", "aspect_ratio": ratio},
+        {"type": "text", "style": "muted", "value": f"Showing {MAX_ROWS} of {len(snap['concepts'])} concepts, weakest first. "
+                                                   "The rest are in your garden."} if len(snap["concepts"]) > MAX_ROWS else None,
         {"type": "text", "style": "muted", "value": f"Last time: {snap['recap']}"} if snap["recap"] else None,
         {"type": "text", "style": "muted", "value": insight} if insight else None,
         _row(_button("Learn next", "teach", True),
@@ -124,14 +127,50 @@ def course_picker_card(courses: list) -> ChatMessage:
     return _card("Pick a course to study.", root)
 
 
+def explain_card(markdown: str, title: str, has_course: bool, concept=None, message: str = "") -> ChatMessage:
+    """Buttons under a direct explanation. With a matching concept, its full lesson; with no course
+    yet, an offer to turn the subject into one (the curriculum agent's build_map)."""
+    if concept:
+        first = _button(f"Full lesson: {clip_label(concept['name'], 24)}", "teach", True, concept_id=concept["id"])
+    elif has_course:
+        first = _button("Learn next", "teach", True)
+    else:
+        first = _button(f"Make {clip_label(title, 22)} a course" if title else "Make this a course", "build_map", True,
+                        course_name=title, syllabus=message[:1500] if len(message) >= 80 else "")
+    root = _section(
+        {"type": "text", "style": "muted",
+         "value": "Want it to stick? A course lets Sprout quiz you and remember what you know." if not has_course
+         else "Ask anything else, or carry on with your course."},
+        _row(first, _button("Back to overview", "home") if has_course else None),
+        _row(_button("Make this a new course", "build_map", False, course_name=title, syllabus=message[:1500]))
+        if has_course and len(message) >= 200 else None,
+    )
+    return _card(markdown, root)
+
+
+def plain(text: str) -> str:
+    """Card text isn't Markdown: drop the backticks and bold marks the model writes for chat."""
+    return re.sub(r"`+|\*\*", "", str(text))
+
+
+LETTERS = "ABCDE"
+BUTTON_CHARS = 64  # about what fits on one answer button before ASI:One cuts it off
+
+
 def question_card(concept_name: str, kind: str, q: dict, number: int, total: int) -> ChatMessage:
+    """The question is the chat text, so the card holds only the answers. Long answers are listed
+    in full with lettered buttons, since a button can't wrap."""
     label = KIND_LABELS.get(kind, "Question") + (f" {number} of {total}" if total > 1 else "")
+    choices = [plain(c) for c in q["choices"]]
+    long = any(len(c) > BUTTON_CHARS for c in choices)
+    buttons = [_button(LETTERS[i] if long else c, "answer", False, choice=i) for i, c in enumerate(choices)]
     root = _section(
         {"type": "heading", "value": concept_name, "level": 2},
         {"type": "badge", "label": label, "variant": "info"},
-        {"type": "text", "style": "body", "value": q["question"]},
-        {"type": "group", "direction": "column", "gap": 8,
-         "children": [_button(choice, "answer", False, choice=i) for i, choice in enumerate(q["choices"])]},
+        {"type": "group", "direction": "column", "gap": 6, "children": [
+            {"type": "text", "style": "body", "value": f"{LETTERS[i]}. {c}"} for i, c in enumerate(choices)]} if long else None,
+        _row(*buttons) if long else {"type": "group", "direction": "column", "gap": 8, "children": buttons},
+        _row(_button("I don't know yet", "answer", False, choice="idk")),
     )
     return _card(q["question"], root)
 
@@ -147,7 +186,7 @@ def lesson_card(concept_name: str, fmt: str, lesson: dict) -> ChatMessage:
             {"type": "badge", "label": f"~{lesson.get('minutes', 3)} min read", "variant": "success"}]},
         {"type": "heading", "value": "Key takeaways", "level": 3} if takeaways else None,
         {"type": "group", "direction": "column", "gap": 6,
-         "children": [{"type": "text", "style": "body", "value": f"• {t}"} for t in takeaways]} if takeaways else None,
+         "children": [{"type": "text", "style": "body", "value": f"• {plain(t)}"} for t in takeaways]} if takeaways else None,
         _row(practice, _button("Check my understanding", "check", not practice)),
         _row(_button("Explain it another way", "reteach"), _button("Back to overview", "home")),
     )
@@ -191,14 +230,27 @@ def flashcard_summary(concept_name: str, known: int, n: int, missed: int, before
     return _card(f"Done: you knew {known} of {n} flashcards.", root)
 
 
-def feedback_card(q: dict, choice: int, before: float, after: float, concept_name: str,
+def feedback_card(q: dict, choice, before: float, after: float, concept_name: str,
                   next_label: str, next_action: str) -> ChatMessage:
-    correct = choice == q["correct_index"]
+    """What the right answer is and, for a wrong pick, the specific mistake behind the one they chose.
+    `choice` is None when the student tapped "I don't know yet"."""
+    right = q["correct_index"]
+    correct = choice == right
+    answer = plain(q["choices"][right])
+    notes = q.get("notes") or []
+    picked = None
+    if choice is not None and not correct:
+        why = plain(notes[choice]) if choice < len(notes) and notes[choice] else ""
+        picked = f"You chose: {plain(q['choices'][choice])}." + (f" {why}" if why else "")
+    title = "Correct" if correct else "Not quite" if choice is not None else "No problem, here it is"
     root = _section(
-        {"type": "heading", "value": "Correct" if correct else "Not quite", "level": 2},
-        {"type": "badge", "label": f"{concept_name}: {before:.0%} → {after:.0%}", "variant": "success" if after >= before else "warning"},
-        {"type": "text", "style": "body", "value": f"Answer: {q['choices'][q['correct_index']]}"},
-        {"type": "text", "style": "muted", "value": q["explanation"]} if q.get("explanation") else None,
+        {"type": "heading", "value": title, "level": 2},
+        {"type": "badge", "label": f"{concept_name} mastery: {before:.0%} → {after:.0%}", "variant": "success" if after >= before else "warning"},
+        {"type": "text", "style": "body", "value": picked} if picked else None,
+        {"type": "text", "style": "body", "value": f"Answer: {answer}"},
+        {"type": "text", "style": "muted", "value": plain(q["explanation"])} if q.get("explanation") else None,
+        {"type": "text", "style": "muted",
+         "value": "Mastery is Sprout's estimate that you know this concept. It moves with every answer."},
         _row(_button(next_label, next_action, True), _button("Back to overview", "home")),
     )
-    return _card("Correct!" if correct else f"Not quite. The answer is {q['choices'][q['correct_index']]}.", root)
+    return _card("Correct!" if correct else "Not quite." if choice is not None else "No problem. Now you've seen it once.", root)

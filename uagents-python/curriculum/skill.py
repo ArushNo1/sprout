@@ -165,11 +165,8 @@ async def reply_with_map(ctx: Context, sender: str, syllabus: str, course_name=N
         "syllabus": syllabus,
         "course_id": course_id,
     })
-    if inferred:
-        await ctx.send(sender, text_message(
-            f"I didn't have a syllabus, so I filled in a standard {cmap['course']['name']} sequence myself. "
-            "Tap Edit to change anything, or Looks right to start."))
-    await ctx.send(sender, map_card(cmap))
+    # One message: two sent back to back can reach the student in either order.
+    await ctx.send(sender, map_card(cmap, inferred))
 
 
 async def greet(ctx: Context, sender: str):

@@ -34,6 +34,12 @@ GARDEN_WORDS = re.compile(r"\b(gardens|all my (courses|classes)|my (courses|clas
                           r"journey|roadmap|learning map|which (course|class)|weakest|strongest|most behind|"
                           r"how am i doing|how('?s| is) my|what('?s| is| should).*(due|first|priority)|compare|"
                           r"across|biggest gap)\b", re.I)
+# A question the student wants answered now, and "I already know this" (tutor/skill.py has the same patterns).
+EXPLAIN_WORDS = re.compile(r"\b(explain|teach me|what (is|are|does|do)|what'?s|how (does|do|is|are|can|to)|why (is|are|does|do)|"
+                           r"i (don'?t|do not|dont) (get|understand)|confused|help me understand|tell me about|"
+                           r"walk me through)\b", re.I)
+TESTOUT_WORDS = re.compile(r"\b(i (already )?know (all (of )?)?(this|that|it|everything)|already know|test out|skip ahead|"
+                           r"mark (it|this|everything|all).*(mastered|done|complete))\b", re.I)
 SYLLABUS_HINTS = re.compile(r"\b(week|unit|chapter|lecture|module|midterm|final|exam)\b", re.I)
 
 
@@ -69,6 +75,13 @@ def looks_like_syllabus(text: str) -> bool:
             or looks_like_topic_list(text))
 
 
+def looks_like_notes(text: str) -> bool:
+    """A long paste with none of a syllabus's shape (weeks, units, exams, a topic list): lecture notes
+    or a textbook passage. For a student who already has a course these get explained, with a button
+    to make them a course, so a paste never quietly creates a duplicate course."""
+    return len(text) >= 200 and len(SYLLABUS_HINTS.findall(text)) < 2 and not looks_like_topic_list(text)
+
+
 def choose_route(text: str, new_chat: bool, cards_from, has_course: bool) -> Route:
     action = card_action(text)
     if action == "new_course":
@@ -82,6 +95,14 @@ def choose_route(text: str, new_chat: bool, cards_from, has_course: bool) -> Rou
         return Route(TUTOR, text=text, why="forget a course")
     if has_course and GARDEN_WORDS.search(text) and not looks_like_syllabus(text):
         return Route(GARDEN, text=text, why="gardens and cross-course questions")
+    # Explain first, organise later: a question (even with pasted notes) is answered before any course setup.
+    if EXPLAIN_WORDS.search(text) and not SMALLTALK.match(text) and len(SYLLABUS_HINTS.findall(text)) < 3 \
+            and not looks_like_topic_list(text) and not COURSE_WORDS.search(text):
+        return Route(TUTOR, text=text, why="explain")
+    if has_course and TESTOUT_WORDS.search(text):
+        return Route(TUTOR, text=text, why="test out")
+    if has_course and looks_like_notes(text) and not COURSE_WORDS.search(text):
+        return Route(TUTOR, text=text, why="pasted notes")
     if looks_like_syllabus(text) or COURSE_WORDS.search(text):
         return Route(CURRICULUM, text=text if looks_like_syllabus(text) else "", start=not looks_like_syllabus(text),
                      why="course setup")

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   bktUpdate,
+  learnRateFor,
   clampBktParam,
   pickNextConcept,
   sm2Update,
@@ -132,5 +133,21 @@ describe('graph', () => {
     expect(
       pickNextConcept([{ id: 1n, p: 0.4 }, { id: 2n, p: 0.2 }], cyc)
     ).toBe(2n);
+  });
+});
+
+describe('learnRateFor', () => {
+  it('gives a diagnostic answer no credit for learning, since nothing was taught', () => {
+    expect(learnRateFor('diagnostic', 0.15)).toBe(0);
+    for (const kind of ['check', 'practice', 'review', 'game']) expect(learnRateFor(kind, 0.15)).toBe(0.15);
+  });
+
+  it('so one lucky diagnostic guess moves mastery less, and a miss counts', () => {
+    const lucky = bktUpdate(0.2, true, { ...params, learn: learnRateFor('diagnostic', params.learn) });
+    const taught = bktUpdate(0.2, true, params);
+    expect(lucky).toBeCloseTo(0.4737, 3);
+    expect(taught).toBeCloseTo(0.5526, 3);
+    const miss = bktUpdate(0.2, false, { ...params, learn: learnRateFor('diagnostic', params.learn) });
+    expect(miss).toBeLessThan(0.05);
   });
 });

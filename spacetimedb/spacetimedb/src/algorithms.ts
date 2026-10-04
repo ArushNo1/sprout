@@ -25,6 +25,14 @@ export function bktUpdate(
   return clamp(posterior + (1 - posterior) * learn, 0, 1);
 }
 
+/**
+ * The learning rate to apply for one answer. A diagnostic question only measures what the student
+ * already knows: nothing was taught, so there is no learning transition. Every other kind of
+ * attempt follows a lesson, practice or a review, and uses the concept's own rate.
+ */
+export const learnRateFor = (kind: string, pLearn: number): number =>
+  kind === 'diagnostic' ? 0 : pLearn;
+
 export type BktParamName = 'pInit' | 'pLearn' | 'pSlip' | 'pGuess';
 
 /**

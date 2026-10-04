@@ -36,7 +36,7 @@ const game = parseGameQuery(new URLSearchParams(
   "course=Linear Algebra&code=QGYA6Y&q=8&s=20&t=Row Operations&t=REF %26 RREF&t=Augmented Matrices&t=Linear Systems"));
 await save("game", png(gameTree(game), GAME_SIZE));
 const arcade = parseGameQuery(new URLSearchParams(
-  "course=Linear Algebra&code=QGYA6Y&q=8&arcade=Quiz Runner&join=sprout-garden-seven.vercel.app/arcade/QGYA6Y&t=Row Operations&t=REF %26 RREF"));
+  "course=Linear Algebra&code=QGYA6Y&q=8&arcade=Quiz Runner&join=sproutlearn.tech/arcade/QGYA6Y&t=Row Operations&t=REF %26 RREF"));
 await save("game-arcade", png(gameTree(arcade), GAME_SIZE));
 for (const [file, q] of [
   ["podium", "title=Final results&subtitle=Linear Algebra · 8 questions&p=1~6420~Ada&p=2~5310~Pranav&p=3~4100~Bob&p=4~2200~Chris&p=5~900~Dana&me=1"],

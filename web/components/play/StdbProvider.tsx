@@ -9,7 +9,7 @@ import { DbConnection, type ErrorContext } from '@/lib/module_bindings';
 import { Identity } from 'spacetimedb';
 
 const HOST = process.env.NEXT_PUBLIC_SPACETIMEDB_HOST || 'https://maincloud.spacetimedb.com';
-const DB   = process.env.NEXT_PUBLIC_SPACETIMEDB_DB   || 'sprout-0gz5d';
+const DB   = process.env.NEXT_PUBLIC_SPACETIMEDB_DB   || 'sprout-live';
 const TOKEN_KEY = `${HOST}/${DB}/auth_token`;
 
 export default function StdbProvider({ children }: { children: ReactNode }) {

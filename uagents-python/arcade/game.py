@@ -12,11 +12,10 @@ import os
 import secrets
 
 from sprout_db import call, sql, sql_str
-from cardkit import WEB_URL
+from cardkit import web_url
 from content import _json_object, call_llm, clean_question
 from learning import MASTERED, micros
 
-PLAY_URL = os.getenv("SPROUT_PLAY_URL", WEB_URL).rstrip("/")
 GAME_QUESTIONS = 8
 GAME_CONCEPTS = 4
 SECONDS_PER_QUESTION = 20
@@ -123,7 +122,13 @@ def game_questions(course_name: str, concept: dict, count: int) -> list:
 ARCADE = {"runner": "Quiz Runner", "meteor": "Meteor Blaster"}
 
 
+def play_url() -> str:
+    """Where games are played: SPROUT_PLAY_URL if set, else whichever web site is healthy."""
+    return (os.getenv("SPROUT_PLAY_URL") or web_url()).rstrip("/")
+
+
 def game_links(code: str, key: str, mode: str = "live") -> dict:
+    PLAY_URL = play_url()
     site = PLAY_URL.split("://", 1)[-1]
     if mode == "arcade":
         return {"code": code, "self": f"{PLAY_URL}/arcade/{code}?k={key}", "join": f"{PLAY_URL}/arcade/{code}",

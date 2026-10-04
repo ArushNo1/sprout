@@ -85,6 +85,29 @@ class RoutingTest(unittest.TestCase):
             self.assertEqual(choose_route(tap(action), False, ARCADE, True).specialist, owner, action)
             self.assertEqual(choose_route(tap(action), False, TUTOR, True).specialist, owner, action)
 
+    def test_questions_are_answered_before_any_course_setup(self):
+        passage = "Open addressing resolves collisions by probing. " * 25 + " I don't get this, explain it"
+        for text, has in (("teach me how binary search works", False), ("teach me how binary search works", True),
+                          ("what is a load factor?", True), (passage, True), (passage, False)):
+            r = choose_route(text, False, TUTOR, has)
+            self.assertEqual((r.specialist, r.text, r.start), (TUTOR, text, False), text[:40])
+        # A real syllabus still goes to the curriculum, and so does asking how Sprout works.
+        syllabus = "Week 1: what is a limit. Week 2: derivatives. Unit 2: integrals and the midterm on Oct 9. " * 3
+        self.assertEqual(choose_route(syllabus, False, TUTOR, True).specialist, CURRICULUM)
+        self.assertEqual(choose_route("how does this work", False, None, False).start, True)
+
+    def test_pasted_notes_dont_quietly_become_a_second_course(self):
+        notes = "Open addressing stores every entry in the table itself and probes for the next free slot. " * 4
+        r = choose_route(notes, False, TUTOR, True)
+        self.assertEqual((r.specialist, r.text), (TUTOR, notes))
+        # With no course yet, the same paste is the student's first course.
+        self.assertEqual(choose_route(notes, False, None, False).specialist, CURRICULUM)
+
+    def test_i_already_know_this_gets_a_quick_proof(self):
+        for text in ("I already know all of this, mark everything 100% mastered", "i know this", "can I test out?"):
+            r = choose_route(text, False, TUTOR, True)
+            self.assertEqual((r.specialist, r.text), (TUTOR, text), text)
+
     def test_card_action(self):
         self.assertEqual(card_action(tap("sample")), "sample")
         self.assertIsNone(card_action("hello"))

@@ -22,9 +22,9 @@ export function decodeRows(result: { schema: { elements: { name: { some: string 
 export const lit = (s: string) => `'${s.replace(/'/g, "''")}'`;
 
 export async function sql(query: string): Promise<Row[]> {
-  const host = process.env.SPACETIMEDB_HOST;
-  const db = process.env.SPACETIMEDB_DB;
-  if (!host || !db) throw new StdbError('SPACETIMEDB_HOST and SPACETIMEDB_DB are not set');
+  // The tables these pages read are public, so the defaults work with no environment set at all.
+  const host = process.env.SPACETIMEDB_HOST || 'https://maincloud.spacetimedb.com';
+  const db = process.env.SPACETIMEDB_DB || 'sprout-live';
   const token = process.env.SPACETIMEDB_TOKEN;
   let res: Response;
   try {

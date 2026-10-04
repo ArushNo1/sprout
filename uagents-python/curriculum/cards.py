@@ -10,9 +10,12 @@ A submitted card comes back as a text message holding JSON:
 
 import json
 import os
+import time
 from datetime import date, datetime, timezone
 from urllib.parse import quote, urlencode
 from uuid import uuid4
+
+import requests
 
 from uagents_core.contrib.protocols.chat import ChatMessage, EndSessionContent, MetadataContent, TextContent
 
@@ -125,11 +128,27 @@ def _days_until(exam_date):
     return days if days >= 0 else None
 
 
-def map_card_url(cmap: dict) -> str:
-    """The /api/garden picture: a row of seeds per unit, one per concept, with the concept count."""
-    stages = {u["id"]: "" for u in cmap["units"]}
+_GARDEN_IMAGE = {"ok": None, "checked": 0.0}
+
+
+def garden_image_live() -> bool:
+    """Whether the cards site serves /api/garden yet. Checked at most every 10 minutes, so a map card
+    never shows a broken image while the cards project is a deploy behind the agents."""
+    if time.time() - _GARDEN_IMAGE["checked"] > 600:
+        try:
+            ok = requests.get(f"{CARDS_URL}/api/garden?title=Sprout&u=Unit~0", timeout=6).status_code == 200
+        except requests.RequestException:
+            ok = False
+        _GARDEN_IMAGE.update(ok=ok, checked=time.time())
+    return bool(_GARDEN_IMAGE["ok"])
+
+
+def map_card_url(cmap: dict, garden: bool = True) -> tuple:
+    """The course map picture and its aspect ratio. With `garden`, /api/garden: a row of seeds per
+    unit, one per concept. Otherwise the older /api/card: a bar per unit sized by its concept count."""
+    counts = {u["id"]: 0 for u in cmap["units"]}
     for c in cmap["concepts"]:
-        stages[c["unit"]] = stages.get(c["unit"], "") + "0"
+        counts[c["unit"]] = counts.get(c["unit"], 0) + 1
     course = cmap["course"]
     days = _days_until(course.get("exam_date"))
     code = course.get("code")
@@ -138,22 +157,28 @@ def map_card_url(cmap: dict) -> str:
         f"{len(cmap['concepts'])} concepts",
         f"exam in {days} days" if days is not None else None,
     ]))
+    units = cmap["units"][:MAX_ROWS]
     params = [("title", course["name"]), ("subtitle", subtitle)]
-    params += [("u", f"{u['name']}~{stages[u['id']]}") for u in cmap["units"][:MAX_ROWS]]
-    return f"{CARDS_URL}/api/garden?{urlencode(params, quote_via=quote)}"
+    if garden:
+        params += [("u", f"{u['name']}~{'0' * counts[u['id']]}") for u in units]
+        height = 40 + 80 + 44 + 30 + len(units) * 100 + 24 + 200 + 30  # gardenSize() in cards/lib/render.js
+        return f"{CARDS_URL}/api/garden?{urlencode(params, quote_via=quote)}", f"1080:{height}"
+    most = max(counts.values(), default=1) or 1
+    params += [("r", f"{u['name']}~{counts[u['id']] / most:.2f}~{counts[u['id']]}") for u in units]
+    height = 40 + 80 + 44 + 34 + len(units) * 58 + 30  # cardSize() in cards/lib/render.js
+    return f"{CARDS_URL}/api/card?{urlencode(params, quote_via=quote)}", f"1080:{height}"
 
 
-def map_card(cmap: dict) -> ChatMessage:
-    rows = min(len(cmap["units"]), MAX_ROWS)
-    height = 40 + 80 + 44 + 30 + rows * 100 + 24 + 200 + 30  # matches gardenSize() in cards/lib/render.js
+def map_card(cmap: dict, inferred: bool = False) -> ChatMessage:
+    """The course map to confirm. `inferred` says the map was filled in from a topic, not a syllabus."""
+    src, ratio = map_card_url(cmap, garden_image_live())
     names = {c["id"]: c["name"] for c in cmap["concepts"]}
     starts = [names[cid] for cid in cmap["order"] if next(
         c for c in cmap["concepts"] if c["id"] == cid)["depth"] == 0][:3]
     root = {
         "type": "section",
         "children": [
-            {"type": "image", "src": map_card_url(cmap), "alt": f"{cmap['course']['name']} concept map",
-             "aspect_ratio": f"1080:{height}"},
+            {"type": "image", "src": src, "alt": f"{cmap['course']['name']} concept map", "aspect_ratio": ratio},
             {"type": "text", "style": "muted",
              "value": f"{len(cmap['edges'])} prerequisite links. Good places to start: {', '.join(starts)}."},
             {"type": "group", "direction": "row", "gap": 8, "children": [
@@ -162,4 +187,7 @@ def map_card(cmap: dict) -> ChatMessage:
             ]},
         ],
     }
+    if inferred:
+        return card_message(f"I didn't have a syllabus, so I filled in a standard {cmap['course']['name']} sequence "
+                            "myself. Tap Edit to change anything, or Looks right to start.", root)
     return card_message("Here's your course map. Does it look right?", root)

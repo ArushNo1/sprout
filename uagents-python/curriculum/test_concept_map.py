@@ -21,6 +21,25 @@ class TopicListTest(unittest.TestCase):
         self.assertFalse(mappable("", ""))
 
 
+class MapCardTest(unittest.TestCase):
+    def test_map_picture_uses_the_garden_when_the_cards_site_has_it(self):
+        from unittest import mock
+        from curriculum import cards
+        cmap = json.loads((Path(__file__).parent / "examples" / "data_structures.map.json").read_text(encoding="utf-8"))
+        src, ratio = cards.map_card_url(cmap, garden=True)
+        self.assertIn("/api/garden?", src)
+        self.assertIn("u=Foundations~0", src)
+        old, _ = cards.map_card_url(cmap, garden=False)
+        self.assertIn("/api/card?", old)
+        for live, path in ((True, "/api/garden?"), (False, "/api/card?")):
+            with mock.patch.object(cards, "garden_image_live", return_value=live):
+                self.assertIn(path, json.dumps(json.loads(cards.map_card(cmap).content[1].metadata["card_payload"])))
+        with mock.patch.object(cards, "garden_image_live", return_value=False):
+            self.assertEqual(cards.map_card(cmap).content[0].text, "Here's your course map. Does it look right?")
+            # A map built from just a topic says so in the card's own message, not in a separate one.
+            self.assertIn("I didn't have a syllabus", cards.map_card(cmap, inferred=True).content[0].text)
+
+
 class SubjectRequestTest(unittest.TestCase):
     def test_a_named_subject_is_enough_but_chatter_is_not(self):
         from curriculum.skill import subject_request

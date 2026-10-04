@@ -336,7 +336,7 @@ export function parseGameQuery(params) {
   return {
     course: clip(params.get("course") || "Sprout", 40),
     code: (params.get("code") || "------").replace(/[^A-Z0-9]/gi, "").toUpperCase().slice(0, 6).padEnd(6, "-"),
-    join: clip(params.get("join") || "sprout-garden-seven.vercel.app/play", 48),
+    join: clip(params.get("join") || "sproutlearn.tech/play", 48),
     questions: Math.max(1, Math.min(20, Number(params.get("q")) || 8)),
     seconds: Math.max(5, Math.min(120, Number(params.get("s")) || 20)),
     topics: params.getAll("t").slice(0, 4).map((t) => clip(t.trim(), 26)),

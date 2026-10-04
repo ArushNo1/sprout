@@ -29,8 +29,8 @@ All five are hosted on Agentverse and use the Agent Chat Protocol with ASI:One i
 | --- | --- | --- |
 | Shared database (BKT mastery, SM-2 reviews, Thompson sampling over teaching formats, next-concept choice) | SpacetimeDB Maincloud, database `sprout-live` | [`spacetimedb/spacetimedb`](spacetimedb/spacetimedb), reducers in [API.md](spacetimedb/API.md) |
 | Card images (progress, course map, journey map) | https://sprout-cards-six.vercel.app | [`cards`](cards) |
-| Knowledge garden: every concept as a plant that grows with live mastery | `<site>/<learner address>/garden` (the `web/` site on Vercel) | [`web`](web) |
-| Live games (Kahoot-style): Sprout writes a quiz on your weak spots, friends join with a code, and your answers update your mastery | `<site>/play` (same site) | [`web/components/play`](web/components/play), plan and status in [docs/games-plan.md](docs/games-plan.md) |
+| Knowledge garden: every concept as a plant that grows with live mastery | https://sproutlearn.tech/`<learner address>`/garden (the `web/` site) | [`web`](web) |
+| Live games (Kahoot-style): Sprout writes a quiz on your weak spots, friends join with a code, and your answers update your mastery | https://sproutlearn.tech/play (same site) | [`web/components/play`](web/components/play), plan and status in [docs/games-plan.md](docs/games-plan.md) |
 | Mastery models in Python: BKT parameter fitting from the attempt log, mastery labels | runs offline against `sprout-live` | [`mastery`](mastery) |
 
 ## How it fits together
@@ -69,7 +69,7 @@ Each agent prints an inspector link; connect it to a mailbox to reach it from AS
 ## Tests
 
 ```bash
-cd uagents-python && python -m unittest orchestrator.test_routing orchestrator.test_inprocess tutor.test_tutor arcade.test_arcade garden.test_garden curriculum.test_concept_map
+cd uagents-python && python -m unittest test_cardkit orchestrator.test_routing orchestrator.test_inprocess tutor.test_tutor arcade.test_arcade garden.test_garden curriculum.test_concept_map
 python -m pytest mastery                 # from the repo root
 cd spacetimedb && npm test               # database algorithms and game scoring
 cd web && npm test                       # graph helpers and play-site routing
@@ -78,5 +78,5 @@ cd web && npm test                       # graph helpers and play-site routing
 ## Deploy
 
 - **Agents:** `cd uagents-python && python deploy_hosted.py [sprout|tutor|curriculum]` builds and uploads the files to Agentverse through its API (needs `AGENTVERSE_API_KEY`; `--dry-run` only builds). To paste by hand instead, `python uagents-python/build_hosted.py` writes the files for each hosted agent's editor: `dist/sprout/` (six files, multi-file hosted agent), `dist/tutor/agent.py` and `dist/curriculum/agent.py`. Stop the agent before editing, save, then start it. Secrets go in each agent's `.env` in the editor: `ASI_ONE_API_KEY`, `SPACETIMEDB_TOKEN`, `SPACETIMEDB_DB=sprout-live`.
-- **Cards and garden:** Vercel projects `sprout-cards` (`cards/`) and `sprout-web` (`web/`, Next.js; root directory `web`). Set `SPROUT_WEB_URL` in each agent's `.env` to the site's URL.
+- **Cards and garden:** Vercel projects `sprout-cards` (`cards/`) and `sprout-web` (`web/`, Next.js; root directory `web`). The agents link to https://sproutlearn.tech once its `/api/health` reports it is reading `sprout-live`, and to the first garden site until then.
 - **Database:** `spacetime publish` from `spacetimedb/spacetimedb` (owner only).

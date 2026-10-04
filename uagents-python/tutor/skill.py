@@ -25,15 +25,21 @@ from uagents_core.contrib.protocols.chat import (
 )
 
 from cardkit import garden_link, parse_selection, text_message
-from content import make_lesson, make_question
+from content import make_explanation, make_lesson, make_question
 from learning import (FORMATS, active_courses, concept, course, days_until, end_session, forget_course, format_insight,
                       format_stats, next_step, record, snapshot, start_session, upcoming_review)
 from sprout_db import DbError, enabled
-from .cards import (course_picker_card, feedback_card, flashcard_back, flashcard_front, flashcard_summary,
+from .cards import (course_picker_card, explain_card, feedback_card, flashcard_back, flashcard_front, flashcard_summary,
                     forget_card, home_card, lesson_card, mastered_card, question_card, summary_card)
 
 CURRICULUM_HANDLE = os.getenv("CURRICULUM_HANDLE", "@blank-agent-181")
 QUESTIONS = {"diagnostic": 5, "review": 3, "check": 2}
+# A question the student wants answered now (orchestrator/routing.py has the same patterns).
+EXPLAIN = re.compile(r"\b(explain|teach me|what (is|are|does|do)|what'?s|how (does|do|is|are|can|to)|why (is|are|does|do)|"
+                     r"i (don'?t|do not|dont) (get|understand)|confused|help me understand|tell me about|walk me through)\b", re.I)
+TESTOUT = re.compile(r"\b(i (already )?know (all (of )?)?(this|that|it|everything)|already know|test out|skip ahead|"
+                     r"mark (it|this|everything|all).*(mastered|done|complete))\b", re.I)
+NOTES_CHARS = 200  # a paste this long is material to explain (routing.looks_like_notes)
 FORGET = re.compile(r"\b(forget|delete|remove|erase)\b.*\b(course|class|progress|data|history)\b", re.I)
 
 
@@ -56,7 +62,10 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
         return
     text = "".join(c.text for c in msg.content if isinstance(c, TextContent)).strip()
     sel = {} if any(isinstance(c, StartSessionContent) for c in msg.content) else parse_selection(text)
-    action = sel.get("action") or ("forget_ask" if FORGET.search(text) else "start")
+    action = sel.get("action") or ("forget_ask" if FORGET.search(text) else "testout" if TESTOUT.search(text)
+                                   else "explain" if EXPLAIN.search(text) or len(text) >= NOTES_CHARS else "start")
+    if action == "explain":
+        sel = {**sel, "message": text}
     try:
         await handle(ctx, sender, action, sel)
     except DbError as err:
@@ -73,13 +82,20 @@ async def on_ack(ctx: Context, sender: str, msg: ChatAcknowledgement):
 
 async def handle(ctx: Context, sender: str, action: str, sel: dict):
     state = load(ctx, sender)
-    if action == "open" and sel.get("course_id"):
+    if action == "explain":
+        await explain(ctx, sender, state, sel.get("message") or "")
+    elif action == "open" and sel.get("course_id"):
         await open_course(ctx, sender, int(sel["course_id"]))
     elif action == "start" or not state.get("course_id"):
         await start(ctx, sender, state)
     elif action == "home":
         await show_home(ctx, sender, state)
-    elif action in ("diagnostic", "review"):
+    elif action in ("diagnostic", "review", "testout"):
+        if action == "testout":  # "I already know this": mastery only moves on evidence, so offer the quick proof
+            action = "diagnostic"
+            await ctx.send(sender, text_message(
+                f"I can't mark things mastered on your word, but you can prove it fast: {QUESTIONS[action]} questions, "
+                "and every one you get right moves that concept up."))
         state.update(mode=action, number=0, total=QUESTIONS[action])
         await ask(ctx, sender, state)
     elif action == "teach":
@@ -112,6 +128,23 @@ async def handle(ctx: Context, sender: str, action: str, sel: dict):
             "Paste a syllabus any time to start another."))
     else:
         await show_home(ctx, sender, state)
+
+
+async def explain(ctx: Context, sender: str, state: dict, message: str):
+    """Answers the student's own question first; organising it into a course comes after. Works
+    with no course at all."""
+    name = state.get("course_name", "") if state.get("course_id") else ""
+    title, markdown = await run(make_explanation, message, name)
+    match = None
+    if state.get("course_id"):
+        snap = await run(snapshot, sender, state["course_id"])
+        words = set(re.findall(r"[a-z0-9]+", f"{title} {message[:400]}".lower()))
+        for c in snap["concepts"]:  # a concept whose whole name appears in what they asked
+            parts = re.findall(r"[a-z0-9]+", c["name"].lower())
+            if parts and all(p in words for p in parts):
+                match = c
+                break
+    await ctx.send(sender, explain_card(markdown, title, bool(state.get("course_id")), match, message))
 
 
 async def start(ctx: Context, sender: str, state: dict):
@@ -243,18 +276,48 @@ async def mark_flashcard(ctx: Context, sender: str, state: dict, i, knew):
                                                  state.get("flash_after")))
 
 
-async def ask(ctx: Context, sender: str, state: dict):
-    mode = state.get("mode", "diagnostic")
+async def prepare(sender: str, state: dict, mode: str):
+    """The next concept to ask about and a question on it, or None when nothing is left to ask."""
     if mode == "check":
         con = await run(concept, state["concept_id"])
     else:
         step = await run(next_step, sender, state["course_id"], mode)
         if step["mode"] == "complete":
+            return None
+        con = await run(concept, step["concept_id"])
+    return con, await run(make_question, state["course_name"], con, mode, state.get("asked", []))
+
+
+_BACKGROUND = set()  # keeps prefetch tasks alive until they finish
+
+
+async def prefetch(ctx: Context, sender: str, state: dict):
+    """Writes the next question right after feedback goes out, so "Next question" is instant. The
+    result is only kept if the student hasn't moved on in the meantime."""
+    mode, number = state.get("mode", "diagnostic"), state["number"]
+    try:
+        ready = await prepare(sender, state, mode)
+    except Exception as err:  # the tap will just write it as before
+        ctx.logger.warning(f"prefetch: {err}")
+        return
+    latest = load(ctx, sender)
+    if ready and latest.get("number") == number and latest.get("mode") == mode and not latest.get("question"):
+        latest["ready"] = {"mode": mode, "number": number, "concept": ready[0], "question": ready[1]}
+        save(ctx, sender, latest)
+
+
+async def ask(ctx: Context, sender: str, state: dict):
+    mode = state.get("mode", "diagnostic")
+    ready = state.pop("ready", None)
+    if ready and ready["mode"] == mode and ready["number"] == state.get("number", 0):
+        con, q = ready["concept"], ready["question"]
+    else:
+        made = await prepare(sender, state, mode)
+        if made is None:
             done = "Nothing is due for review right now." if mode == "review" else "You've been quizzed on every concept."
             await ctx.send(sender, text_message(f"{done} Say \"hi\" to see your progress."))
             return
-        con = await run(concept, step["concept_id"])
-    q = await run(make_question, state["course_name"], con, mode, state.get("asked", []))
+        con, q = made
     state.update(concept_id=con["id"], concept_name=con["name"], question=q,
                  number=state.get("number", 0) + 1, asked=(state.get("asked", []) + [q["question"]])[-10:])
     save(ctx, sender, state)
@@ -270,11 +333,12 @@ def track(state: dict, before: float, after: float):
 
 async def answer(ctx: Context, sender: str, state: dict, choice):
     q = state.get("question")
+    unsure = choice == "idk"  # "I don't know yet": counts as not known, without a lucky guess
     try:
-        choice = int(choice)
+        choice = None if unsure else int(choice)
     except (TypeError, ValueError):
         choice = -1
-    if not q or not 0 <= choice < len(q["choices"]):
+    if not q or not (unsure or 0 <= choice < len(q["choices"])):
         await show_home(ctx, sender, state)
         return
     mode = state.get("mode", "diagnostic")
@@ -293,6 +357,11 @@ async def answer(ctx: Context, sender: str, state: dict, choice):
     else:
         nxt = ("See my progress", "home")
     await ctx.send(sender, feedback_card(q, choice, before, after, state["concept_name"], *nxt))
+    if state["number"] < state["total"]:
+        # In the background: a hosted agent delivers the feedback only once this handler returns.
+        task = asyncio.create_task(prefetch(ctx, sender, dict(state)))
+        _BACKGROUND.add(task)
+        task.add_done_callback(_BACKGROUND.discard)
 
 
 async def finish(ctx: Context, sender: str, state: dict):

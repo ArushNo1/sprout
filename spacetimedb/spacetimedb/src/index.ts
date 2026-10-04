@@ -15,6 +15,7 @@ import {
   FORMATS,
   SM2_INITIAL,
   bktUpdate,
+  learnRateFor,
   clampBktParam,
   cleanPlayerName,
   gameCode,
@@ -594,7 +595,7 @@ function applyAttempt(
   // 1. Knowledge tracing.
   const m = ensureMastery(ctx, address, course.id, concept);
   const pAfter = bktUpdate(m.pMastered, correct, {
-    learn: concept.pLearn,
+    learn: learnRateFor(kind, concept.pLearn),
     slip: concept.pSlip,
     guess: concept.pGuess,
   });
