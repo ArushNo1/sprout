@@ -527,6 +527,7 @@ button.choice:active:not(:disabled) {
 
 .verdict__rank,
 .board__rank,
+.me__rank,
 .result__big,
 .podium__block {
   font-family: var(--plain);
@@ -653,4 +654,51 @@ button.choice:active:not(:disabled) {
 .podium__step--3 .podium__block {
   height: 80px;
   background: var(--tile-3);
+}
+
+/* ── Arcade ─────────────────────────────────────────────────────────────── */
+
+.arcade {
+  display: grid;
+  gap: 20px;
+  margin-top: 16px;
+}
+
+@media (min-width: 900px) {
+  .arcade {
+    grid-template-columns: minmax(0, 520px) 1fr;
+    align-items: start;
+  }
+}
+
+.arcade__frame {
+  display: block;
+  width: 100%;
+  aspect-ratio: 480 / 800;
+  max-height: 78vh;
+  border: 0;
+  border-radius: 18px;
+  background: #0a2a16;
+}
+
+.arcade__how,
+.arcade__note {
+  margin-top: 10px;
+  font-size: 16px;
+  color: var(--bar-fill);
+}
+
+.arcade__note b {
+  font-weight: 400;
+  color: var(--green);
+}
+
+.arcade__side .me {
+  margin-top: 0;
+}
+
+.me__rank {
+  margin-left: 6px;
+  font-size: 15px;
+  color: var(--bar-fill);
 }

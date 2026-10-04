@@ -1,6 +1,6 @@
 // Renders sample PNGs into preview/ so the design can be checked without deploying.
 import { mkdirSync, writeFileSync } from "node:fs";
-import { journeyLayout, journeyTree, parseJourneyQuery, BUTTON_SIZE, PRODUCT_SIZE, PRODUCT_WIDE_SIZE, productWideTree, buttonTree, cardSize, cardTree, parseCardQuery, parseProductQuery, png, productTree } from "../lib/render.js";
+import { GAME_SIZE, gameTree, parseGameQuery, parsePodiumQuery, podiumSize, podiumTree, journeyLayout, journeyTree, parseJourneyQuery, BUTTON_SIZE, PRODUCT_SIZE, PRODUCT_WIDE_SIZE, productWideTree, buttonTree, cardSize, cardTree, parseCardQuery, parseProductQuery, png, productTree } from "../lib/render.js";
 
 mkdirSync("preview", { recursive: true });
 const save = async (name, res) => writeFileSync(`preview/${name}.png`, Buffer.from(await res.arrayBuffer()));
@@ -26,4 +26,17 @@ const journey = parseJourneyQuery(new URLSearchParams(
   "&n=2~next~REF %26 RREF&n=3~later~Next Topic&e=0-1&e=1-2&e=1-3&e=2-4&e=3-4"));
 const journeyBox = journeyLayout(journey.nodes);
 await save("journey", png(journeyTree(journey, journeyBox), journeyBox.size));
+const game = parseGameQuery(new URLSearchParams(
+  "course=Linear Algebra&code=QGYA6Y&q=8&s=20&t=Row Operations&t=REF %26 RREF&t=Augmented Matrices&t=Linear Systems"));
+await save("game", png(gameTree(game), GAME_SIZE));
+const arcade = parseGameQuery(new URLSearchParams(
+  "course=Linear Algebra&code=QGYA6Y&q=8&arcade=Quiz Runner&join=sprout-garden-seven.vercel.app/arcade/QGYA6Y&t=Row Operations&t=REF %26 RREF"));
+await save("game-arcade", png(gameTree(arcade), GAME_SIZE));
+for (const [file, q] of [
+  ["podium", "title=Final results&subtitle=Linear Algebra · 8 questions&p=1~6420~Ada&p=2~5310~Pranav&p=3~4100~Bob&p=4~2200~Chris&p=5~900~Dana&me=1"],
+  ["podium-two", "title=Final results&subtitle=Linear Algebra · 8 questions&p=1~3118~Pranav&p=2~1648~Ada&me=0"],
+]) {
+  const data = parsePodiumQuery(new URLSearchParams(q));
+  await save(file, png(podiumTree(data), podiumSize(data.players)));
+}
 console.log("wrote preview/*.png");

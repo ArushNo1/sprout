@@ -38,6 +38,13 @@ class RoutingTest(unittest.TestCase):
         r = choose_route("please forget my course", False, TUTOR, True)
         self.assertEqual((r.specialist, r.text, r.start), (TUTOR, "please forget my course", False))
 
+    def test_topic_lists_go_to_curriculum(self):
+        for text in ("Row operations\nREF & RREF\nDeterminants\nEigenvalues",
+                     "Row operations, REF & RREF, Determinants"):
+            r = choose_route(text, False, TUTOR, True)
+            self.assertEqual((r.specialist, r.text), (CURRICULUM, text))
+        self.assertEqual(choose_route("quiz, review, teach me", False, TUTOR, True).specialist, TUTOR)
+
     def test_games(self):
         r = choose_route("let's play a kahoot game with my friends", False, TUTOR, True)
         self.assertEqual((r.specialist, r.text, r.start), (TUTOR, "let's play a kahoot game with my friends", False))

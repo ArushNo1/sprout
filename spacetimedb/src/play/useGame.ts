@@ -61,6 +61,7 @@ export function useGame(code: string) {
     question,
     ranked,
     me,
+    answers,
     answersNow,
     myAnswer,
     isHost,

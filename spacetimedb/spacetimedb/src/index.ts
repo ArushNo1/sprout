@@ -980,7 +980,9 @@ export const seed_demo = spacetimedb.reducer(
 // `advance_game`. Each question ends when its timer fires (`end_question`), when
 // everyone has answered, or when the host skips ahead.
 
-const GAME_STATUSES = ['lobby', 'question', 'reveal', 'finished'];
+const GAME_STATUSES = ['lobby', 'question', 'reveal', 'finished', 'arcade'];
+const GAME_MODES = ['live', 'arcade'];
+const ARCADE_TEMPLATES = ['runner', 'meteor'];
 const MAX_PLAYERS = 200;
 const MAX_QUESTIONS = 20;
 // Answers sent right at the buzzer still count.
@@ -1134,12 +1136,17 @@ export const create_game = spacetimedb.reducer(
     hostAddress: t.string(),
     courseId: t.u64(),
     title: t.string(),
+    mode: t.string(),
+    template: t.string(),
     secondsPerQuestion: t.u32(),
     hostKey: t.string(),
     questions: t.array(GameQuestionInput),
   },
-  (ctx, { hostAddress, courseId, title, secondsPerQuestion, hostKey, questions }) => {
+  (ctx, { hostAddress, courseId, title, mode, template, secondsPerQuestion, hostKey, questions }) => {
     requireAgent(ctx);
+    oneOf(mode, GAME_MODES, 'mode');
+    const arcade = mode === 'arcade';
+    if (arcade) oneOf(template, ARCADE_TEMPLATES, 'template');
     requireLearner(ctx, hostAddress);
     requireCourse(ctx, courseId, hostAddress);
     if (hostKey.length < 16) throw new SenderError('Host key is too short');
@@ -1176,7 +1183,9 @@ export const create_game = spacetimedb.reducer(
       hostAddress,
       courseId,
       title: title.trim().slice(0, 80) || 'Sprout game',
-      status: 'lobby',
+      mode,
+      template: arcade ? template : '',
+      status: arcade ? 'arcade' : 'lobby',
       questionIndex: 0,
       questionCount: questions.length,
       secondsPerQuestion,
@@ -1193,9 +1202,9 @@ export const create_game = spacetimedb.reducer(
         conceptId: q.conceptId,
         prompt: q.prompt,
         choices: q.choices,
-        correctIndex: undefined,
-        explanation: undefined,
-        choiceCounts: [],
+        correctIndex: arcade ? q.answer : undefined,
+        explanation: arcade ? q.explanation || undefined : undefined,
+        choiceCounts: arcade ? q.choices.map(() => 0) : [],
       });
     ctx.db.gameSecret.insert({
       gameId: game.id,
@@ -1280,6 +1289,7 @@ export const advance_game = spacetimedb.reducer(
     const game = findGame(ctx, code);
     requireHost(ctx, game);
     oneOf(game.status, GAME_STATUSES, 'status');
+    if (game.mode === 'arcade') throw new SenderError('Arcade games run themselves');
     if (game.status === 'lobby') {
       if (gamePlayers(ctx, game.id).length === 0)
         throw new SenderError('Wait for someone to join');
@@ -1301,6 +1311,7 @@ export const end_game = spacetimedb.reducer(
     requireHost(ctx, game);
     if (game.status === 'question') revealQuestion(ctx, game);
     if (game.status !== 'finished') finishGame(ctx, ctx.db.game.id.find(game.id)!);
+    // (Arcade games can be ended too: the board freezes and no more answers count.)
   }
 );
 
@@ -1358,5 +1369,49 @@ export const end_question = spacetimedb.reducer(
     )
       return;
     revealQuestion(ctx, game);
+  }
+);
+
+// An answer from an arcade game. Each player plays at their own pace, so only
+// the first answer to each question counts (replays are practice). Scored like
+// a live game answered instantly: 1000 points plus the streak bonus.
+export const arcade_answer = spacetimedb.reducer(
+  { code: t.string(), questionIndex: t.u32(), choice: t.u32() },
+  (ctx, { code, questionIndex, choice }) => {
+    const game = findGame(ctx, code);
+    if (game.mode !== 'arcade') throw new SenderError('Not an arcade game');
+    if (game.status !== 'arcade') throw new SenderError('That game has ended');
+    const me = gamePlayers(ctx, game.id).find(pl => pl.identity.isEqual(ctx.sender));
+    if (!me) throw new SenderError('Join the game first');
+    const question = [...ctx.db.gameQuestion.gameId.filter(game.id)].find(
+      q => q.index === questionIndex
+    );
+    if (!question) throw new SenderError('No such question');
+    if (choice >= question.choices.length) throw new SenderError('No such choice');
+    if (questionAnswers(ctx, game.id, questionIndex).some(a => a.playerId === me.id)) return;
+
+    const secret = ctx.db.gameSecret.gameId.find(game.id)!;
+    const correct = choice === secret.answers[questionIndex];
+    const streak = correct ? me.streak + 1 : 0;
+    const points = scorePoints(correct, 0, 1, streak);
+    ctx.db.playerAnswer.insert({
+      id: 0n,
+      gameId: game.id,
+      playerId: me.id,
+      questionIndex,
+      answeredMs: Math.max(0, Number((ctx.timestamp.microsSinceUnixEpoch - me.joinedAt.microsSinceUnixEpoch) / 1000n)),
+      correct,
+      points,
+    });
+    ctx.db.player.id.update({
+      ...me,
+      score: me.score + points,
+      streak,
+      correctCount: me.correctCount + (correct ? 1 : 0),
+    });
+    const counts = question.choices.map((_, i) => question.choiceCounts[i] ?? 0);
+    counts[choice]++;
+    ctx.db.gameQuestion.id.update({ ...question, choiceCounts: counts });
+    if (me.learnerAddress) recordGameAttempt(ctx, me.learnerAddress, question, correct);
   }
 );

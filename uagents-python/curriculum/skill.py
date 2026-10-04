@@ -13,6 +13,7 @@ the student's mastery rows. Without SPACETIMEDB_TOKEN maps stay in the agent's o
 import asyncio
 import json
 import os
+import re
 import time
 from datetime import datetime, timezone
 from typing import Optional
@@ -29,6 +30,18 @@ from .prompt import SYSTEM_PROMPT, user_prompt
 ASI_URL = "https://api.asi1.ai/v1/chat/completions"
 MODEL = os.getenv("ASI_ONE_MODEL", "asi1-mini")
 MIN_SYLLABUS_CHARS = 80
+TOPIC_SPLIT = re.compile(r"[\n,;•·]|\s-\s|^\s*[-*\d.)]+\s", re.M)
+
+
+def topics(text: str) -> list:
+    """The items of a pasted topic list ("Row operations, REF & RREF, Determinants" or one per line)."""
+    return [t.strip(" -*.)\t") for t in TOPIC_SPLIT.split(text or "") if len(t.strip(" -*.)\t")) >= 2]
+
+
+def mappable(syllabus: str, course_name: str = "") -> bool:
+    """Enough to build a map from: a real syllabus, a list of two or more topics, or a course name
+    (the model fills in a standard sequence for those)."""
+    return len(syllabus.strip()) >= MIN_SYLLABUS_CHARS or len(topics(syllabus)) >= 2 or bool(course_name.strip())
 
 
 def map_key(sender: str, what: str) -> str:
@@ -176,12 +189,14 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
 
     if action == "build_map":
         syllabus = (selection.get("syllabus") or "").strip()
-        if len(syllabus) < MIN_SYLLABUS_CHARS:
+        name = (selection.get("course_name") or "").strip()
+        if not mappable(syllabus, name):
             await ctx.send(sender, text_message(
-                "That syllabus is too short to map. Paste the units, weekly schedule, or lecture topics."))
-            await ctx.send(sender, upload_card(selection.get("course_name", ""), selection.get("exam_date", ""), syllabus))
+                "Give me a course name or at least two topics (one per line or comma-separated) and I'll map the rest."))
+            await ctx.send(sender, upload_card(name, selection.get("exam_date", ""), syllabus))
             return
-        await reply_with_map(ctx, sender, syllabus, selection.get("course_name") or None, selection.get("exam_date") or None)
+        await reply_with_map(ctx, sender, syllabus or f"A standard course in {name}.", name or None,
+                             selection.get("exam_date") or None)
     elif action == "sample":
         await reply_with_map(ctx, sender, SAMPLE_SYLLABUS, SAMPLE_COURSE, selection.get("exam_date") or None)
     elif action == "edit_map":
@@ -204,7 +219,7 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
             "Next up is a short quiz to see where you're starting from."))
     elif text.lower() == "json" and ctx.storage.get(map_key(sender, "map")):
         await ctx.send(sender, text_message(f"```json\n{json.dumps(ctx.storage.get(map_key(sender, 'map')), indent=2)}\n```"))
-    elif len(text) >= MIN_SYLLABUS_CHARS:
+    elif len(text) >= MIN_SYLLABUS_CHARS or len(topics(text)) >= 3:
         await reply_with_map(ctx, sender, text)
     else:
         await ctx.send(sender, upload_card())

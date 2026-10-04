@@ -55,7 +55,7 @@ Reads are open: all tables except `config` and `agent` are public, so learner da
 | `session` | `id` | start/end, recap summary used to open the next chat |
 | `next_step` | `address:course_id` | latest recommendation from `compute_next_step` |
 | `study_card` | `id` | generated quiz / flashcard / worked-example payloads (JSON) |
-| `game` | `id` (`code` unique) | a live game: status `lobby`/`question`/`reveal`/`finished`, current question, timer start, host identity |
+| `game` | `id` (`code` unique) | `mode` `live` (Kahoot-style, status `lobby`/`question`/`reveal`/`finished`) or `arcade` (status `arcade`/`finished`, `template` `runner`/`meteor`), current question, timer start, host identity |
 | `game_question` | `id` | prompt and choices; `correct_index`, `explanation` and `choice_counts` stay empty until the reveal |
 | `game_secret` | `game_id` | **private**: host key and answer key |
 | `player` | `id` | name, score, streak, correct count, and `learner_address` when playing from the student's own link |
@@ -96,12 +96,13 @@ Players and hosts call these from the play site with their own (anonymous) ident
 
 | Reducer | Arguments | Notes |
 |---|---|---|
-| `create_game` | `host_address, course_id, title, seconds_per_question, host_key, questions[]` | Agents only. `questions`: `{concept_id, prompt, choices[2-4], answer, explanation}`, 1-20 of them, all from that course. Makes a six-character code (read it back with `SELECT code, created_at FROM game WHERE host_address = ...`). Clears the host's finished games and any older than a day |
+| `create_game` | `host_address, course_id, title, mode, template, seconds_per_question, host_key, questions[]` | Agents only. Arcade games publish the answers with the questions, since the game reacts in-browser. `questions`: `{concept_id, prompt, choices[2-4], answer, explanation}`, 1-20 of them, all from that course. Makes a six-character code (read it back with `SELECT code, created_at FROM game WHERE host_address = ...`). Clears the host's finished games and any older than a day |
 | `claim_host` | `code, host_key` | Makes the caller the host screen; the last screen to claim wins |
 | `join_game` | `code, name, host_key?` | Names are 1-20 characters and unique per game (case-insensitive). With the right key the player is linked to `host_address` and their answers update mastery. Calling it again renames |
 | `leave_game` | `code` | Lobby only |
 | `advance_game` | `code` | Host only: lobby → first question (needs a player), question → reveal, reveal → next question or finished |
 | `end_game` | `code` | Host only: reveals the current question if needed, then finishes |
+| `arcade_answer` | `code, question_index, choice` | Arcade games only. The first answer per player per question counts (replays are practice): 1000 points plus the streak bonus, live choice counts, and mastery for a linked player |
 | `submit_answer` | `code, question_index, choice` | One per player per question, only while the question is open. Reveals early once everyone has answered |
 
 Scoring (`scorePoints` in `algorithms.ts`): a correct answer earns 500-1000 points depending on time left, plus 100 per answer in a row after the first (capped at 500). At each reveal, a linked player's answer runs the same update as `record_attempt` with kind `game`; unanswered questions don't count.

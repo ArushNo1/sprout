@@ -3,11 +3,13 @@
 //   /play/CODE            join a game (code prefilled)
 //   /play/CODE?k=KEY      join as the learner who made it (counts toward mastery)
 //   /host/CODE?k=KEY      the host screen
+//   /arcade/CODE(?k=KEY)  an arcade game (same join rules as /play)
 import { GAME_CODE_LENGTH, normalizeCode } from '../../spacetimedb/src/algorithms';
 
 export type Route =
   | { kind: 'play'; code: string | null; key: string | null }
-  | { kind: 'host'; code: string; key: string | null };
+  | { kind: 'host'; code: string; key: string | null }
+  | { kind: 'arcade'; code: string; key: string | null };
 
 export function parseRoute(pathname: string, search: string): Route | null {
   const parts = pathname.split('/').filter(Boolean);
@@ -15,6 +17,7 @@ export function parseRoute(pathname: string, search: string): Route | null {
   const code = parts[1] ? normalizeCode(decodeURIComponent(parts[1])) : null;
   if (parts[0] === 'play') return { kind: 'play', code: code || null, key };
   if (parts[0] === 'host' && code) return { kind: 'host', code, key };
+  if (parts[0] === 'arcade' && code) return { kind: 'arcade', code, key };
   return null;
 }
 

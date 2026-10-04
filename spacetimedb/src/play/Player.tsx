@@ -72,7 +72,7 @@ function PlayGame({ code, playKey }: { code: string; playKey: string | null }) {
   );
 }
 
-function JoinForm({ code, playKey }: { code: string; playKey: string | null }) {
+export function JoinForm({ code, playKey }: { code: string; playKey: string | null }) {
   const join = useReducer(reducers.joinGame);
   const [name, setName] = useState(savedName);
   const [error, setError] = useState<string | null>(null);
@@ -164,10 +164,12 @@ function PlayStage({ g, code }: { g: GameState; code: string }) {
           </p>
           {me.learnerAddress && (
             <p className="result__garden">
-              Your answers were saved to Sprout.{' '}
+              Your answers were saved to Sprout. Tap Results in the chat to
+              see what moved, or{' '}
               <a href={`/?u=${encodeURIComponent(me.learnerAddress)}&course=${game.courseId}`}>
-                See your garden
+                see your garden
               </a>
+              .
             </p>
           )}
         </section>

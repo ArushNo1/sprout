@@ -11,7 +11,7 @@ COURSE_WORDS = re.compile(r"\b(syllabus|new course|add (a )?course|another cours
 STUDY_WORDS = re.compile(r"\b(keep going|continue|study|quiz|review|teach|learn|practice|progress|"
                          r"diagnostic|where (was|did) i|pick up|let'?s go|ready)\b", re.I)
 FORGET_WORDS = re.compile(r"\b(forget|delete|remove|erase)\b.*\b(course|class|progress|data|history)\b", re.I)
-GAME_WORDS = re.compile(r"\b(games?|kahoot|gimkit|blooket|quiz (my|with) friends|play with)\b", re.I)
+GAME_WORDS = re.compile(r"\b(games?|kahoot|gimkit|blooket|quiz (my|with) friends|play with|arcade|nexus)\b", re.I)
 SYLLABUS_HINTS = re.compile(r"\b(week|unit|chapter|lecture|module|midterm|final|exam)\b", re.I)
 
 
@@ -35,8 +35,16 @@ def card_action(text: str):
     return sel.get("action") if isinstance(sel, dict) else None
 
 
+def looks_like_topic_list(text: str) -> bool:
+    """Three or more short items, one per line or comma-separated: "Row operations, REF & RREF, Determinants"."""
+    items = [t.strip(" -*.)\t") for t in re.split(r"[\n,;•]", text) if t.strip(" -*.)\t")]
+    return (len(items) >= 3 and all(len(t) <= 60 for t in items) and not card_action(text)
+            and not (STUDY_WORDS.search(text) or GAME_WORDS.search(text) or FORGET_WORDS.search(text)))
+
+
 def looks_like_syllabus(text: str) -> bool:
-    return len(text) >= 200 or (len(text) >= 80 and len(SYLLABUS_HINTS.findall(text)) >= 2)
+    return (len(text) >= 200 or (len(text) >= 80 and len(SYLLABUS_HINTS.findall(text)) >= 2)
+            or looks_like_topic_list(text))
 
 
 def choose_route(text: str, new_chat: bool, cards_from, has_course: bool) -> Route:

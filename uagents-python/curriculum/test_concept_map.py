@@ -10,6 +10,17 @@ from curriculum.concept_map import extract_json, mentions_exam_date, normalize
 EXAMPLE = Path(__file__).parent / "examples" / "data_structures.raw.json"
 
 
+class TopicListTest(unittest.TestCase):
+    def test_short_lists_and_course_names_are_enough(self):
+        from curriculum.skill import mappable, topics
+        self.assertEqual(topics("Row operations, REF & RREF\nDeterminants"), ["Row operations", "REF & RREF", "Determinants"])
+        self.assertEqual(topics("- Big-O\n- Linked lists"), ["Big-O", "Linked lists"])
+        self.assertTrue(mappable("Limits, Derivatives"))
+        self.assertTrue(mappable("", "MATH 1554"))
+        self.assertFalse(mappable("Limits"))
+        self.assertFalse(mappable("", ""))
+
+
 class NormalizeTest(unittest.TestCase):
     def test_example_order_respects_prerequisites(self):
         m = normalize(json.loads(EXAMPLE.read_text()))

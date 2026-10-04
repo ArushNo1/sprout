@@ -16,6 +16,8 @@ export default __t.row({
   hostAddress: __t.string().name("host_address"),
   courseId: __t.u64().name("course_id"),
   title: __t.string(),
+  mode: __t.string(),
+  template: __t.string(),
   status: __t.string(),
   questionIndex: __t.u32().name("question_index"),
   questionCount: __t.u32().name("question_count"),

@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.tsx';
+import Arcade from './play/Arcade.tsx';
 import Host from './play/Host.tsx';
 import Player from './play/Player.tsx';
 import { parseRoute } from './play/route.ts';
@@ -45,10 +46,14 @@ const connectionBuilder = DbConnection.builder()
 
 // /play and /host are live games; everything else is the garden.
 const route = parseRoute(window.location.pathname, window.location.search);
-if (route) document.title = route.kind === 'host' ? `Host ${route.code} · Sprout live` : 'Sprout live';
+if (route)
+  document.title =
+    route.kind === 'host' ? `Host ${route.code} · Sprout live` : route.kind === 'arcade' ? 'Sprout arcade' : 'Sprout live';
 const page =
   route?.kind === 'host' ? (
     <Host code={route.code} hostKey={route.key} />
+  ) : route?.kind === 'arcade' ? (
+    <Arcade code={route.code} playKey={route.key} />
   ) : route?.kind === 'play' ? (
     <Player code={route.code} playKey={route.key} />
   ) : (

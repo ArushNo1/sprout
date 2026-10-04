@@ -37,6 +37,7 @@ import {
 import AddConceptReducer from "./add_concept_reducer";
 import AddPrerequisiteReducer from "./add_prerequisite_reducer";
 import AdvanceGameReducer from "./advance_game_reducer";
+import ArcadeAnswerReducer from "./arcade_answer_reducer";
 import ClaimHostReducer from "./claim_host_reducer";
 import ComputeNextStepReducer from "./compute_next_step_reducer";
 import ConfirmCourseReducer from "./confirm_course_reducer";
@@ -314,6 +315,7 @@ const reducersSchema = __reducers(
   __reducerSchema("add_concept", AddConceptReducer),
   __reducerSchema("add_prerequisite", AddPrerequisiteReducer),
   __reducerSchema("advance_game", AdvanceGameReducer),
+  __reducerSchema("arcade_answer", ArcadeAnswerReducer),
   __reducerSchema("claim_host", ClaimHostReducer),
   __reducerSchema("compute_next_step", ComputeNextStepReducer),
   __reducerSchema("confirm_course", ConfirmCourseReducer),

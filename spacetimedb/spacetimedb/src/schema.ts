@@ -196,7 +196,12 @@ const game = table(
     hostAddress: t.string().index('btree'),
     courseId: t.u64(),
     title: t.string(),
-    // 'lobby' | 'question' | 'reveal' | 'finished'
+    // 'live': everyone answers the same question together, Kahoot-style.
+    // 'arcade': each player runs an arcade game at their own pace; the board is shared.
+    mode: t.string(),
+    // Arcade game to load ('runner' | 'meteor'); empty for live games.
+    template: t.string(),
+    // live: 'lobby' | 'question' | 'reveal' | 'finished'; arcade: 'arcade' | 'finished'
     status: t.string(),
     questionIndex: t.u32(),
     questionCount: t.u32(),
@@ -208,8 +213,9 @@ const game = table(
   }
 );
 
-// What players see. `correctIndex`, `explanation` and `choiceCounts` stay empty
-// until the question is revealed.
+// What players see. In live games `correctIndex`, `explanation` and
+// `choiceCounts` stay empty until the question is revealed. Arcade games need
+// the answer on the client to react in-game, so they're filled from the start.
 const gameQuestion = table(
   { name: 'game_question', public: true },
   {

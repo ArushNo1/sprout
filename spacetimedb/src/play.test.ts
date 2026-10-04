@@ -9,6 +9,11 @@ describe('parseRoute', () => {
     expect(parseRoute('/host/ABC234/', '?k=secret')).toEqual({ kind: 'host', code: 'ABC234', key: 'secret' });
   });
 
+  it('reads arcade links', () => {
+    expect(parseRoute('/arcade/abc234', '?k=secret')).toEqual({ kind: 'arcade', code: 'ABC234', key: 'secret' });
+    expect(parseRoute('/arcade', '')).toBeNull();
+  });
+
   it('leaves other paths to the garden', () => {
     expect(parseRoute('/', '?u=agent1x')).toBeNull();
     expect(parseRoute('/host', '')).toBeNull();

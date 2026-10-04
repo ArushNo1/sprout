@@ -13,7 +13,9 @@ What changed from the plan below:
 - The host key replaces `?u=<address>`. Putting a learner address in a shareable link would let anyone write to that learner's mastery, so the agent makes a random key per game and only the student's own chat gets it.
 - Linked players' answers update mastery at each reveal (attempt kind `game`), so the garden moves during the game, not just at the end.
 - Questions are written in parallel, one model call per concept, then a blind check pass answers each one and drops any whose key it disagrees with or finds ambiguous. A game of 8 questions takes about 6 s.
-- Not built yet: gold mode, the results card in chat, Rematch, the solo Kaplay mode and the Playwright smoke test.
+- Arcade mode is the Nexus idea in a demo-safe form: Nexus's Kaplay templates adapted by hand (Quiz Runner from `quizrunner`, Meteor Blaster from `shootemup`) in `spacetimedb/public/arcade/`, filled with Sprout's checked questions at play time. Each player runs at their own pace at `/arcade/CODE`; the first run's answers go to `arcade_answer` (scored on the server, shared high-score board, mastery for the student's own link) and replays are practice. Ask Sprout for "a video game" or tap Arcade game.
+- After a game, Results (or High scores) in chat shows a podium image (`/api/podium`), the student's place, what moved in their mastery and the concept the group found hardest, with buttons to review it or play again. The invite card has its own image too (`/api/game`).
+- Not built yet: gold mode, per-game AI-written Kaplay games (the full Nexus pipeline) and a CI smoke test (a local Playwright script plays both arcade games end to end).
 
 ## What we take from Nexus, and what we don't
 

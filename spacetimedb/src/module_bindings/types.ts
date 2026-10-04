@@ -95,6 +95,8 @@ export const Game = __t.object("Game", {
   hostAddress: __t.string(),
   courseId: __t.u64(),
   title: __t.string(),
+  mode: __t.string(),
+  template: __t.string(),
   status: __t.string(),
   questionIndex: __t.u32(),
   questionCount: __t.u32(),

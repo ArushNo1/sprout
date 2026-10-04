@@ -244,3 +244,97 @@ export function parseProductQuery(params) {
     desc: clip(params.get("desc") || "", 90),
   };
 }
+
+// Live game invite: the join code as big tiles, where to join, and what's in the game.
+export const GAME_SIZE = { width: 1080, height: 700 };
+
+export function gameTree({ course, code, join, questions, seconds, topics, arcade }) {
+  const tiles = code.split("").map((ch) => h("div", {
+    display: "flex", width: 132, height: 164, alignItems: "center", justifyContent: "center",
+    borderRadius: 22, backgroundColor: COLORS.primary, color: COLORS.card, fontSize: 118, lineHeight: 1,
+  }, ch));
+  const chips = topics.map((t) => h("div", {
+    display: "flex", padding: "6px 22px 10px", borderRadius: 30, backgroundColor: COLORS.track,
+    color: COLORS.green, fontSize: 32, whiteSpace: "nowrap",
+  }, t));
+  return h("div", {
+    display: "flex", width: "100%", height: "100%", backgroundColor: COLORS.card, borderRadius: 32,
+    flexDirection: "column", padding: `40px ${PAD_X}px 44px`, fontFamily: "Instrument Serif",
+  }, [
+    h("div", { display: "flex", fontSize: 36, fontStyle: "italic", color: COLORS.green }, arcade ? `arcade · ${arcade}` : "live game"),
+    h("div", { display: "flex", fontSize: titleSize(course), color: COLORS.green, lineHeight: 1.05, whiteSpace: "nowrap" }, course),
+    h("div", { display: "flex", gap: 16, justifyContent: "center", marginTop: 40 }, tiles),
+    h("div", { display: "flex", justifyContent: "center", marginTop: 26, fontSize: 38, color: COLORS.ink }, arcade ? `Play at ${join}` : `Join at ${join} and type the code`),
+    h("div", { display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center", marginTop: 30 }, chips),
+    h("div", { display: "flex", justifyContent: "center", marginTop: "auto", fontSize: 32, fontStyle: "italic", color: COLORS.barFill },
+      arcade ? `${questions} questions · play at your own pace · shared high scores` : `${questions} questions, ${seconds} seconds each`),
+  ]);
+}
+
+// Query: course, code, join, q (question count), s (seconds), repeated t=topic.
+export function parseGameQuery(params) {
+  return {
+    course: clip(params.get("course") || "Sprout", 40),
+    code: (params.get("code") || "------").replace(/[^A-Z0-9]/gi, "").toUpperCase().slice(0, 6).padEnd(6, "-"),
+    join: clip(params.get("join") || "sprout-garden-seven.vercel.app/play", 48),
+    questions: Math.max(1, Math.min(20, Number(params.get("q")) || 8)),
+    seconds: Math.max(5, Math.min(120, Number(params.get("s")) || 20)),
+    topics: params.getAll("t").slice(0, 4).map((t) => clip(t.trim(), 26)),
+    arcade: clip(params.get("arcade") || "", 24),
+  };
+}
+
+// Final standings: a podium for the top three, then rows for the rest. "me" marks the student.
+export const PODIUM_W = 1080;
+const PODIUM = { top: 40 + 80 + 44, stage: 420, row: 58, bottom: 40 };
+
+export function podiumSize(players) {
+  const extra = Math.max(0, players.length - 3);
+  return { width: PODIUM_W, height: PODIUM.top + PODIUM.stage + (extra ? 20 + extra * PODIUM.row : 0) + PODIUM.bottom };
+}
+
+export function podiumTree({ title, subtitle, players }) {
+  const byRank = (i) => players[i];
+  const step = (p) => {
+    if (!p) return h("div", { display: "flex", width: 300 }, []);
+    const place = Math.max(1, Math.min(3, p.rank));  // tied players share a step
+    const height = { 1: 230, 2: 170, 3: 120 }[place];
+    const fill = { 1: COLORS.primary, 2: COLORS.barFill, 3: COLORS.track }[place];
+    const ink = place === 3 ? COLORS.green : COLORS.card;
+    return h("div", { display: "flex", flexDirection: "column", alignItems: "center", width: 300 }, [
+      h("div", { display: "flex", fontSize: 44, color: COLORS.ink, whiteSpace: "nowrap", textDecoration: p.me ? "underline" : "none" }, clip(p.name, 14)),
+      h("div", { display: "flex", fontSize: 32, fontStyle: "italic", color: COLORS.green, marginBottom: 10 }, p.score.toLocaleString("en-US")),
+      h("div", { display: "flex", width: 300, height, borderRadius: "22px 22px 0 0", backgroundColor: fill, color: ink,
+        alignItems: "center", justifyContent: "center", fontSize: 84 }, String(p.rank)),
+    ]);
+  };
+  const rest = players.slice(3).map((p) => h("div", { display: "flex", alignItems: "center", height: 48, fontSize: 36, color: COLORS.ink }, [
+    h("div", { display: "flex", width: 80, color: COLORS.barFill }, String(p.rank)),
+    h("div", { display: "flex", width: 640, textDecoration: p.me ? "underline" : "none" }, clip(p.name, 24)),
+    h("div", { display: "flex", width: 264, justifyContent: "flex-end" }, p.score.toLocaleString("en-US")),
+  ]));
+  return h("div", {
+    display: "flex", width: "100%", height: "100%", backgroundColor: COLORS.card, borderRadius: 32,
+    flexDirection: "column", padding: `40px ${PAD_X}px ${PODIUM.bottom}px`, fontFamily: "Instrument Serif",
+  }, [
+    h("div", { display: "flex", height: 80, alignItems: "flex-end", fontSize: titleSize(title), color: COLORS.green, lineHeight: 1.05, whiteSpace: "nowrap" }, title),
+    h("div", { display: "flex", fontSize: 36, fontStyle: "italic", color: COLORS.green, marginTop: 4, whiteSpace: "nowrap" }, subtitle),
+    h("div", { display: "flex", height: PODIUM.stage, alignItems: "flex-end", justifyContent: "center", gap: 18, borderBottom: `4px solid ${COLORS.track}` },
+      [step(byRank(1)), step(byRank(0)), step(byRank(2))]),
+    ...(rest.length ? [h("div", { display: "flex", flexDirection: "column", marginTop: 20, gap: 10 }, rest)] : []),
+  ]);
+}
+
+// Query: title, subtitle, repeated p=rank~score~name, me=index of the student's row (optional).
+export function parsePodiumQuery(params) {
+  const me = params.get("me");
+  const players = params.getAll("p").slice(0, 6).map((raw, i) => {
+    const [rank = "0", score = "0", ...name] = raw.split("~");
+    return { rank: Number(rank) || i + 1, score: Number(score) || 0, name: clip(name.join("~").trim() || "Player", 24), me: me !== null && Number(me) === i };
+  });
+  return {
+    title: clip(params.get("title") || "Final results", 46),
+    subtitle: clip(params.get("subtitle") || "", 60),
+    players,
+  };
+}

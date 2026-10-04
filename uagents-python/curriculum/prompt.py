@@ -25,6 +25,7 @@ Rules:
 - An edge means a student must understand "from" before "to" makes sense. Only add direct prerequisites, not every ancestor.
 - Edges may cross units. Add prerequisites the syllabus implies but does not list (e.g. Big-O before comparing sorts), with lower confidence.
 - No cycles. Every id in edges must exist in concepts.
+- The input may be only a short topic list or a course name. Then fill in what a standard course on those topics covers: expand each topic into testable pieces, add the foundations they rely on, and still aim for 8-30 concepts.
 - Keep units in syllabus order. If there are no units, group by week or theme.
 - exam_date is the next exam on or after today. If the syllabus gives no year, use the first such date on or after today. Use null if no exam date is given.
 """

@@ -7,7 +7,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tutor import game
-from tutor.cards import game_card, parse_selection
+from tutor.cards import arcade_card, game_card, ordinal, parse_selection, results_card
 
 CONCEPTS = [
     {"id": 1, "name": "Arrays", "summary": "", "p": 0.97, "attempts": 5, "due": False},
@@ -73,15 +73,38 @@ class CreateTest(unittest.TestCase):
         with mock.patch.object(game, "call") as call, mock.patch.object(game, "sql", return_value=rows), \
                 mock.patch.object(game, "PLAY_URL", "https://play.test"):
             g = game.create_game("agent1me", 3, "DSA review", [game.clean_game_question(RAW, 4)])
-        reducer, address, course_id, title, seconds, key, questions = call.call_args.args
-        self.assertEqual((reducer, address, course_id, seconds), ("create_game", "agent1me", 3, 20))
+        reducer, address, course_id, title, mode, template, seconds, key, questions = call.call_args.args
+        self.assertEqual((reducer, address, course_id, mode, template, seconds), ("create_game", "agent1me", 3, "live", "", 20))
         self.assertGreaterEqual(len(key), 16)
         self.assertEqual(g["code"], "NEWNEW")
         self.assertEqual(g["host"], f"https://play.test/host/NEWNEW?k={key}")
         self.assertEqual(g["self"], f"https://play.test/play/NEWNEW?k={key}")
         self.assertEqual(g["join_display"], "play.test/play")
 
-    def test_card_has_links_and_buttons(self):
+    def test_arcade_game_links(self):
+        rows = [{"code": "ARC234", "created_at": [9]}]
+        with mock.patch.object(game, "call") as call, mock.patch.object(game, "sql", return_value=rows) as sql, \
+                mock.patch.object(game, "PLAY_URL", "https://play.test"):
+            g = game.create_game("agent1me", 3, "DSA review", [], "arcade", "meteor")
+        self.assertEqual(call.call_args.args[4:6], ("arcade", "meteor"))
+        self.assertIn("status = 'arcade'", sql.call_args.args[0])
+        self.assertEqual(g["self"], f"https://play.test/arcade/ARC234?k={call.call_args.args[7]}")
+        self.assertEqual((g["join"], g["join_display"]), ("https://play.test/arcade/ARC234", "play.test/arcade/ARC234"))
+        self.assertNotIn("host", g)
+
+    def test_arcade_card(self):
+        g = {**game.game_links("ARC234", "secretkey", "arcade"), "arcade": "Quiz Runner"}
+        msg = arcade_card("DSA", g, 8, ["Big-O"], ("meteor", "Meteor Blaster"))
+        self.assertIn("**Quiz Runner**", msg.content[0].text)
+        self.assertIn(g["self"], msg.content[0].text)
+        payload = json.loads(msg.content[1].metadata["card_payload"])
+        kids = payload["root"]["children"]
+        self.assertIn("arcade=Quiz%20Runner", kids[0]["src"])
+        actions = [b["action"]["selection"] for row in kids[2:] for b in row["children"]]
+        self.assertEqual(actions[:2], [{"action": "game_results", "code": "ARC234"}, {"action": "arcade", "template": "meteor"}])
+        self.assertNotIn("secretkey", json.dumps(payload))
+
+    def test_card_has_links_image_and_buttons(self):
         g = game.game_links("ABC234", "secretkey")
         msg = game_card("DSA", g, 8, 20, ["Big-O", "Heaps"])
         text = msg.content[0].text
@@ -89,10 +112,86 @@ class CreateTest(unittest.TestCase):
         self.assertIn(g["host"], text)
         self.assertIn(g["self"], text)
         payload = json.loads(msg.content[1].metadata["card_payload"])
-        buttons = [c for c in payload["root"]["children"][-1]["children"]]
-        actions = [parse_selection(json.dumps(b["action"]))["action"] for b in buttons]
-        self.assertEqual(actions, ["game", "home"])
+        kids = payload["root"]["children"]
+        self.assertIn("/api/game?", kids[0]["src"])
+        self.assertIn("code=ABC234", kids[0]["src"])
+        self.assertIn("t=Big-O", kids[0]["src"])
+        actions = [b["action"]["selection"] for row in kids[2:] for b in row["children"]]
+        self.assertEqual([a["action"] for a in actions], ["game_results", "game", "home"])
+        self.assertEqual(actions[0]["code"], "ABC234")
         self.assertNotIn("secretkey", json.dumps(payload))
+
+
+ROWS = {
+    "game": [{"id": 9, "course_id": 3, "mode": "live", "status": "finished", "question_count": 3, "created_at": [100]}],
+    "player": [{"id": 1, "name": "Ada", "score": 2100, "correct_count": 3, "learner_address": None, "joined_at": [1]},
+               {"id": 2, "name": "Me", "score": 900, "correct_count": 1, "learner_address": "agent1me", "joined_at": [2]},
+               {"id": 3, "name": "Bob", "score": 900, "correct_count": 1, "learner_address": None, "joined_at": [3]}],
+    "concept": [{"id": 4, "name": "Big-O"}, {"id": 5, "name": "Heaps"}],
+    "game_question": [{"concept_id": 4, "correct_index": 0, "choice_counts": [3, 0, 0, 0]},
+                      {"concept_id": 5, "correct_index": 1, "choice_counts": [2, 1, 0, 0]},
+                      {"concept_id": 5, "correct_index": None, "choice_counts": []}],
+    "attempt": [{"concept_id": 4, "p_before": 0.2, "p_after": 0.4, "created_at": [150]},
+                {"concept_id": 4, "p_before": 0.4, "p_after": 0.6, "created_at": [160]},
+                {"concept_id": 5, "p_before": 0.5, "p_after": 0.3, "created_at": [50]}],  # an older game
+}
+
+
+def fake_sql(query):
+    table = query.split(" FROM ")[1].split()[0]
+    return [dict(r) for r in ROWS[table]]
+
+
+class ResultsTest(unittest.TestCase):
+    def test_standings_concepts_and_what_moved(self):
+        with mock.patch.object(game, "sql", side_effect=fake_sql):
+            res = game.results("agent1me", "ABC234")
+        self.assertEqual([(p["name"], p["rank"]) for p in res["players"]], [("Ada", 1), ("Me", 2), ("Bob", 2)])
+        self.assertEqual(res["me"]["name"], "Me")
+        self.assertEqual([(c["name"], round(c["share"], 2)) for c in res["concepts"]], [("Heaps", 0.33), ("Big-O", 1.0)])
+        self.assertEqual(res["moved"], [{"name": "Big-O", "from": 0.2, "to": 0.6}])
+
+    def test_missing_game(self):
+        with mock.patch.object(game, "sql", return_value=[]):
+            self.assertIsNone(game.results("agent1me", "NOPE00"))
+
+    def test_results_card(self):
+        with mock.patch.object(game, "sql", side_effect=fake_sql):
+            res = game.results("agent1me", "ABC234")
+        msg = results_card("DSA", res)
+        self.assertEqual(msg.content[0].text, "Game over. You came 2nd with 900 points.")
+        payload = json.loads(msg.content[1].metadata["card_payload"])
+        flat = json.dumps(payload)
+        self.assertIn("/api/podium?", flat)
+        self.assertIn("me=1", payload["root"]["children"][0]["src"])
+        self.assertIn("Big-O: 20% \\u2192 60%", flat)
+        self.assertIn("Hardest for the group: Heaps (33% of answers right)", flat)
+        review = [b for row in payload["root"]["children"] if row.get("type") == "group" and row.get("direction") == "row"
+                  for b in row["children"] if b.get("type") == "button"]
+        self.assertEqual(review[0]["action"]["selection"], {"action": "teach", "concept_id": 5})
+
+    def test_unfinished_and_empty_games(self):
+        with mock.patch.object(game, "sql", side_effect=fake_sql):
+            res = game.results("agent1me", "ABC234")
+        res["status"] = "question"
+        self.assertIn("still going", results_card("DSA", res).content[0].text)
+        self.assertIn("Nobody joined", results_card("DSA", {**res, "players": []}).content[0].text)
+
+    def test_arcade_results_wording(self):
+        with mock.patch.object(game, "sql", side_effect=fake_sql):
+            res = game.results("agent1me", "ABC234")
+        res.update(mode="arcade", status="arcade")
+        msg = results_card("DSA", res)
+        self.assertEqual(msg.content[0].text, "You're 2nd on the board with 900 points.")
+        payload = json.loads(msg.content[1].metadata["card_payload"])
+        self.assertIn("title=High%20scores", payload["root"]["children"][0]["src"])
+        res["template"] = "runner"
+        flat = json.dumps(json.loads(results_card("DSA", res).content[1].metadata["card_payload"]))
+        self.assertIn('{"action": "arcade", "template": "runner"}', flat)
+
+    def test_ordinal(self):
+        self.assertEqual([ordinal(n) for n in (1, 2, 3, 4, 11, 12, 13, 21, 22, 103)],
+                         ["1st", "2nd", "3rd", "4th", "11th", "12th", "13th", "21st", "22nd", "103rd"])
 
 
 if __name__ == "__main__":

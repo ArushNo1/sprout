@@ -10,19 +10,8 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-import {
-  GameQuestionInput,
-} from "./types";
-
 export default {
-  hostAddress: __t.string(),
-  courseId: __t.u64(),
-  title: __t.string(),
-  mode: __t.string(),
-  template: __t.string(),
-  secondsPerQuestion: __t.u32(),
-  hostKey: __t.string(),
-  get questions() {
-    return __t.array(GameQuestionInput);
-  },
+  code: __t.string(),
+  questionIndex: __t.u32(),
+  choice: __t.u32(),
 };

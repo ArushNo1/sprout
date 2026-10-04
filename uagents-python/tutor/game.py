@@ -120,16 +120,65 @@ def game_questions(course_name: str, concept: dict, count: int) -> list:
     return check_answers(course_name, write_questions(course_name, concept, count + 1))[:count]
 
 
-def game_links(code: str, key: str) -> dict:
+ARCADE = {"runner": "Quiz Runner", "meteor": "Meteor Blaster"}
+
+
+def game_links(code: str, key: str, mode: str = "live") -> dict:
+    site = PLAY_URL.split("://", 1)[-1]
+    if mode == "arcade":
+        return {"code": code, "self": f"{PLAY_URL}/arcade/{code}?k={key}", "join": f"{PLAY_URL}/arcade/{code}",
+                "join_display": f"{site}/arcade/{code}"}
     return {"code": code, "host": f"{PLAY_URL}/host/{code}?k={key}", "self": f"{PLAY_URL}/play/{code}?k={key}",
-            "join": f"{PLAY_URL}/play/{code}", "join_display": f"{PLAY_URL.split('://', 1)[-1]}/play"}
+            "join": f"{PLAY_URL}/play/{code}", "join_display": f"{site}/play"}
 
 
-def create_game(address: str, course_id: int, title: str, questions: list) -> dict:
+def results(address: str, code: str):
+    """A game's standings, how the group did per concept, and how this student's mastery moved.
+    None if the game is gone (games are cleared a day after they're made)."""
+    games = sql(f"SELECT id, course_id, mode, template, status, question_count, created_at FROM game WHERE code = {sql_str(code)}")
+    if not games:
+        return None
+    g = games[0]
+    players = sorted(sql(f"SELECT id, name, score, correct_count, learner_address, joined_at FROM player WHERE game_id = {int(g['id'])}"),
+                     key=lambda p: (-p["score"], micros(p["joined_at"])))
+    rank = 0
+    for i, p in enumerate(players):
+        if i == 0 or p["score"] != players[i - 1]["score"]:
+            rank = i + 1
+        p["rank"] = rank
+    names = {c["id"]: c["name"] for c in sql(f"SELECT id, name FROM concept WHERE course_id = {int(g['course_id'])}")}
+
+    # Share of answers that were right, per concept, over the questions that were revealed.
+    right, total = {}, {}
+    for q in sql(f"SELECT concept_id, correct_index, choice_counts FROM game_question WHERE game_id = {int(g['id'])}"):
+        counts = q["choice_counts"] or []
+        if q["correct_index"] is None or not sum(counts):
+            continue
+        right[q["concept_id"]] = right.get(q["concept_id"], 0) + counts[q["correct_index"]]
+        total[q["concept_id"]] = total.get(q["concept_id"], 0) + sum(counts)
+    by_concept = sorted(({"id": c, "name": names.get(c, "a concept"), "share": right[c] / total[c]} for c in total),
+                        key=lambda c: c["share"])
+
+    # This student's mastery before their first game answer and after their last, per concept.
+    start = micros(g["created_at"])
+    moved = {}
+    for a in sorted(sql(f"SELECT concept_id, p_before, p_after, created_at FROM attempt "
+                        f"WHERE user_address = {sql_str(address)} AND kind = 'game'"), key=lambda a: micros(a["created_at"])):
+        if micros(a["created_at"]) < start:
+            continue
+        m = moved.setdefault(a["concept_id"], {"name": names.get(a["concept_id"], "a concept"), "from": a["p_before"]})
+        m["to"] = a["p_after"]
+    return {"code": code, "mode": g["mode"], "template": g.get("template") or "", "status": g["status"], "questions": g["question_count"], "players": players,
+            "me": next((p for p in players if p["learner_address"] == address), None),
+            "concepts": by_concept, "moved": list(moved.values())}
+
+
+def create_game(address: str, course_id: int, title: str, questions: list, mode: str = "live", template: str = "") -> dict:
     """Stores the game and returns its code and links. The key in the host and player links is what
     lets someone run the game or play as this student, so only the student's own chat gets it."""
     key = secrets.token_urlsafe(18)
-    call("create_game", address, int(course_id), title, SECONDS_PER_QUESTION, key, questions)
-    rows = sql(f"SELECT code, created_at FROM game WHERE host_address = {sql_str(address)} AND status = 'lobby'")
+    call("create_game", address, int(course_id), title, mode, template, SECONDS_PER_QUESTION, key, questions)
+    status = "arcade" if mode == "arcade" else "lobby"
+    rows = sql(f"SELECT code, created_at FROM game WHERE host_address = {sql_str(address)} AND status = '{status}'")
     newest = max(rows, key=lambda r: micros(r["created_at"]))
-    return game_links(newest["code"], key)
+    return {**game_links(newest["code"], key, mode), "mode": mode, "template": template}
