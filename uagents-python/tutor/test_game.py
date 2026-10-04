@@ -142,6 +142,26 @@ def fake_sql(query):
     return [dict(r) for r in ROWS[table]]
 
 
+class ArcadeChoiceTest(unittest.TestCase):
+    def test_named_game_is_honored(self):
+        import asyncio
+        from datetime import datetime, timezone
+        from uuid import uuid4
+        from uagents_core.contrib.protocols.chat import ChatMessage, TextContent
+        from tutor import skill
+        seen = []
+        async def fake_handle(ctx, sender, action, sel):
+            seen.append((action, sel.get("template")))
+        class Ctx:
+            async def send(self, *a): pass
+            logger = None
+        with mock.patch.object(skill, "handle", fake_handle), mock.patch.object(skill, "enabled", return_value=True):
+            for text in ("let's play meteor blaster", "quiz runner please", "make me a video game"):
+                msg = ChatMessage(timestamp=datetime.now(timezone.utc), msg_id=uuid4(), content=[TextContent(type="text", text=text)])
+                asyncio.run(skill.on_chat(Ctx(), "agent1me", msg))
+        self.assertEqual(seen, [("arcade", "meteor"), ("arcade", "runner"), ("arcade", "")])
+
+
 class ResultsTest(unittest.TestCase):
     def test_standings_concepts_and_what_moved(self):
         with mock.patch.object(game, "sql", side_effect=fake_sql):

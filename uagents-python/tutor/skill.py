@@ -62,6 +62,10 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
     sel = {} if any(isinstance(c, StartSessionContent) for c in msg.content) else parse_selection(text)
     action = sel.get("action") or ("forget_ask" if FORGET.search(text) else "arcade" if ARCADE_WORDS.search(text)
                                    else "game" if GAME.search(text) else "start")
+    if action == "arcade" and not sel.get("template"):
+        # "play meteor blaster" / "quiz runner": honor a game named in the message.
+        named = "meteor" if re.search(r"\b(meteor|blaster)\b", text, re.I) else "runner" if re.search(r"\brunner\b", text, re.I) else ""
+        sel = {**sel, "template": named}
     try:
         await handle(ctx, sender, action, sel)
     except DbError as err:
