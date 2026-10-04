@@ -57,6 +57,7 @@
         const prompt = add([text("", { size: 22, width: W - 32, font: Sprout.FONT, lineSpacing: 4 }), pos(16, 46), color(30, 30, 30), z(31)]);
         const scoreText = add([text("", { size: 20, font: Sprout.FONT }), pos(W / 2, H - 24), anchor("center"), color(...P.card), z(31)]);
         if (practice) add([text("replay", { size: 16, font: Sprout.FONT }), pos(16, H - 32), color(...P.tan), z(31)]);
+        Sprout.hud({ panelH: C.panelH, z: 31 });  // rivals and their scores, live from the shared board
 
         // Ship
         const ship = add([
@@ -155,7 +156,7 @@
             flash(rgb(...P.wrong), 0.3);
           }
           const note = add([
-            text(right ? "Direct hit!" : choice === null ? `Too slow. Answer: ${q.choices[q.correct]}` : `Answer: ${q.choices[q.correct]}`,
+            text((right ? "Direct hit!" : choice === null ? `Too slow. Answer: ${q.choices[q.correct]}` : `Answer: ${q.choices[q.correct]}`) + Sprout.crowd(qi),
               { size: 22, width: W - 40, align: "center", font: Sprout.FONT }),
             pos(W / 2, C.shipY - 120), anchor("center"), color(...(right ? P.right : P.card)), z(40),
           ]);

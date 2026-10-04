@@ -1,5 +1,42 @@
-/* Live games. Same palette and type as the garden (index.css). */
-:root {
+/* Live games. Same palette and type as the garden and the chat cards
+   (cards/lib/render.js COLORS; --vein is the light green in leaf.png). Scoped
+   to .play so the dashboard's own --ink and dark mode don't leak in. */
+.play {
+  --card: #f4eadf;
+  --green: #0b6122;
+  --bar-fill: #4e8a5e;
+  --track: #dccbb2;
+  --ink: #222222;
+  --primary: #0a4d17;
+  --vein: #a4d7a2;
+  color-scheme: light;
+  color: var(--ink);
+  font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  font-size: 19px;
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+}
+
+.play :where(h1, h2, h3, p, ol, ul) {
+  margin: 0;
+  padding: 0;
+}
+
+.play a {
+  color: var(--green);
+}
+
+html:has(.play),
+html:has(.play) body {
+  background: #f4eadf;
+}
+
+body:has(.play) main {
+  max-width: none;
+  padding: 0;
+}
+
+.play {
   --tile-0: #0b6122;
   --tile-1: #a8482a;
   --tile-2: #2c5878;
@@ -324,6 +361,72 @@
   animation: pop 240ms ease-out;
 }
 
+.chips--center {
+  justify-content: center;
+  margin-top: 22px;
+}
+
+.chip--me {
+  background: var(--green);
+  color: var(--card);
+}
+
+/* Who's locked in: dim until their answer row arrives, then lit. */
+.roster {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.roster__p {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 14px 5px;
+  border-radius: 999px;
+  border: 2px dashed var(--track);
+  color: var(--bar-fill);
+  transition:
+    background 200ms,
+    color 200ms,
+    border-color 200ms;
+}
+
+.roster__p--in {
+  border: 2px solid var(--green);
+  background: var(--green);
+  color: var(--card);
+  animation: lockin 320ms ease-out;
+}
+
+.roster__ms {
+  font-family: var(--plain);
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+@keyframes lockin {
+  40% {
+    transform: scale(1.12);
+  }
+}
+
+.crowd {
+  margin-top: 14px;
+  text-align: center;
+  font-style: italic;
+  color: var(--bar-fill);
+}
+
+.crowd b {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--green);
+}
+
 @keyframes pop {
   from {
     transform: scale(0.6);
@@ -533,6 +636,22 @@ button.choice:active:not(:disabled) {
   font-family: var(--plain);
 }
 
+.verdict__passed,
+.verdict__grew {
+  margin-top: 6px;
+  font-size: 18px;
+}
+
+.verdict__grew {
+  display: inline-block;
+  padding: 2px 12px 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  font-family: var(--plain);
+  font-size: 15px;
+  animation: pop 320ms ease-out 200ms backwards;
+}
+
 .verdict__streak,
 .verdict__rank {
   font-style: italic;
@@ -578,6 +697,32 @@ button.choice:active:not(:disabled) {
 
 .board__row--me {
   box-shadow: inset 0 0 0 2px var(--bar-fill);
+}
+
+/* Rows start at their place before the reveal and slide to the new one. */
+.board__row--moved {
+  position: relative;
+  animation: climb 800ms cubic-bezier(0.2, 0.8, 0.2, 1) 250ms backwards;
+}
+
+@keyframes climb {
+  from {
+    transform: translateY(calc(var(--from) * (100% + 6px)));
+  }
+}
+
+.board__move {
+  font-family: var(--plain);
+  font-size: 14px;
+  flex: none;
+}
+
+.board__move--up {
+  color: var(--green);
+}
+
+.board__move--down {
+  color: var(--wrong);
 }
 
 .board__rank {
@@ -701,4 +846,201 @@ button.choice:active:not(:disabled) {
   margin-left: 6px;
   font-size: 15px;
   color: var(--bar-fill);
+}
+
+/* ── The race (arcade sidebar) ──────────────────────────────────────────── */
+
+.race {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.race__row {
+  display: grid;
+  grid-template-columns: 3ch 1fr auto;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 8px 14px 10px;
+  border-radius: 10px;
+  background: var(--paper);
+}
+
+.race__row--me {
+  box-shadow: inset 0 0 0 2px var(--bar-fill);
+}
+
+.race__rank {
+  font-family: var(--plain);
+  color: var(--bar-fill);
+}
+
+.race__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.race__score {
+  font-family: var(--plain);
+  font-size: 18px;
+}
+
+.race__track {
+  grid-column: 2 / 3;
+  height: 6px;
+  margin-top: 4px;
+  border-radius: 3px;
+  background: var(--track);
+  overflow: hidden;
+}
+
+.race__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--bar-fill);
+  transition: width 400ms ease-out;
+}
+
+.race__done {
+  font-family: var(--plain);
+  font-size: 13px;
+  color: var(--bar-fill);
+}
+
+.feed {
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  margin-top: 14px;
+  font-size: 16px;
+  color: var(--bar-fill);
+}
+
+.feed__item {
+  animation: pop 240ms ease-out;
+}
+
+.feed__item b {
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.feed__item--right b {
+  color: var(--green);
+}
+
+.feed__pts {
+  margin-left: 6px;
+  font-family: var(--plain);
+  font-size: 13px;
+  color: var(--green);
+}
+
+/* ── Mastery growth and the host's recap ────────────────────────────────── */
+
+.growth__list,
+.recap__list {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.growth__row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  padding: 8px 14px 10px;
+  border-radius: 10px;
+  background: var(--paper);
+}
+
+.growth__name {
+  min-width: 0;
+  color: var(--green);
+}
+
+.growth__nums {
+  font-family: var(--plain);
+  font-size: 15px;
+  color: var(--bar-fill);
+}
+
+.growth__nums b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.growth__bar {
+  position: relative;
+  grid-column: 1 / -1;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--track);
+  overflow: hidden;
+}
+
+.growth__was,
+.growth__delta {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transition:
+    left 600ms ease-out,
+    width 600ms ease-out;
+}
+
+.growth__was {
+  left: 0;
+  background: var(--bar-fill);
+}
+
+.growth__delta--up {
+  background: var(--vein);
+}
+
+.growth__delta--down {
+  background: var(--wrong);
+  opacity: 0.6;
+}
+
+.recap__row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--paper);
+}
+
+.recap__concept {
+  color: var(--green);
+}
+
+.recap__prompt {
+  grid-column: 1 / 2;
+  font-family: var(--plain);
+  font-size: 15px;
+  color: var(--bar-fill);
+}
+
+.recap__score {
+  grid-row: 1 / 3;
+  grid-column: 2;
+  align-self: center;
+  font-family: var(--plain);
+  font-size: 18px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play *,
+  .play *::before,
+  .play *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

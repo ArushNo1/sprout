@@ -50,6 +50,31 @@ export function standings<
   });
 }
 
+/** Places gained (negative: lost), list rows moved, and who was overtaken. */
+export type Move = { places: number; rows: number; passed: string[] };
+
+/**
+ * How the board moved on one question: rebuild everyone's standing before its
+ * points landed and compare. Every screen derives this from the same rows.
+ */
+export function boardMoves<
+  T extends { id: bigint; name: string; score: number; joinedAt: { microsSinceUnixEpoch: bigint } },
+>(players: readonly T[], earned: ReadonlyMap<bigint, number>): Map<bigint, Move> {
+  const now = standings(players);
+  const before = standings(players.map(p => ({ ...p, score: p.score - (earned.get(p.id) ?? 0) })));
+  const was = new Map(before.map((p, i) => [p.id, { rank: p.rank, pos: i }]));
+  const out = new Map<bigint, Move>();
+  now.forEach((p, i) => {
+    const b = was.get(p.id)!;
+    out.set(p.id, {
+      places: b.rank - p.rank,
+      rows: b.pos - i,
+      passed: now.filter(o => was.get(o.id)!.pos < b.pos && o.rank > p.rank).map(o => o.name),
+    });
+  });
+  return out;
+}
+
 export const ordinal = (n: number) => {
   const s = ['th', 'st', 'nd', 'rd'];
   const v = n % 100;

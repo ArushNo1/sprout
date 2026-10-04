@@ -2,11 +2,22 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useReducer } from 'spacetimedb/react';
 import { normalizeCode } from '@/lib/algorithms';
 import { reducers } from '@/lib/module_bindings';
-import { Choices, Frame, Leaderboard, Notice, Timer, gate } from '@/components/play/parts';
+import { Choices, CrowdLine, Frame, GrowthList, Leaderboard, Notice, Roster, Timer, gate } from '@/components/play/parts';
 import { looksLikeCode, ordinal, secondsLeft } from '@/components/play/route';
-import { errorText, startedMs, useGame, useNow, type GameState } from '@/components/play/useGame';
+import { errorText, pct, startedMs, useGame, useGrowth, useNow, type GameState } from '@/components/play/useGame';
 
 const NAME_KEY = 'sprout-play-name';
+
+export const gardenHref = (address: string, courseId: bigint) =>
+  `/${encodeURIComponent(address)}/garden?course=${courseId}`;
+
+function buzz(pattern: number | number[]) {
+  try {
+    navigator.vibrate?.(pattern);
+  } catch {
+    /* not supported */
+  }
+}
 
 function savedName() {
   try {
@@ -132,8 +143,14 @@ function PlayStage({ g, code }: { g: GameState; code: string }) {
   // What this device picked; the server keeps choices private until the reveal.
   const [picked, setPicked] = useState<{ index: number; choice: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const growth = useGrowth(me.learnerAddress, game.courseId, me.joinedAt.microsSinceUnixEpoch);
+  const right = g.myAnswer?.correct === true;
 
   useEffect(() => setError(null), [game.questionIndex, game.status]);
+  // A small buzz when the answer lands, so a phone in hand feels the reveal.
+  useEffect(() => {
+    if (game.status === 'reveal') buzz(right ? 40 : [30, 60, 30]);
+  }, [game.status, game.questionIndex]);
 
   const head = (
     <header className="me">
@@ -147,9 +164,17 @@ function PlayStage({ g, code }: { g: GameState; code: string }) {
       <>
         {head}
         <Notice title="You're in">
-          Watch the host's screen. The game starts when they're ready.{' '}
-          {g.ranked.length > 1 && `${g.ranked.length - 1} others are here too.`}
+          Watch the host's screen. The game starts when they're ready.
         </Notice>
+        {g.ranked.length > 1 && (
+          <ul className="chips chips--center" aria-label="Players here">
+            {g.ranked.map(p => (
+              <li key={String(p.id)} className={p.id === me.id ? 'chip chip--me' : 'chip'}>
+                {p.name}
+              </li>
+            ))}
+          </ul>
+        )}
       </>
     );
 
@@ -164,15 +189,12 @@ function PlayStage({ g, code }: { g: GameState; code: string }) {
           </p>
           {me.learnerAddress && (
             <p className="result__garden">
-              Your answers were saved to Sprout. Tap Results in the chat to
-              see what moved, or{' '}
-              <a href={`/?u=${encodeURIComponent(me.learnerAddress)}&course=${game.courseId}`}>
-                see your garden
-              </a>
-              .
+              Your answers were saved to Sprout.{' '}
+              <a href={gardenHref(me.learnerAddress, game.courseId)}>See your garden</a>.
             </p>
           )}
         </section>
+        <GrowthList list={growth.list} title="What grew" />
         <Leaderboard ranked={g.ranked} meId={me.id} />
       </>
     );
@@ -202,7 +224,10 @@ function PlayStage({ g, code }: { g: GameState; code: string }) {
         {g.myAnswer || mine !== undefined ? (
           <>
             <Choices choices={q.choices} picked={mine} />
-            <p className="waiting">Locked in. Waiting for everyone else…</p>
+            <p className="waiting">
+              Locked in. {g.answersNow.length} of {g.ranked.length} answered…
+            </p>
+            <Roster g={g} />
           </>
         ) : (
           <Choices choices={q.choices} onPick={choose} disabled={left === 0} />
@@ -214,7 +239,9 @@ function PlayStage({ g, code }: { g: GameState; code: string }) {
 
   // Reveal.
   const answered = g.myAnswer;
-  const right = answered?.correct === true;
+  const move = g.moves.get(me.id);
+  const started = game.questionStartedAt?.microsSinceUnixEpoch ?? 0n;
+  const grew = growth.latest && growth.latest.at >= started && growth.latest.conceptId === q.conceptId ? growth.latest : undefined;
   return (
     <>
       {head}
@@ -222,10 +249,26 @@ function PlayStage({ g, code }: { g: GameState; code: string }) {
         <p className="verdict__word">{!answered ? 'Out of time' : right ? 'Correct' : 'Not quite'}</p>
         {right && <p className="verdict__points">+{answered!.points.toLocaleString()}</p>}
         {me.streak >= 2 && <p className="verdict__streak">{me.streak} in a row</p>}
-        <p className="verdict__rank">You're in {ordinal(me.rank)}</p>
+        <p className="verdict__rank">
+          You're in {ordinal(me.rank)}
+          {move && move.places > 0 && ` (up ${move.places})`}
+          {move && move.places < 0 && ` (down ${-move.places})`}
+        </p>
+        {move && move.passed.length > 0 && (
+          <p className="verdict__passed">
+            You passed {move.passed.slice(0, 2).join(' and ')}
+            {move.passed.length > 2 && ` and ${move.passed.length - 2} more`}
+          </p>
+        )}
+        {grew && (
+          <p className="verdict__grew">
+            {grew.name}: {pct(grew.before)} → {pct(grew.after)} mastery
+          </p>
+        )}
       </section>
       <h2 className="prompt">{q.prompt}</h2>
       <Choices choices={q.choices} correct={q.correctIndex} picked={mine} />
+      <CrowdLine g={g} />
       {q.explanation && <p className="explain">{q.explanation}</p>}
     </>
   );

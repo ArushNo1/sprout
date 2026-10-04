@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useReducer } from 'spacetimedb/react';
 import { reducers } from '@/lib/module_bindings';
-import { Frame, Leaderboard, Notice, gate } from '@/components/play/parts';
-import { JoinForm } from '@/components/play/Player';
+import { Frame, GrowthList, Notice, gate } from '@/components/play/parts';
+import { JoinForm, gardenHref } from '@/components/play/Player';
 import { ordinal } from '@/components/play/route';
-import { errorText, useGame, type GameState } from '@/components/play/useGame';
+import { errorText, useGame, useGrowth, type GameState } from '@/components/play/useGame';
 
 const GAMES: Record<string, { name: string; how: string }> = {
   runner: { name: 'Quiz Runner', how: 'Answers fall down four lanes. Move into the right one: arrow keys, or tap a lane.' },
@@ -69,6 +69,47 @@ function ArcadeStage({ g, code }: { g: GameState; code: string }) {
     payload,
     answered: g.answers.filter(a => a.playerId === me.id).map(a => a.questionIndex),
   };
+  const growth = useGrowth(me.learnerAddress, game.courseId, me.joinedAt.microsSinceUnixEpoch);
+
+  const names = useMemo(() => new Map(g.ranked.map(p => [p.id, p.name])), [g.ranked]);
+  // The shared board as the game sees it: who's how far, and how the room did
+  // on each question. Re-sent on every change so the canvas stays live.
+  const live = useMemo(
+    () => ({
+      type: 'sprout-live',
+      total: game.questionCount,
+      rivals: g.ranked.map(p => ({
+        name: p.name,
+        done: g.answers.filter(a => a.playerId === p.id).length,
+        score: p.score,
+        me: p.id === me.id,
+      })),
+      crowd: g.questions.map(q => ({
+        right: q.correctIndex === undefined ? 0 : q.choiceCounts[q.correctIndex] ?? 0,
+        total: q.choiceCounts.reduce((n, c) => n + c, 0),
+      })),
+    }),
+    [g.ranked, g.answers, g.questions, game.questionCount, me.id]
+  );
+  const gameReady = useRef(false);
+  const seen = useRef<Set<bigint> | null>(null);
+  const sendLive = () => {
+    const win = frame.current?.contentWindow;
+    if (!win || !gameReady.current) return;
+    // Other players' new answers become in-game toasts; history doesn't.
+    const fresh = seen.current ? g.answers.filter(a => !seen.current!.has(a.id)) : [];
+    seen.current = new Set(g.answers.map(a => a.id));
+    const events = fresh
+      .filter(a => a.playerId !== me.id)
+      .map(a => {
+        const who = names.get(a.playerId) ?? 'Someone';
+        return a.correct ? `${who} got Q${a.questionIndex + 1} +${a.points.toLocaleString()}` : `${who} missed Q${a.questionIndex + 1}`;
+      });
+    win.postMessage({ ...live, events }, '*');
+  };
+  const sendLiveRef = useRef(sendLive);
+  sendLiveRef.current = sendLive;
+  useEffect(() => sendLiveRef.current(), [live]);
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
@@ -80,6 +121,8 @@ function ArcadeStage({ g, code }: { g: GameState; code: string }) {
           { ...latest.current.payload, answered: latest.current.answered },
           '*'
         );
+        gameReady.current = true;
+        sendLiveRef.current();
       } else if (msg.type === 'sprout-start') {
         start({ code }).catch(err => setError(errorText(err)));
       } else if (msg.type === 'sprout-answer' && Number.isInteger(msg.index) && Number.isInteger(msg.choice)) {
@@ -92,8 +135,8 @@ function ArcadeStage({ g, code }: { g: GameState; code: string }) {
     return () => window.removeEventListener('message', onMessage);
   }, [answer, start, code]);
 
-  const progress = (id: bigint) => g.answers.filter(a => a.playerId === id).length;
   const ready = g.questions.length === game.questionCount;
+  const feed = [...g.answers].sort((a, b) => (a.id < b.id ? 1 : -1)).slice(0, 6);
 
   return (
     <Frame wide>
@@ -128,17 +171,43 @@ function ArcadeStage({ g, code }: { g: GameState; code: string }) {
             </span>
             <span className="me__score">{me.score.toLocaleString()}</span>
           </div>
+          <h3 className="stage__sub">The race</h3>
+          <ol className="race">
+            {live.rivals.map((r, i) => {
+              const p = g.ranked[i];
+              return (
+                <li key={String(p.id)} className={r.me ? 'race__row race__row--me' : 'race__row'}>
+                  <span className="race__rank">{ordinal(p.rank)}</span>
+                  <span className="race__name">{r.name}</span>
+                  <span className="race__score">{r.score.toLocaleString()}</span>
+                  <span className="race__track" aria-label={`${r.done} of ${game.questionCount} answered`}>
+                    <span className="race__fill" style={{ width: `${(100 * r.done) / game.questionCount}%` }} />
+                  </span>
+                  <span className="race__done">
+                    {p.correctCount}/{r.done} right
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+          {feed.length > 0 && (
+            <ul className="feed" aria-live="polite">
+              {feed.map(a => (
+                <li key={String(a.id)} className={a.correct ? 'feed__item feed__item--right' : 'feed__item'}>
+                  <b>{a.playerId === me.id ? 'You' : names.get(a.playerId) ?? 'Someone'}</b>{' '}
+                  {a.correct ? `got Q${a.questionIndex + 1}` : `missed Q${a.questionIndex + 1}`}
+                  {a.correct && <span className="feed__pts">+{a.points.toLocaleString()}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+          <GrowthList list={growth.list} title={done ? 'What grew' : 'Growing as you play'} />
           {done && me.learnerAddress && (
             <p className="arcade__note">
-              Your answers were saved to Sprout. Tap Results in the chat to see
-              what moved.
+              Your answers were saved to Sprout.{' '}
+              <a href={gardenHref(me.learnerAddress, game.courseId)}>See your garden</a>.
             </p>
           )}
-          <h3 className="stage__sub">High scores</h3>
-          <Leaderboard ranked={g.ranked} meId={me.id} />
-          <p className="arcade__note">
-            {g.ranked.map(p => `${p.name} ${progress(p.id)}/${game.questionCount}`).join(' · ')}
-          </p>
           <p className="arcade__note">
             Friends can join at <b>{window.location.host}/arcade/{code}</b>
           </p>

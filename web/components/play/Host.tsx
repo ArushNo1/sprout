@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { useReducer } from 'spacetimedb/react';
 import { reducers } from '@/lib/module_bindings';
-import { Choices, Frame, Leaderboard, Notice, Timer, gate } from '@/components/play/parts';
+import { Choices, CrowdLine, Frame, Leaderboard, Notice, Roster, Timer, gate } from '@/components/play/parts';
 import { secondsLeft } from '@/components/play/route';
-import { errorText, startedMs, useGame, useNow, type GameState } from '@/components/play/useGame';
+import { errorText, pct, startedMs, useConceptNames, useGame, useNow, type GameState } from '@/components/play/useGame';
 
 export default function Host({ code, hostKey }: { code: string; hostKey: string | null }) {
   const g = useGame(code);
@@ -113,6 +113,7 @@ function HostStage({ g, code, hostKey }: { g: GameState; code: string; hostKey: 
         {header}
         <Podium ranked={g.ranked} />
         <Leaderboard ranked={g.ranked} />
+        <Recap g={g} />
       </section>
     );
   }
@@ -134,6 +135,7 @@ function HostStage({ g, code, hostKey }: { g: GameState; code: string; hostKey: 
         </div>
         <h2 className="prompt prompt--big">{q.prompt}</h2>
         <Choices choices={q.choices} />
+        <Roster g={g} showTimes />
         <div className="stage__actions">
           <button className="btn btn--quiet" onClick={next} disabled={busy}>
             Show the answer now
@@ -153,9 +155,10 @@ function HostStage({ g, code, hostKey }: { g: GameState; code: string; hostKey: 
       </div>
       <h2 className="prompt">{q.prompt}</h2>
       <Choices choices={q.choices} correct={q.correctIndex} counts={q.choiceCounts} />
+      <CrowdLine g={g} />
       {q.explanation && <p className="explain">{q.explanation}</p>}
       <h3 className="stage__sub">Leaderboard</h3>
-      <Leaderboard ranked={g.ranked} limit={5} />
+      <Leaderboard ranked={g.ranked} limit={5} moves={g.moves} />
       <div className="stage__actions">
         <button className="btn" onClick={next} disabled={busy}>
           {last ? 'Final results' : 'Next question'}
@@ -207,6 +210,39 @@ function Lobby({ code, hostKey, g }: { code: string; hostKey: string; g: GameSta
         </ul>
       </div>
     </div>
+  );
+}
+
+/** Which concepts the room found hardest, from every scored answer. */
+function Recap({ g }: { g: GameState }) {
+  const names = useConceptNames(g.game?.courseId);
+  const rows = g.questions
+    .map(q => {
+      const scored = g.answers.filter(a => a.questionIndex === q.index && a.correct !== undefined);
+      const right = scored.filter(a => a.correct).length;
+      return { q, total: scored.length, right };
+    })
+    .filter(r => r.total > 0);
+  if (rows.length === 0) return null;
+  const hardest = [...rows].sort((a, b) => a.right / a.total - b.right / b.total).slice(0, 3);
+  const overall = rows.reduce((n, r) => n + r.right, 0) / rows.reduce((n, r) => n + r.total, 0);
+  return (
+    <section className="recap">
+      <h3 className="stage__sub">
+        The room got {pct(overall)} right. Worth reviewing:
+      </h3>
+      <ul className="recap__list">
+        {hardest.map(({ q, right, total }) => (
+          <li key={String(q.id)} className="recap__row">
+            <span className="recap__concept">{names.get(q.conceptId) ?? `Question ${q.index + 1}`}</span>
+            <span className="recap__prompt">{q.prompt}</span>
+            <span className="recap__score">
+              {right} of {total}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

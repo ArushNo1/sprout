@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { ordinal } from '@/components/play/route';
-import type { GameState } from '@/components/play/useGame';
+import { pct, type GameState, type Growth, type Move } from '@/components/play/useGame';
 
 // U+FE0E keeps these as text glyphs; some phones draw ◆ as a pink emoji.
 export const SHAPES = ['▲', '◆', '●', '■'].map(s => s + '\uFE0E');
@@ -137,27 +137,117 @@ export function Choices({
   );
 }
 
+/**
+ * The standings. With `moves`, rows start where they stood before the reveal
+ * and slide to their new places, so every screen replays the same shake-up.
+ */
 export function Leaderboard({
   ranked,
   limit,
   meId,
+  moves,
 }: {
   ranked: GameState['ranked'];
   limit?: number;
   meId?: bigint;
+  moves?: Map<bigint, Move>;
 }) {
   const rows = limit ? ranked.slice(0, limit) : ranked;
   if (rows.length === 0) return null;
   return (
     <ol className="board">
-      {rows.map(p => (
-        <li key={String(p.id)} className={p.id === meId ? 'board__row board__row--me' : 'board__row'}>
-          <span className="board__rank">{ordinal(p.rank)}</span>
-          <span className="board__name">{p.name}</span>
-          {p.streak >= 2 && <span className="board__streak">{p.streak} in a row</span>}
-          <span className="board__score">{p.score.toLocaleString()}</span>
-        </li>
-      ))}
+      {rows.map(p => {
+        const m = moves?.get(p.id);
+        const cls = ['board__row', p.id === meId && 'board__row--me', m?.rows && 'board__row--moved']
+          .filter(Boolean)
+          .join(' ');
+        return (
+          <li
+            key={String(p.id)}
+            className={cls}
+            style={m?.rows ? ({ '--from': m.rows } as CSSProperties) : undefined}
+          >
+            <span className="board__rank">{ordinal(p.rank)}</span>
+            <span className="board__name">{p.name}</span>
+            {p.streak >= 2 && <span className="board__streak">{p.streak} in a row</span>}
+            {m && m.places !== 0 && (
+              <span className={m.places > 0 ? 'board__move board__move--up' : 'board__move board__move--down'}>
+                {m.places > 0 ? '▲' : '▼'}
+                {Math.abs(m.places)}
+              </span>
+            )}
+            <span className="board__score">{p.score.toLocaleString()}</span>
+          </li>
+        );
+      })}
     </ol>
+  );
+}
+
+/** Who's locked in on the current question, lit up as their answers land. */
+export function Roster({ g, showTimes = false }: { g: GameState; showTimes?: boolean }) {
+  const inAt = new Map(g.answersNow.map(a => [a.playerId, a.answeredMs]));
+  return (
+    <ul className="roster" aria-label={`${inAt.size} of ${g.ranked.length} answered`}>
+      {g.ranked.map(p => {
+        const ms = inAt.get(p.id);
+        return (
+          <li key={String(p.id)} className={ms === undefined ? 'roster__p' : 'roster__p roster__p--in'}>
+            {p.name}
+            {showTimes && ms !== undefined && <span className="roster__ms">{(ms / 1000).toFixed(1)}s</span>}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** "4 of 6 got it · fastest: Ana, 1.8 s", from the reveal's published counts. */
+export function CrowdLine({ g }: { g: GameState }) {
+  const c = g.crowd;
+  if (!c || c.total === 0) return null;
+  return (
+    <p className="crowd">
+      <b>
+        {c.right} of {c.total}
+      </b>{' '}
+      got it
+      {c.fastest && (
+        <>
+          {' '}
+          · fastest: <b>{c.fastest.name}</b>, {(c.fastest.ms / 1000).toFixed(1)}s
+        </>
+      )}
+    </p>
+  );
+}
+
+/** Mastery before and after this game, per concept. Updates as answers are scored. */
+export function GrowthList({ list, title }: { list: Growth[]; title: string }) {
+  if (list.length === 0) return null;
+  return (
+    <section className="growth">
+      <h3 className="stage__sub">{title}</h3>
+      <ul className="growth__list">
+        {list.map(gr => {
+          const up = gr.after >= gr.before;
+          return (
+            <li key={String(gr.conceptId)} className="growth__row">
+              <span className="growth__name">{gr.name}</span>
+              <span className="growth__bar" aria-hidden>
+                <span className="growth__was" style={{ width: pct(Math.min(gr.before, gr.after)) }} />
+                <span
+                  className={up ? 'growth__delta growth__delta--up' : 'growth__delta growth__delta--down'}
+                  style={{ left: pct(Math.min(gr.before, gr.after)), width: pct(Math.abs(gr.after - gr.before)) }}
+                />
+              </span>
+              <span className="growth__nums">
+                {pct(gr.before)} → <b>{pct(gr.after)}</b>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
