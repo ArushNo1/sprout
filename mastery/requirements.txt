@@ -1,0 +1,7 @@
+# mastery/ talks to SpacetimeDB through uagents-python/sprout_db.py.
+requests
+python-dotenv   # optional; loads uagents-python/.env
+pytest          # tests only
+
+# pyBKT and pandas are NOT needed here. They are only used by the offline
+# fitter (python -m mastery.fit_params); see requirements-fit.txt.

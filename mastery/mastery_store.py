@@ -1,63 +1,94 @@
 """
-mastery_store.py — Supabase persistence layer for BKT mastery scores.
+mastery_store.py — mastery reads and writes against Sprout's SpacetimeDB database.
 
-Tables expected in Supabase (Postgres):
+The database is the single source of truth. Writes go through reducers and
+reads through SQL, using the shared client in uagents-python/sprout_db.py
+(the same one the orchestrator, curriculum and tutor agents use):
 
-  mastery (
-    user_address  text,
-    concept_id    text,
-    course_id     text,
-    p_mastered    float,
-    last_seen     timestamptz,
-    PRIMARY KEY (user_address, concept_id)
-  )
+  record_answer  calls the `record_attempt` reducer, which runs the BKT update,
+                 reschedules the SM-2 review, updates the format bandit and
+                 logs the attempt, then reads the new p_mastered back.
+  get_snapshot   reads the `concept` and `mastery` rows for one course.
 
-  attempts (
-    id            bigserial PRIMARY KEY,
-    user_address  text,
-    concept_id    text,
-    format_used   text,
-    correct       boolean,
-    created_at    timestamptz DEFAULT now()
-  )
+Tables used (spacetimedb/spacetimedb/src/schema.ts; SQL columns are snake_case):
 
-Reads SUPABASE_URL and SUPABASE_KEY from the .env file in the project root.
-Install deps: pip install supabase python-dotenv
+  concept  (id, course_id, name, p_init, p_learn, p_slip, p_guess, ...)
+  mastery  (key = "<user_address>:<concept_id>", user_address, course_id,
+            concept_id, p_mastered, attempts, correct, last_seen, next_review, ...)
+  attempt  (id, user_address, course_id, concept_id, kind, format, correct,
+            p_before, p_after, created_at, ...)
+
+Environment (read by sprout_db.py; a .env in uagents-python/ or the current
+directory is loaded if python-dotenv is installed):
+
+  SPACETIMEDB_HOST   default https://maincloud.spacetimedb.com
+  SPACETIMEDB_DB     sprout-live
+  SPACETIMEDB_TOKEN  a token for a registered Sprout agent (writes need it)
+
+Every public function takes an optional `db`: any object with
+`sql(query) -> list[dict]` and `call(reducer, *args)`. It defaults to the
+sprout_db module, and tests pass a fake so nothing touches the network.
 """
 
 import logging
-import os
-from datetime import datetime, timezone
+import sys
+from pathlib import Path
 
-from dotenv import load_dotenv
-
-from bkt import DEFAULT_PARAMS, mastery_label, update_mastery
-
-# Load .env from the project root (two levels up from this file).
-load_dotenv()
+try:
+    from .bkt import DEFAULT_PARAMS, mastery_label
+except ImportError:  # run from inside mastery/ (python mastery_store.py, flat test imports)
+    from bkt import DEFAULT_PARAMS, mastery_label
 
 logger = logging.getLogger(__name__)
 
+UAGENTS_DIR = Path(__file__).resolve().parent.parent / "uagents-python"
+
+# Mirrors FORMATS and ATTEMPT_KINDS in spacetimedb/spacetimedb/src.
+FORMATS = ("worked_example", "flashcards", "diagram", "analogy")
+ATTEMPT_KINDS = ("diagnostic", "check", "practice", "review")
+
+_db = None
+
+
+def default_db():
+    """The shared sprout_db client, imported on first use."""
+    global _db
+    if _db is None:
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(UAGENTS_DIR / ".env")
+            load_dotenv()
+        except ImportError:
+            pass
+        if str(UAGENTS_DIR) not in sys.path:
+            sys.path.insert(0, str(UAGENTS_DIR))
+        import sprout_db
+        if not sprout_db.enabled():
+            logger.error("SPACETIMEDB_TOKEN is not set; database calls will fail.")
+        _db = sprout_db
+    return _db
+
+
 # ---------------------------------------------------------------------------
-# Supabase client — created once at import time.
+# Encoding helpers (same rules as sprout_db.py, kept here so callers with a
+# fake db don't need requests installed)
 # ---------------------------------------------------------------------------
 
-def _make_client():
-    """Build and return a Supabase client, or None if env vars are missing."""
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_KEY")
-    if not url or not key:
-        logger.error("SUPABASE_URL or SUPABASE_KEY not set — mastery_store will not work.")
-        return None
-    try:
-        from supabase import create_client
-        return create_client(url, key)
-    except Exception as exc:
-        logger.error("Failed to create Supabase client: %s", exc)
-        return None
+def sql_str(text) -> str:
+    """A SQL string literal."""
+    return "'" + str(text).replace("'", "''") + "'"
 
 
-_client = _make_client()
+def opt(value):
+    """A reducer Option argument: {"some": v} or {"none": []}."""
+    return {"none": []} if value is None or value == "" else {"some": value}
+
+
+def micros(ts):
+    """SQL returns timestamps as [micros]; returns int micros or None."""
+    if ts is None:
+        return None
+    return ts[0] if isinstance(ts, list) else int(ts)
 
 
 # ---------------------------------------------------------------------------
@@ -66,108 +97,107 @@ _client = _make_client()
 
 def record_answer(
     user_address: str,
-    concept_id: str,
+    concept_id,
     correct: bool,
-    format_used: str,
+    format_used: str | None = None,
+    *,
+    kind: str = "practice",
+    session_id: int | None = None,
+    question: str | None = None,
+    db=None,
 ) -> tuple[float, str]:
     """
-    Process one quiz answer for a user/concept pair.
+    Record one quiz answer and return the learner's new mastery for the concept.
 
-    Steps:
-      1. Load the current p_mastered from the `mastery` table
-         (falls back to the BKT prior if no row exists yet).
-      2. Run the BKT update.
-      3. Upsert the new p_mastered and last_seen into `mastery`.
-      4. Append a row to `attempts`.
+    Calls the `record_attempt` reducer, which does the BKT update with the
+    concept's own parameters, the SM-2 reschedule, the format bandit update
+    and the attempt log in one transaction. This function never writes the
+    mastery table itself. It then reads p_mastered back from `mastery`.
 
     Args:
-        user_address: Unique identifier for the student (ASI:One wallet address).
-        concept_id:   Identifier for the concept being quizzed.
+        user_address: The learner's ASI:One sender address.
+        concept_id:   The concept's u64 id (int, or a numeric string).
         correct:      True if the student answered correctly.
-        format_used:  Quiz format, e.g. "mcq", "flashcard", "free_recall".
+        format_used:  Teaching format in effect: worked_example, flashcards,
+                      diagram or analogy. Anything else (e.g. "mcq") is a
+                      question style rather than a teaching format, so it is
+                      sent as none and the bandit is left alone.
+        kind:         diagnostic | check | practice | review.
+        session_id:   Optional session id from `start_session`.
+        question:     Optional question text (truncated to 500 chars).
+        db:           Optional client (see module docstring).
 
     Returns:
-        (new_p_mastered, label) — safe defaults (prior, "not started") on error.
+        (new_p_mastered, label). On any error it logs and returns the safe
+        default (prior, "not started") so the agent doesn't crash.
     """
     safe_default = (DEFAULT_PARAMS["prior"], mastery_label(DEFAULT_PARAMS["prior"]))
-
-    if _client is None:
-        logger.error("record_answer: no Supabase client available.")
-        return safe_default
-
     try:
-        # --- 1. Fetch current mastery ---
-        row = (
-            _client.table("mastery")
-            .select("p_mastered")
-            .eq("user_address", user_address)
-            .eq("concept_id", concept_id)
-            .maybe_single()
-            .execute()
+        db = db or default_db()
+        cid = int(concept_id)
+        fmt = format_used if format_used in FORMATS else None
+        db.call(
+            "record_attempt",
+            user_address,
+            cid,
+            bool(correct),
+            kind,
+            opt(fmt),
+            opt(None if session_id is None else int(session_id)),
+            opt(question[:500] if question else None),
         )
-        current_p = row.data["p_mastered"] if row.data else DEFAULT_PARAMS["prior"]
-
-        # --- 2. BKT update ---
-        new_p = update_mastery(current_p, correct)
-        label = mastery_label(new_p)
-
-        # --- 3. Upsert mastery row ---
-        _client.table("mastery").upsert({
-            "user_address": user_address,
-            "concept_id":   concept_id,
-            "p_mastered":   new_p,
-            "last_seen":    datetime.now(timezone.utc).isoformat(),
-        }).execute()
-
-        # --- 4. Append attempt ---
-        _client.table("attempts").insert({
-            "user_address": user_address,
-            "concept_id":   concept_id,
-            "format_used":  format_used,
-            "correct":      correct,
-        }).execute()
-
-        return new_p, label
-
+        rows = db.sql(f"SELECT p_mastered FROM mastery WHERE key = {sql_str(f'{user_address}:{cid}')}")
+        if not rows:
+            raise LookupError("no mastery row after record_attempt")
+        new_p = float(rows[0]["p_mastered"])
+        return new_p, mastery_label(new_p)
     except Exception as exc:
         logger.error("record_answer error for %s/%s: %s", user_address, concept_id, exc)
         return safe_default
 
 
-def get_snapshot(user_address: str, course_id: str) -> list[dict]:
+def get_snapshot(user_address: str, course_id, db=None) -> list[dict]:
     """
     Return mastery info for every concept in a course, for the snapshot card.
 
-    Each returned dict has:
-      concept_id  — the concept identifier
-      p_mastered  — current mastery probability (float)
-      label       — "solid" / "shaky" / "not started"
+    Each returned dict (ordered by concept id) has:
+      concept_id   — the concept's id (int)
+      name         — the concept name
+      p_mastered   — current mastery probability; the concept's p_init if the
+                     learner has no mastery row yet (draft course)
+      label        — "solid" / "shaky" / "not started" (bkt.mastery_label)
+      attempts     — number of recorded answers
+      next_review  — next review time in microseconds since epoch, or None
 
-    Falls back to an empty list on error so the agent doesn't crash.
+    Pass {r["name"]: r["p_mastered"] for r in snapshot} to bkt.subject_mastery
+    for the "3 of 31 solid" line.
+
+    Returns [] if the course doesn't exist or belongs to another learner, and
+    logs and returns [] on error so the agent doesn't crash.
     """
-    if _client is None:
-        logger.error("get_snapshot: no Supabase client available.")
-        return []
-
     try:
-        # Fetch all mastery rows for this user in this course.
-        rows = (
-            _client.table("mastery")
-            .select("concept_id, p_mastered")
-            .eq("user_address", user_address)
-            .eq("course_id", course_id)
-            .execute()
-        )
-
-        return [
-            {
-                "concept_id": r["concept_id"],
-                "p_mastered": r["p_mastered"],
-                "label":      mastery_label(r["p_mastered"]),
-            }
-            for r in (rows.data or [])
-        ]
-
+        db = db or default_db()
+        cid = int(course_id)
+        course = db.sql(f"SELECT user_address FROM course WHERE id = {cid}")
+        if not course or course[0]["user_address"] != user_address:
+            return []
+        concepts = db.sql(f"SELECT id, name, p_init FROM concept WHERE course_id = {cid}")
+        rows = {r["concept_id"]: r for r in db.sql(
+            f"SELECT concept_id, p_mastered, attempts, next_review FROM mastery "
+            f"WHERE user_address = {sql_str(user_address)} AND course_id = {cid}")}
+        snapshot = []
+        for c in sorted(concepts, key=lambda c: c["id"]):
+            m = rows.get(c["id"])
+            p = float(m["p_mastered"]) if m else float(c["p_init"])
+            snapshot.append({
+                "concept_id":  c["id"],
+                "name":        c["name"],
+                "p_mastered":  p,
+                "label":       mastery_label(p),
+                "attempts":    m["attempts"] if m else 0,
+                "next_review": micros(m.get("next_review")) if m else None,
+            })
+        return snapshot
     except Exception as exc:
         logger.error("get_snapshot error for %s/%s: %s", user_address, course_id, exc)
         return []

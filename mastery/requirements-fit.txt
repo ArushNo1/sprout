@@ -1,0 +1,11 @@
+# Optional: only for BKT fitting (python -m mastery.fit_params).
+# Nothing else in mastery/ imports these.
+#
+# pyBKT 1.4.3 ships no wheels, so it runs its pure-Python fallback, which
+# breaks on numpy 2 and on scikit-learn 1.6+. numpy < 2 needs Python 3.12 or
+# older. This set was checked on Python 3.11.
+-r requirements.txt
+numpy<2
+pandas<2.2
+scikit-learn<1.6
+pyBKT==1.4.3

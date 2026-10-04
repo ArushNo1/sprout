@@ -15,6 +15,7 @@ import {
   FORMATS,
   SM2_INITIAL,
   bktUpdate,
+  clampBktParam,
   pickNextConcept,
   sm2Update,
   thompsonPick,
@@ -394,6 +395,41 @@ export const update_concept = spacetimedb.reducer(
       summary: summary ?? concept.summary,
       embedding: embedding ?? concept.embedding,
     });
+  }
+);
+
+// Per-concept BKT parameters fitted offline from the attempt log
+// (`python -m mastery.fit_params`). Omitted fields are unchanged. Values must
+// be probabilities; they are clamped so slip/guess stay below 0.5. A new
+// pInit only applies to mastery rows created afterwards. Doesn't call
+// requireLearner: a batch job isn't learner activity.
+export const set_concept_params = spacetimedb.reducer(
+  {
+    address: t.string(),
+    conceptId: t.u64(),
+    pInit: t.option(t.f64()),
+    pLearn: t.option(t.f64()),
+    pSlip: t.option(t.f64()),
+    pGuess: t.option(t.f64()),
+  },
+  (ctx, { address, conceptId, pInit, pLearn, pSlip, pGuess }) => {
+    requireAgent(ctx);
+    const concept = requireConcept(ctx, conceptId);
+    requireCourse(ctx, concept.courseId, address);
+    const given = { pInit, pLearn, pSlip, pGuess };
+    const next = { ...concept };
+    let changed = false;
+    for (const name of ['pInit', 'pLearn', 'pSlip', 'pGuess'] as const) {
+      const value = given[name];
+      if (value === undefined) continue;
+      const clamped = clampBktParam(name, value);
+      if (clamped === null)
+        throw new SenderError(`${name} must be a probability in [0, 1], got ${value}`);
+      next[name] = clamped;
+      changed = true;
+    }
+    if (!changed) throw new SenderError('No parameters given');
+    ctx.db.concept.id.update(next);
   }
 );
 

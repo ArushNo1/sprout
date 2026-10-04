@@ -71,6 +71,7 @@ Reads are open: all tables except `config` and `agent` are public, so learner da
 | `update_course` | `address, course_id, name?, current_unit?, exam_date?` | Omitted fields unchanged |
 | `ingest_concept_graph` | `address, course_id, concepts[], edges[]` | `concepts`: `{name, summary, embedding[], p_init?}`; `edges`: `{concept, requires, confidence}` by **name**. Replaces a draft's earlier extraction; adds to an active course. Cyclic or unknown-name edges are skipped |
 | `add_concept` / `update_concept` / `remove_concept` | see source | For the "confirm or edit the concept list" step |
+| `set_concept_params` | `address, concept_id, p_init?, p_learn?, p_slip?, p_guess?` | Per-concept BKT parameters, written by the offline fitter (`python -m mastery.fit_params`). Omitted fields unchanged; values must be in [0, 1] and are clamped to [0.001, 0.999], with slip and guess kept below 0.5. A new `p_init` only seeds mastery rows created afterwards. Doesn't touch the learner's `last_active_at` |
 | `add_prerequisite` / `remove_prerequisite` | see source | Rejects cycles |
 | `confirm_course` | `address, course_id` | Activates the course and creates a mastery row per concept |
 | `forget_course` | `address, course_id` | Deletes the course and everything tied to it |
@@ -103,4 +104,4 @@ SELECT format, alpha, beta, uses FROM format_weight WHERE user_address = '<addr>
 
 ## Tests
 
-`npx vitest run src/algorithms.test.ts` covers the BKT, SM-2, bandit and graph logic in [spacetimedb/src/algorithms.ts](spacetimedb/src/algorithms.ts).
+`npx vitest run src/algorithms.test.ts` covers the BKT (including the `set_concept_params` clamp), SM-2, bandit and graph logic in [spacetimedb/src/algorithms.ts](spacetimedb/src/algorithms.ts).

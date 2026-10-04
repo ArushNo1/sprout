@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   bktUpdate,
+  clampBktParam,
   pickNextConcept,
   sm2Update,
   SM2_INITIAL,
@@ -35,6 +36,32 @@ describe('bktUpdate', () => {
   it('stays within [0, 1]', () => {
     expect(bktUpdate(0, false, params)).toBeGreaterThanOrEqual(0);
     expect(bktUpdate(1, true, params)).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('clampBktParam', () => {
+  it('passes ordinary fitted values through', () => {
+    expect(clampBktParam('pInit', 0.3)).toBe(0.3);
+    expect(clampBktParam('pLearn', 0.12)).toBe(0.12);
+    expect(clampBktParam('pSlip', 0.08)).toBe(0.08);
+    expect(clampBktParam('pGuess', 0.2)).toBe(0.2);
+  });
+
+  it('keeps slip and guess below 0.5', () => {
+    expect(clampBktParam('pSlip', 0.7)).toBe(0.499);
+    expect(clampBktParam('pGuess', 0.5)).toBe(0.499);
+    expect(clampBktParam('pLearn', 0.7)).toBe(0.7);
+  });
+
+  it('keeps every parameter off the hard 0/1 edges', () => {
+    expect(clampBktParam('pInit', 0)).toBe(0.001);
+    expect(clampBktParam('pLearn', 1)).toBe(0.999);
+    expect(clampBktParam('pGuess', 0)).toBe(0.001);
+  });
+
+  it('rejects values that are not probabilities', () => {
+    for (const v of [-0.1, 1.5, NaN, Infinity])
+      expect(clampBktParam('pInit', v)).toBeNull();
   });
 });
 

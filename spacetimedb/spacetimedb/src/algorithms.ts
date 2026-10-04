@@ -25,6 +25,20 @@ export function bktUpdate(
   return clamp(posterior + (1 - posterior) * learn, 0, 1);
 }
 
+export type BktParamName = 'pInit' | 'pLearn' | 'pSlip' | 'pGuess';
+
+/**
+ * Clamp a fitted BKT parameter into a range the tracer can use: [0.001, 0.999]
+ * for pInit/pLearn, [0.001, 0.499] for pSlip/pGuess (at 0.5 or above a wrong
+ * answer would count as evidence of mastery). Returns null when the value
+ * isn't a probability at all.
+ */
+export function clampBktParam(name: BktParamName, value: number): number | null {
+  if (!Number.isFinite(value) || value < 0 || value > 1) return null;
+  const hi = name === 'pSlip' || name === 'pGuess' ? 0.499 : 0.999;
+  return clamp(value, 0.001, hi);
+}
+
 // ── Spaced repetition (SM-2) ─────────────────────────────────────────────────
 
 export type ReviewState = {
