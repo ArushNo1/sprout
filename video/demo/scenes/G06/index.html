@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>The router</title>
+    <script src="assets/gsap.min.js"></script>
+    <style>
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Italic.ttf") format("truetype"); font-weight: 400; font-style: italic; }
+@font-face { font-family: "DejaVu Sans Mono"; src: url("assets/DejaVuSansMono.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+:root {
+  --paper: #fbf6ef; --cream: #f4eadf; --tan: #dccbb2; --green: #0b6122; --primary: #0a4d17;
+  --mid: #4e8a5e; --vein: #a4d7a2; --bloom: #e8a33d; --wilt: #b0584c; --focus: #1f6fb2; --ink: #222222;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: transparent; }
+#root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Instrument Serif", Georgia, serif; color: var(--ink); }
+.scene { position: absolute; inset: 0; }
+.abs { position: absolute; }
+#bg { position: absolute; inset: 0;
+  background: radial-gradient(1300px 900px at 18% 12%, #ffffff 0%, rgba(255,255,255,0) 70%),
+              radial-gradient(1200px 900px at 92% 95%, #dcebd3 0%, rgba(220,235,211,0) 70%), #f3ebdd; }
+.leaf { position: absolute; width: 300px; height: auto; opacity: 0.9; }
+#leaf-a { left: -90px; top: -80px; }
+#leaf-b { right: -100px; bottom: -90px; }
+.frost { background: rgba(255,255,255,0.66); border: 2px solid rgba(11,97,34,0.16); border-radius: 36px;
+  box-shadow: 0 30px 80px rgba(11,97,34,0.14), inset 0 2px 0 rgba(255,255,255,0.85); }
+.over .frost { background: rgba(255,253,249,0.95); }
+.solid { background: #fffdf9; border: 2px solid rgba(11,97,34,0.18); border-radius: 30px;
+  box-shadow: 0 24px 60px rgba(11,97,34,0.16); }
+.kicker { position: absolute; left: 192px; top: 120px; display: flex; align-items: center; gap: 20px;
+  font-style: italic; font-size: 44px; color: var(--mid); }
+.kicker i { display: block; width: 80px; height: 4px; background: var(--vein); transform-origin: 0 50%; }
+.head { font-size: 96px; line-height: 1.02; letter-spacing: -2px; color: var(--green); }
+.chip { display: inline-flex; align-items: center; gap: 14px; font-size: 38px; color: var(--green);
+  background: rgba(164,215,162,0.38); border-radius: 999px; padding: 6px 28px 10px; white-space: nowrap; }
+.pill { display: inline-flex; align-items: center; justify-content: center; gap: 16px; border-radius: 999px; white-space: nowrap; }
+.mono { font-family: "DejaVu Sans Mono", monospace; letter-spacing: -0.5px; }
+.it { font-style: italic; }
+.dot { width: 16px; height: 16px; border-radius: 50%; background: var(--mid); display: inline-block; flex: none; }
+.plant { position: absolute; width: 100%; height: 100%; left: 0; top: 0; }
+svg text { font-family: "Instrument Serif", Georgia, serif; }
+
+#edges { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; }
+#hub { position: absolute; left: 810px; top: 410px; width: 300px; height: 300px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+#hub b { font-weight: 400; font-size: 92px; color: var(--green); line-height: 1; }
+#hub small { font-size: 30px; font-style: italic; color: var(--mid); }
+.sp { position: absolute; width: 330px; height: 110px; margin-left: -165px; margin-top: -55px; display: flex; align-items: center; justify-content: center; font-size: 52px; color: var(--green); }
+#msg { position: absolute; left: 230px; top: 520px; font-size: 36px; padding: 10px 30px 14px; background: var(--focus); color: #fff; }
+#cap { position: absolute; left: 0; right: 0; top: 925px; text-align: center; font-size: 44px; font-style: italic; color: var(--mid); }
+</style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="G06" data-start="0" data-duration="8" data-width="1920" data-height="1080">
+      <div id="bg"><img id="leaf-a" class="leaf" data-layout-allow-overflow src="assets/leaf.png" alt="" /><img id="leaf-b" class="leaf" data-layout-allow-overflow src="assets/leaf.png" alt="" /></div>
+      <section id="sc" class="scene clip" data-start="0" data-duration="8" data-track-index="1">
+
+<div class="kicker" id="kick"><i></i><span>not a single prompt</span></div>
+<svg id="edges" viewBox="0 0 1920 1080">
+<line id="e0" x1="960" y1="560" x2="520" y2="330" stroke="#dccbb2" stroke-width="6" stroke-linecap="round"/><line id="e1" x1="960" y1="560" x2="1400" y2="330" stroke="#dccbb2" stroke-width="6" stroke-linecap="round"/><line id="e2" x1="960" y1="560" x2="1400" y2="790" stroke="#dccbb2" stroke-width="6" stroke-linecap="round"/><line id="e3" x1="960" y1="560" x2="520" y2="790" stroke="#dccbb2" stroke-width="6" stroke-linecap="round"/>
+<line id="hot" x1="960" y1="560" x2="520" y2="330" stroke="#0b6122" stroke-width="9" stroke-linecap="round"/>
+</svg>
+<div class="sp frost" id="s0" style="left:520px;top:330px;border-radius:999px">Curriculum</div>
+<div class="sp frost" id="s1" style="left:1400px;top:330px;border-radius:999px">Tutor</div>
+<div class="sp frost" id="s2" style="left:1400px;top:790px;border-radius:999px">Garden</div>
+<div class="sp frost" id="s3" style="left:520px;top:790px;border-radius:999px">Arcade</div>
+<div class="frost" id="hub"><b>sprout</b><small>orchestrator</small></div>
+<span class="pill" id="msg">“here's my syllabus”</span>
+<div id="cap">The orchestrator routes each request to the specialist that owns it.</div>
+
+      </section>
+    </div>
+    <script>
+
+const tl = gsap.timeline({ paused: true });
+const E = { out: "power3.out", expo: "expo.out", back: "back.out(1.5)", soft: "sine.inOut", in: "power2.in" };
+function draw(sel, t, d, ease) {
+  document.querySelectorAll(sel).forEach((el) => {
+    const len = el.getTotalLength();
+    el.style.strokeDasharray = len + " " + len;
+    tl.set(el, { opacity: 0 }, 0);
+    tl.set(el, { opacity: 1 }, t);
+    tl.fromTo(el, { strokeDashoffset: len }, { strokeDashoffset: 0, duration: d, ease: ease || "power2.inOut" }, t);
+  });
+}
+function kick(t) {
+  tl.fromTo("#kick", { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: E.out }, t);
+  tl.fromTo("#kick i", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: E.soft }, t + 0.1);
+}
+function count(el, from, to, t, d, fmt) {
+  const o = { v: from };
+  const node = document.querySelector(el);
+  const f = fmt || ((v) => Math.round(v).toLocaleString("en-US"));
+  tl.to(o, { v: to, duration: d, ease: "power2.out", onUpdate: () => { node.textContent = f(o.v); } }, t);
+}
+
+tl.fromTo("#leaf-a", { rotate: -12, x: -40, y: -30 }, { rotate: 2, x: 0, y: 0, duration: 1.4, ease: E.out }, 0);
+tl.fromTo("#leaf-b", { rotate: 192, x: 40, y: 30 }, { rotate: 180, x: 0, y: 0, duration: 1.4, ease: E.out }, 0.1);
+tl.to("#leaf-a", { rotate: -5, duration: 6.5, ease: E.soft }, 1.4);
+tl.to("#leaf-b", { rotate: 186, duration: 6.5, ease: E.soft }, 1.5);
+
+
+kick(0.1);
+tl.fromTo("#hub", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.7, ease: E.back }, 0.2);
+draw("#edges line:not(#hot)", 0.5, 0.6);
+tl.fromTo(".sp", { scale: 0.7, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: E.back, stagger: 0.1 }, 0.7);
+tl.fromTo("#msg", { x: -200, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: E.out }, 1.0);
+tl.to("#msg", { x: 580, scale: 0.4, opacity: 0, duration: 0.8, ease: "power2.in" }, 1.9);
+tl.to("#hub", { scale: 1.08, duration: 0.15, ease: E.out }, 2.6);
+tl.to("#hub", { scale: 1, duration: 0.4, ease: E.back }, 2.75);
+draw("#hot", 2.8, 0.6, "power2.out");
+tl.to("#s0", { backgroundColor: "#0a4d17", color: "#f4eadf", scale: 1.08, duration: 0.4, ease: E.out }, 3.3);
+tl.to("#s1, #s2, #s3, #e1, #e2, #e3", { opacity: 0.3, duration: 0.6 }, 3.3);
+tl.fromTo("#cap", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: E.out }, 3.8);
+
+window.__timelines["G06"] = tl;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Draft to confirmed</title>
+    <script src="assets/gsap.min.js"></script>
+    <style>
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Italic.ttf") format("truetype"); font-weight: 400; font-style: italic; }
+@font-face { font-family: "DejaVu Sans Mono"; src: url("assets/DejaVuSansMono.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+:root {
+  --paper: #fbf6ef; --cream: #f4eadf; --tan: #dccbb2; --green: #0b6122; --primary: #0a4d17;
+  --mid: #4e8a5e; --vein: #a4d7a2; --bloom: #e8a33d; --wilt: #b0584c; --focus: #1f6fb2; --ink: #222222;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: transparent; }
+#root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Instrument Serif", Georgia, serif; color: var(--ink); }
+.scene { position: absolute; inset: 0; }
+.abs { position: absolute; }
+#bg { position: absolute; inset: 0;
+  background: radial-gradient(1300px 900px at 18% 12%, #ffffff 0%, rgba(255,255,255,0) 70%),
+              radial-gradient(1200px 900px at 92% 95%, #dcebd3 0%, rgba(220,235,211,0) 70%), #f3ebdd; }
+.leaf { position: absolute; width: 300px; height: auto; opacity: 0.9; }
+#leaf-a { left: -90px; top: -80px; }
+#leaf-b { right: -100px; bottom: -90px; }
+.frost { background: rgba(255,255,255,0.66); border: 2px solid rgba(11,97,34,0.16); border-radius: 36px;
+  box-shadow: 0 30px 80px rgba(11,97,34,0.14), inset 0 2px 0 rgba(255,255,255,0.85); }
+.over .frost { background: rgba(255,253,249,0.95); }
+.solid { background: #fffdf9; border: 2px solid rgba(11,97,34,0.18); border-radius: 30px;
+  box-shadow: 0 24px 60px rgba(11,97,34,0.16); }
+.kicker { position: absolute; left: 192px; top: 120px; display: flex; align-items: center; gap: 20px;
+  font-style: italic; font-size: 44px; color: var(--mid); }
+.kicker i { display: block; width: 80px; height: 4px; background: var(--vein); transform-origin: 0 50%; }
+.head { font-size: 96px; line-height: 1.02; letter-spacing: -2px; color: var(--green); }
+.chip { display: inline-flex; align-items: center; gap: 14px; font-size: 38px; color: var(--green);
+  background: rgba(164,215,162,0.38); border-radius: 999px; padding: 6px 28px 10px; white-space: nowrap; }
+.pill { display: inline-flex; align-items: center; justify-content: center; gap: 16px; border-radius: 999px; white-space: nowrap; }
+.mono { font-family: "DejaVu Sans Mono", monospace; letter-spacing: -0.5px; }
+.it { font-style: italic; }
+.dot { width: 16px; height: 16px; border-radius: 50%; background: var(--mid); display: inline-block; flex: none; }
+.plant { position: absolute; width: 100%; height: 100%; left: 0; top: 0; }
+svg text { font-family: "Instrument Serif", Georgia, serif; }
+
+#wrap { position: absolute; left: 1280px; top: 130px; width: 450px; }
+#pillbox { position: relative; height: 96px; perspective: 800px; }
+.st { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 16px; border-radius: 999px; font-size: 46px; backface-visibility: hidden; }
+#draft { background: var(--tan); color: #5f5444; }
+#active { background: var(--primary); color: var(--cream); }
+#list { margin-top: 22px; padding: 26px 30px 30px; }
+#list div { display: flex; align-items: center; gap: 16px; font-size: 36px; height: 62px; color: var(--ink); }
+#list svg { flex: none; }
+#list .arrow { color: var(--green); font-style: italic; }
+</style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="G08" data-start="0" data-duration="8" data-width="1920" data-height="1080">
+      
+      <section id="sc" class="scene clip over" data-start="0" data-duration="8" data-track-index="1">
+
+<div id="wrap">
+  <div id="pillbox"><div class="st" id="draft"><span class="mono" style="font-size:30px">status</span> draft</div><div class="st" id="active"><span class="mono" style="font-size:30px">status</span> active</div></div>
+  <div class="frost" id="list">
+    <div id="l0"><svg viewBox="0 0 40 40" width="40" height="40"><circle cx="20" cy="20" r="18" fill="#0b6122"/><path d="M11 21 L18 27 L29 14" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>course activated</div>
+    <div id="l1"><svg viewBox="0 0 40 40" width="40" height="40"><circle cx="20" cy="20" r="18" fill="#0b6122"/><path d="M11 21 L18 27 L29 14" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>mastery records created</div>
+    <div id="l2" class="arrow">handed to the Tutor →</div>
+  </div>
+</div>
+
+      </section>
+    </div>
+    <script>
+
+const tl = gsap.timeline({ paused: true });
+const E = { out: "power3.out", expo: "expo.out", back: "back.out(1.5)", soft: "sine.inOut", in: "power2.in" };
+function draw(sel, t, d, ease) {
+  document.querySelectorAll(sel).forEach((el) => {
+    const len = el.getTotalLength();
+    el.style.strokeDasharray = len + " " + len;
+    tl.set(el, { opacity: 0 }, 0);
+    tl.set(el, { opacity: 1 }, t);
+    tl.fromTo(el, { strokeDashoffset: len }, { strokeDashoffset: 0, duration: d, ease: ease || "power2.inOut" }, t);
+  });
+}
+function kick(t) {
+  tl.fromTo("#kick", { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: E.out }, t);
+  tl.fromTo("#kick i", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: E.soft }, t + 0.1);
+}
+function count(el, from, to, t, d, fmt) {
+  const o = { v: from };
+  const node = document.querySelector(el);
+  const f = fmt || ((v) => Math.round(v).toLocaleString("en-US"));
+  tl.to(o, { v: to, duration: d, ease: "power2.out", onUpdate: () => { node.textContent = f(o.v); } }, t);
+}
+
+
+
+tl.fromTo("#pillbox", { y: -40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: E.out }, 0);
+tl.fromTo("#draft", { rotateX: 0 }, { rotateX: 180, duration: 0.6, ease: "power2.inOut" }, 0.6);
+tl.fromTo("#active", { rotateX: -180 }, { rotateX: 0, duration: 0.6, ease: "power2.inOut" }, 0.6);
+tl.fromTo("#list", { y: -20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: E.out }, 1.1);
+tl.fromTo("#list > div", { x: 30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: E.out, stagger: 0.5 }, 1.3);
+tl.to("#wrap", { opacity: 0, x: 40, duration: 0.4, ease: E.in }, 7.5);
+
+window.__timelines["G08"] = tl;
+    </script>
+  </body>
+</html>

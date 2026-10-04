@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>One tap one transaction</title>
+    <script src="assets/gsap.min.js"></script>
+    <style>
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Italic.ttf") format("truetype"); font-weight: 400; font-style: italic; }
+@font-face { font-family: "DejaVu Sans Mono"; src: url("assets/DejaVuSansMono.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+:root {
+  --paper: #fbf6ef; --cream: #f4eadf; --tan: #dccbb2; --green: #0b6122; --primary: #0a4d17;
+  --mid: #4e8a5e; --vein: #a4d7a2; --bloom: #e8a33d; --wilt: #b0584c; --focus: #1f6fb2; --ink: #222222;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: transparent; }
+#root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Instrument Serif", Georgia, serif; color: var(--ink); }
+.scene { position: absolute; inset: 0; }
+.abs { position: absolute; }
+#bg { position: absolute; inset: 0;
+  background: radial-gradient(1300px 900px at 18% 12%, #ffffff 0%, rgba(255,255,255,0) 70%),
+              radial-gradient(1200px 900px at 92% 95%, #dcebd3 0%, rgba(220,235,211,0) 70%), #f3ebdd; }
+.leaf { position: absolute; width: 300px; height: auto; opacity: 0.9; }
+#leaf-a { left: -90px; top: -80px; }
+#leaf-b { right: -100px; bottom: -90px; }
+.frost { background: rgba(255,255,255,0.66); border: 2px solid rgba(11,97,34,0.16); border-radius: 36px;
+  box-shadow: 0 30px 80px rgba(11,97,34,0.14), inset 0 2px 0 rgba(255,255,255,0.85); }
+.over .frost { background: rgba(255,253,249,0.95); }
+.solid { background: #fffdf9; border: 2px solid rgba(11,97,34,0.18); border-radius: 30px;
+  box-shadow: 0 24px 60px rgba(11,97,34,0.16); }
+.kicker { position: absolute; left: 192px; top: 120px; display: flex; align-items: center; gap: 20px;
+  font-style: italic; font-size: 44px; color: var(--mid); }
+.kicker i { display: block; width: 80px; height: 4px; background: var(--vein); transform-origin: 0 50%; }
+.head { font-size: 96px; line-height: 1.02; letter-spacing: -2px; color: var(--green); }
+.chip { display: inline-flex; align-items: center; gap: 14px; font-size: 38px; color: var(--green);
+  background: rgba(164,215,162,0.38); border-radius: 999px; padding: 6px 28px 10px; white-space: nowrap; }
+.pill { display: inline-flex; align-items: center; justify-content: center; gap: 16px; border-radius: 999px; white-space: nowrap; }
+.mono { font-family: "DejaVu Sans Mono", monospace; letter-spacing: -0.5px; }
+.it { font-style: italic; }
+.dot { width: 16px; height: 16px; border-radius: 50%; background: var(--mid); display: inline-block; flex: none; }
+.plant { position: absolute; width: 100%; height: 100%; left: 0; top: 0; }
+svg text { font-family: "Instrument Serif", Georgia, serif; }
+
+#card { position: absolute; left: 230px; top: 100px; width: 1460px; height: 880px; padding: 40px 60px; }
+#hd { display: flex; align-items: baseline; gap: 18px; }
+#hd .mono { font-size: 46px; color: var(--green); }
+#hd .it { font-size: 50px; color: var(--mid); }
+#evt { position: absolute; right: 60px; top: 38px; font-size: 36px; padding: 8px 28px 12px; background: var(--wilt); color: #fff; }
+#vein { position: absolute; left: 92px; top: 150px; width: 6px; height: 590px; background: var(--vein); border-radius: 3px; transform-origin: 50% 0; }
+.rw { position: absolute; left: 70px; width: 1320px; height: 130px; display: flex; align-items: center; gap: 30px; }
+.rw .bul { width: 50px; height: 50px; border-radius: 50%; background: var(--green); color: var(--cream); font-size: 30px; display: flex; align-items: center; justify-content: center; flex: none; }
+.rw .ti { width: 330px; flex: none; }
+.rw .ti b { display: block; font-weight: 400; font-size: 48px; color: var(--ink); line-height: 1; }
+.rw .ti small { font-size: 28px; font-style: italic; color: var(--mid); }
+.bar { position: relative; width: 420px; height: 26px; border-radius: 13px; background: var(--tan); overflow: hidden; flex: none; }
+.bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; border-radius: 13px; background: var(--mid); transform-origin: 0 50%; }
+.num { font-size: 56px; color: var(--green); width: 130px; flex: none; }
+.pb { position: relative; width: 84px; height: 105px; flex: none; }
+.prm { display: flex; gap: 12px; }
+.prm span { font-size: 26px; padding: 6px 16px 8px; }
+.cal { display: flex; align-items: center; gap: 18px; font-size: 46px; }
+.cal .old { color: #8b8070; position: relative; }
+.cal .old::after { content: ""; position: absolute; left: -6px; right: -6px; top: 55%; height: 4px; background: var(--wilt); transform: scaleX(var(--s, 0)); transform-origin: 0 50%; }
+.cal .new { color: var(--green); }
+#log { font-size: 28px; width: 640px; height: 92px; overflow: hidden; border-radius: 16px; background: rgba(220,203,178,0.35); padding: 6px 18px; }
+#log div { height: 40px; line-height: 40px; color: #6e6457; }
+#log .nw { color: var(--green); }
+#brk { position: absolute; right: 30px; top: 160px; width: 40px; height: 570px; border: 6px solid var(--green); border-left: none; border-radius: 0 24px 24px 0; transform-origin: 0 50%; }
+#cm { position: absolute; right: -40px; top: 415px; font-size: 30px; padding: 6px 18px 8px; background: var(--primary); color: var(--cream); }
+#ag { position: absolute; left: 60px; right: 60px; bottom: 40px; display: flex; align-items: center; gap: 34px; font-size: 38px; }
+#ag .a { display: flex; align-items: center; gap: 12px; color: var(--ink); }
+#ag .a i { width: 22px; height: 22px; border-radius: 50%; background: var(--tan); display: block; }
+#ag .msg { margin-left: auto; font-style: italic; color: var(--mid); }
+</style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="G11" data-start="0" data-duration="28" data-width="1920" data-height="1080">
+      <div id="bg"><img id="leaf-a" class="leaf" data-layout-allow-overflow src="assets/leaf.png" alt="" /><img id="leaf-b" class="leaf" data-layout-allow-overflow src="assets/leaf.png" alt="" /></div>
+      <section id="sc" class="scene clip" data-start="0" data-duration="28" data-track-index="1">
+
+<div class="frost" id="card">
+  <div id="hd"><span class="mono">record_attempt</span><span class="it">· one transaction</span></div>
+  <span class="pill" id="evt">Didn't know · Hash tables</span>
+  <div id="vein"></div>
+  <div class="rw" id="r1" style="top:150px"><div class="bul">1</div><div class="ti"><b>BKT</b><small>probability of mastery</small></div>
+    <div class="bar"><i id="mb"></i></div><div class="num" id="mn">0.62</div>
+    <div class="pb"><img class="plant" id="pl3" src="assets/plant-3.svg" alt="" /><img class="plant" id="pl2" src="assets/plant-2.svg" alt="" /></div>
+    <div class="prm" id="prm" style="position:absolute;left:440px;top:96px"><span class="solid mono">prior .31</span><span class="solid mono">learn .18</span><span class="solid mono">slip .09</span><span class="solid mono">guess .21</span></div></div>
+  <div class="rw" id="r2" style="top:320px"><div class="bul">2</div><div class="ti"><b>SM-2</b><small>next review</small></div>
+    <div class="cal"><svg viewBox="0 0 40 40" width="52" height="52"><rect x="4" y="8" width="32" height="28" rx="5" fill="none" stroke="#0b6122" stroke-width="3.5"/><path d="M4 16 H36 M13 4 V11 M27 4 V11" stroke="#0b6122" stroke-width="3.5" stroke-linecap="round"/></svg><span class="old" id="old">in 6 days</span><span>→</span><span class="new" id="nw">tomorrow</span></div></div>
+  <div class="rw" id="r3" style="top:460px"><div class="bul">3</div><div class="ti"><b>Format policy</b><small>flashcard evidence</small></div>
+    <div class="bar"><i id="fb" style="background:#1f6fb2"></i></div><div class="num" id="fn" style="color:#1f6fb2">0.46</div></div>
+  <div class="rw" id="r4" style="top:600px"><div class="bul">4</div><div class="ti"><b>Attempt logged</b><small>history for fitting</small></div>
+    <div id="log" class="mono"><div id="lg">#1041 · stacks · knew it</div><div class="nw">#1042 · hash tables · didn't know</div></div></div>
+  <div id="brk"></div><span class="pill mono" id="cm">commit</span>
+  <div id="ag"><span class="a"><i></i>Curriculum</span><span class="a"><i></i>Tutor</span><span class="a"><i></i>Garden</span><span class="a"><i></i>Arcade</span><span class="msg">every agent sees the new state</span></div>
+</div>
+
+      </section>
+    </div>
+    <script>
+
+const tl = gsap.timeline({ paused: true });
+const E = { out: "power3.out", expo: "expo.out", back: "back.out(1.5)", soft: "sine.inOut", in: "power2.in" };
+function draw(sel, t, d, ease) {
+  document.querySelectorAll(sel).forEach((el) => {
+    const len = el.getTotalLength();
+    el.style.strokeDasharray = len + " " + len;
+    tl.set(el, { opacity: 0 }, 0);
+    tl.set(el, { opacity: 1 }, t);
+    tl.fromTo(el, { strokeDashoffset: len }, { strokeDashoffset: 0, duration: d, ease: ease || "power2.inOut" }, t);
+  });
+}
+function kick(t) {
+  tl.fromTo("#kick", { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: E.out }, t);
+  tl.fromTo("#kick i", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: E.soft }, t + 0.1);
+}
+function count(el, from, to, t, d, fmt) {
+  const o = { v: from };
+  const node = document.querySelector(el);
+  const f = fmt || ((v) => Math.round(v).toLocaleString("en-US"));
+  tl.to(o, { v: to, duration: d, ease: "power2.out", onUpdate: () => { node.textContent = f(o.v); } }, t);
+}
+
+tl.fromTo("#leaf-a", { rotate: -12, x: -40, y: -30 }, { rotate: 2, x: 0, y: 0, duration: 1.4, ease: E.out }, 0);
+tl.fromTo("#leaf-b", { rotate: 192, x: 40, y: 30 }, { rotate: 180, x: 0, y: 0, duration: 1.4, ease: E.out }, 0.1);
+tl.to("#leaf-a", { rotate: -5, duration: 26.5, ease: E.soft }, 1.4);
+tl.to("#leaf-b", { rotate: 186, duration: 26.5, ease: E.soft }, 1.5);
+
+
+tl.fromTo("#card", { y: 60, opacity: 0, scale: 0.97 }, { y: 0, opacity: 1, scale: 1, duration: 0.8, ease: E.expo }, 0.1);
+tl.fromTo("#evt", { y: -30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: E.back }, 0.6);
+tl.fromTo("#vein", { scaleY: 0 }, { scaleY: 0, duration: 0.01 }, 0);
+tl.set("#r1, #r2, #r3, #r4, #brk, #cm, #ag", { opacity: 0 }, 0);
+tl.set("#mb", { scaleX: 0.62 }, 0);
+tl.set("#fb", { scaleX: 0.46 }, 0);
+tl.set("#pl2", { opacity: 0 }, 0);
+tl.set("#prm span", { opacity: 0 }, 0);
+// 1 BKT
+tl.to("#vein", { scaleY: 0.25, duration: 0.6, ease: E.out }, 1.8);
+tl.fromTo("#r1", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: E.out }, 2.0);
+tl.to("#mb", { scaleX: 0.41, backgroundColor: "#b0584c", duration: 1.2, ease: "power2.inOut" }, 3.0);
+count("#mn", 0.62, 0.41, 3.0, 1.2, (v) => v.toFixed(2));
+tl.to("#mn", { color: "#b0584c", duration: 0.4 }, 3.0);
+tl.to("#pl3", { opacity: 0, rotate: 10, transformOrigin: "50% 100%", duration: 0.5 }, 3.6);
+tl.fromTo("#pl2", { opacity: 0, rotate: -6 }, { opacity: 1, rotate: 0, transformOrigin: "50% 100%", duration: 0.6, ease: E.back }, 3.8);
+tl.fromTo("#prm span", { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: E.out, stagger: 0.25 }, 5.0);
+// 2 SM-2
+tl.to("#vein", { scaleY: 0.5, duration: 0.6, ease: E.out }, 8.2);
+tl.fromTo("#r2", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: E.out }, 8.4);
+tl.set("#nw", { opacity: 0 }, 0);
+tl.fromTo("#old", { "--s": 0 }, { "--s": 1, duration: 0.5, ease: E.out }, 9.4);
+tl.fromTo("#nw", { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: E.back }, 9.7);
+// 3 format policy
+tl.to("#vein", { scaleY: 0.75, duration: 0.6, ease: E.out }, 12.6);
+tl.fromTo("#r3", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: E.out }, 12.8);
+tl.to("#fb", { scaleX: 0.40, duration: 1.0, ease: "power2.inOut" }, 13.8);
+count("#fn", 0.46, 0.40, 13.8, 1.0, (v) => v.toFixed(2));
+// 4 attempt logged
+tl.to("#vein", { scaleY: 1, duration: 0.6, ease: E.out }, 16.6);
+tl.fromTo("#r4", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: E.out }, 16.8);
+tl.fromTo("#log div", { y: 0 }, { y: -40, duration: 0.6, ease: E.out }, 17.6);
+tl.set("#log", { paddingTop: 6 }, 0);
+// commit
+tl.fromTo("#brk", { opacity: 0, scaleX: 0 }, { opacity: 1, scaleX: 1, duration: 0.6, ease: E.out }, 20.4);
+tl.fromTo("#cm", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.5, ease: E.back }, 20.8);
+// every agent sees it
+tl.fromTo("#ag", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: E.out }, 22.6);
+tl.to("#ag .a i", { backgroundColor: "#4e8a5e", scale: 1.5, duration: 0.25, ease: E.out, stagger: 0.15 }, 23.4);
+tl.to("#ag .a i", { scale: 1, duration: 0.35, ease: E.back, stagger: 0.15 }, 23.65);
+
+window.__timelines["G11"] = tl;
+    </script>
+  </body>
+</html>

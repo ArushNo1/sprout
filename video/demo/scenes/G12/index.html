@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>The garden stays</title>
+    <script src="assets/gsap.min.js"></script>
+    <style>
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Italic.ttf") format("truetype"); font-weight: 400; font-style: italic; }
+@font-face { font-family: "DejaVu Sans Mono"; src: url("assets/DejaVuSansMono.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+:root {
+  --paper: #fbf6ef; --cream: #f4eadf; --tan: #dccbb2; --green: #0b6122; --primary: #0a4d17;
+  --mid: #4e8a5e; --vein: #a4d7a2; --bloom: #e8a33d; --wilt: #b0584c; --focus: #1f6fb2; --ink: #222222;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: transparent; }
+#root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Instrument Serif", Georgia, serif; color: var(--ink); }
+.scene { position: absolute; inset: 0; }
+.abs { position: absolute; }
+#bg { position: absolute; inset: 0;
+  background: radial-gradient(1300px 900px at 18% 12%, #ffffff 0%, rgba(255,255,255,0) 70%),
+              radial-gradient(1200px 900px at 92% 95%, #dcebd3 0%, rgba(220,235,211,0) 70%), #f3ebdd; }
+.leaf { position: absolute; width: 300px; height: auto; opacity: 0.9; }
+#leaf-a { left: -90px; top: -80px; }
+#leaf-b { right: -100px; bottom: -90px; }
+.frost { background: rgba(255,255,255,0.66); border: 2px solid rgba(11,97,34,0.16); border-radius: 36px;
+  box-shadow: 0 30px 80px rgba(11,97,34,0.14), inset 0 2px 0 rgba(255,255,255,0.85); }
+.over .frost { background: rgba(255,253,249,0.95); }
+.solid { background: #fffdf9; border: 2px solid rgba(11,97,34,0.18); border-radius: 30px;
+  box-shadow: 0 24px 60px rgba(11,97,34,0.16); }
+.kicker { position: absolute; left: 192px; top: 120px; display: flex; align-items: center; gap: 20px;
+  font-style: italic; font-size: 44px; color: var(--mid); }
+.kicker i { display: block; width: 80px; height: 4px; background: var(--vein); transform-origin: 0 50%; }
+.head { font-size: 96px; line-height: 1.02; letter-spacing: -2px; color: var(--green); }
+.chip { display: inline-flex; align-items: center; gap: 14px; font-size: 38px; color: var(--green);
+  background: rgba(164,215,162,0.38); border-radius: 999px; padding: 6px 28px 10px; white-space: nowrap; }
+.pill { display: inline-flex; align-items: center; justify-content: center; gap: 16px; border-radius: 999px; white-space: nowrap; }
+.mono { font-family: "DejaVu Sans Mono", monospace; letter-spacing: -0.5px; }
+.it { font-style: italic; }
+.dot { width: 16px; height: 16px; border-radius: 50%; background: var(--mid); display: inline-block; flex: none; }
+.plant { position: absolute; width: 100%; height: 100%; left: 0; top: 0; }
+svg text { font-family: "Instrument Serif", Georgia, serif; }
+
+#chat { position: absolute; left: 510px; top: 130px; width: 900px; height: 470px; padding: 34px 40px; }
+#chat .bar { display: flex; gap: 12px; margin-bottom: 26px; }
+#chat .bar i { width: 18px; height: 18px; border-radius: 50%; background: var(--tan); display: block; }
+.bb { max-width: 600px; font-size: 34px; padding: 14px 26px 18px; border-radius: 26px; margin-bottom: 16px; }
+.bb.me { margin-left: auto; background: rgba(31,111,178,0.12); }
+.bb.ai { background: rgba(164,215,162,0.35); }
+#sun { position: absolute; left: 760px; top: 420px; width: 400px; height: 400px; border-radius: 50%;
+  background: radial-gradient(circle, #ffd98a 0%, rgba(255,217,138,0.6) 42%, rgba(255,217,138,0) 72%); }
+#gard { position: absolute; left: 330px; right: 330px; top: 640px; height: 260px; display: flex; justify-content: space-between; align-items: flex-end; }
+#gard .pb { position: relative; width: 140px; height: 175px; }
+#soil { position: absolute; left: 300px; right: 300px; top: 890px; height: 22px; border-radius: 11px; background: var(--tan); }
+#say { position: absolute; left: 0; right: 0; top: 260px; text-align: center; font-size: 84px; line-height: 1.05; color: var(--green); letter-spacing: -2px; }
+#say em { color: var(--mid); }
+</style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="G12" data-start="0" data-duration="10" data-width="1920" data-height="1080">
+      <div id="bg"><img id="leaf-a" class="leaf" data-layout-allow-overflow src="assets/leaf.png" alt="" /><img id="leaf-b" class="leaf" data-layout-allow-overflow src="assets/leaf.png" alt="" /></div>
+      <section id="sc" class="scene clip" data-start="0" data-duration="10" data-track-index="1">
+
+<div id="sun"></div>
+<div class="frost" id="chat"><div class="bar"><i></i><i></i><i></i></div>
+  <div class="bb me">let's do hash tables</div>
+  <div class="bb ai">Sure. Picture a row of buckets…</div>
+  <div class="bb me">got it, thanks!</div>
+</div>
+<div id="say">Closing the chat removes the conversation, <em class="it">not the learning.</em></div>
+<div id="soil"></div>
+<div id="gard"><div class="pb" id="g0"><img class="plant" src="assets/plant-4.svg" alt="" /></div><div class="pb" id="g1"><img class="plant" src="assets/plant-3.svg" alt="" /></div><div class="pb" id="g2"><img class="plant" src="assets/plant-2.svg" alt="" /></div><div class="pb" id="g3"><img class="plant" src="assets/plant-4.svg" alt="" /></div><div class="pb" id="g4"><img class="plant" src="assets/plant-1.svg" alt="" /></div><div class="pb" id="g5"><img class="plant" src="assets/plant-3.svg" alt="" /></div><div class="pb" id="g6"><img class="plant" src="assets/plant-2.svg" alt="" /></div></div>
+
+      </section>
+    </div>
+    <script>
+
+const tl = gsap.timeline({ paused: true });
+const E = { out: "power3.out", expo: "expo.out", back: "back.out(1.5)", soft: "sine.inOut", in: "power2.in" };
+function draw(sel, t, d, ease) {
+  document.querySelectorAll(sel).forEach((el) => {
+    const len = el.getTotalLength();
+    el.style.strokeDasharray = len + " " + len;
+    tl.set(el, { opacity: 0 }, 0);
+    tl.set(el, { opacity: 1 }, t);
+    tl.fromTo(el, { strokeDashoffset: len }, { strokeDashoffset: 0, duration: d, ease: ease || "power2.inOut" }, t);
+  });
+}
+function kick(t) {
+  tl.fromTo("#kick", { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: E.out }, t);
+  tl.fromTo("#kick i", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: E.soft }, t + 0.1);
+}
+function count(el, from, to, t, d, fmt) {
+  const o = { v: from };
+  const node = document.querySelector(el);
+  const f = fmt || ((v) => Math.round(v).toLocaleString("en-US"));
+  tl.to(o, { v: to, duration: d, ease: "power2.out", onUpdate: () => { node.textContent = f(o.v); } }, t);
+}
+
+tl.fromTo("#leaf-a", { rotate: -12, x: -40, y: -30 }, { rotate: 2, x: 0, y: 0, duration: 1.4, ease: E.out }, 0);
+tl.fromTo("#leaf-b", { rotate: 192, x: 40, y: 30 }, { rotate: 180, x: 0, y: 0, duration: 1.4, ease: E.out }, 0.1);
+tl.to("#leaf-a", { rotate: -5, duration: 8.5, ease: E.soft }, 1.4);
+tl.to("#leaf-b", { rotate: 186, duration: 8.5, ease: E.soft }, 1.5);
+
+
+tl.fromTo("#chat", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: E.expo }, 0.1);
+tl.fromTo("#soil", { scaleX: 0 }, { scaleX: 1, duration: 0.7, ease: E.out }, 0.2);
+tl.fromTo("#gard .pb", { scale: 0.3, opacity: 0, transformOrigin: "50% 100%" }, { scale: 1, opacity: 1, duration: 0.6, ease: E.back, stagger: 0.08 }, 0.4);
+tl.to("#chat", { scaleY: 0.08, scaleX: 0.6, duration: 0.7, ease: "power2.in" }, 2.4);
+tl.to("#chat", { y: 520, x: 260, rotate: 38, opacity: 0, duration: 1.4, ease: "power1.in" }, 3.0);
+tl.fromTo("#sun", { y: 220, scale: 0.6, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 1.2, ease: "power2.out" }, 3.6);
+tl.to("#gard .pb", { y: -8, duration: 0.6, ease: E.soft, stagger: 0.06, yoyo: true, repeat: 1 }, 3.8);
+tl.fromTo("#say", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: E.expo }, 4.4);
+
+window.__timelines["G12"] = tl;
+    </script>
+  </body>
+</html>

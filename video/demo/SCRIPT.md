@@ -1,6 +1,6 @@
 # Sprout demo — script with motion graphics
 
-Draft for approval. Nothing is rendered yet.
+Approved. The rendered graphics live in this folder (see README.md).
 
 **Look:** the Sprout site and the existing launch sting. Paper background (`#fbf6ef`) with soft green light, frosted cream cards, Instrument Serif, and leaves at the corners. Concepts appear as plants: a seed when unknown, a bloom when mastered. Colours always mean the same thing. Green `#0b6122` is solid knowledge, vein green `#a4d7a2` is links and growth, amber `#e8a33d` is "ready to learn", wilt red `#b0584c` is a gap, focus blue `#1f6fb2` is the cursor or selection, and tan `#dccbb2` is empty track.
 

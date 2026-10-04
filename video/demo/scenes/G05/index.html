@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Play together</title>
+    <script src="assets/gsap.min.js"></script>
+    <style>
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Italic.ttf") format("truetype"); font-weight: 400; font-style: italic; }
+@font-face { font-family: "DejaVu Sans Mono"; src: url("assets/DejaVuSansMono.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+:root {
+  --paper: #fbf6ef; --cream: #f4eadf; --tan: #dccbb2; --green: #0b6122; --primary: #0a4d17;
+  --mid: #4e8a5e; --vein: #a4d7a2; --bloom: #e8a33d; --wilt: #b0584c; --focus: #1f6fb2; --ink: #222222;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: transparent; }
+#root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Instrument Serif", Georgia, serif; color: var(--ink); }
+.scene { position: absolute; inset: 0; }
+.abs { position: absolute; }
+#bg { position: absolute; inset: 0;
+  background: radial-gradient(1300px 900px at 18% 12%, #ffffff 0%, rgba(255,255,255,0) 70%),
+              radial-gradient(1200px 900px at 92% 95%, #dcebd3 0%, rgba(220,235,211,0) 70%), #f3ebdd; }
+.leaf { position: absolute; width: 300px; height: auto; opacity: 0.9; }
+#leaf-a { left: -90px; top: -80px; }
+#leaf-b { right: -100px; bottom: -90px; }
+.frost { background: rgba(255,255,255,0.66); border: 2px solid rgba(11,97,34,0.16); border-radius: 36px;
+  box-shadow: 0 30px 80px rgba(11,97,34,0.14), inset 0 2px 0 rgba(255,255,255,0.85); }
+.over .frost { background: rgba(255,253,249,0.95); }
+.solid { background: #fffdf9; border: 2px solid rgba(11,97,34,0.18); border-radius: 30px;
+  box-shadow: 0 24px 60px rgba(11,97,34,0.16); }
+.kicker { position: absolute; left: 192px; top: 120px; display: flex; align-items: center; gap: 20px;
+  font-style: italic; font-size: 44px; color: var(--mid); }
+.kicker i { display: block; width: 80px; height: 4px; background: var(--vein); transform-origin: 0 50%; }
+.head { font-size: 96px; line-height: 1.02; letter-spacing: -2px; color: var(--green); }
+.chip { display: inline-flex; align-items: center; gap: 14px; font-size: 38px; color: var(--green);
+  background: rgba(164,215,162,0.38); border-radius: 999px; padding: 6px 28px 10px; white-space: nowrap; }
+.pill { display: inline-flex; align-items: center; justify-content: center; gap: 16px; border-radius: 999px; white-space: nowrap; }
+.mono { font-family: "DejaVu Sans Mono", monospace; letter-spacing: -0.5px; }
+.it { font-style: italic; }
+.dot { width: 16px; height: 16px; border-radius: 50%; background: var(--mid); display: inline-block; flex: none; }
+.plant { position: absolute; width: 100%; height: 100%; left: 0; top: 0; }
+svg text { font-family: "Instrument Serif", Georgia, serif; }
+
+#copy { position: absolute; left: 192px; top: 300px; width: 640px; }
+#copy .sub { font-size: 48px; line-height: 1.15; margin-top: 30px; opacity: 0.85; }
+.dev { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; border: 6px solid #2f3a32; background: #fffdf9; }
+.dev .code { display: flex; gap: 10px; font-size: 64px; color: var(--green); }
+.dev .code span { width: 52px; text-align: center; border-bottom: 4px solid var(--vein); }
+.dev .st { font-size: 34px; font-style: italic; color: #8b8070; display: flex; align-items: center; gap: 12px; }
+.dev .st i { width: 20px; height: 20px; border-radius: 50%; background: var(--tan); display: block; }
+#lap { left: 880px; top: 220px; width: 600px; height: 380px; border-radius: 24px; }
+#lapbase { position: absolute; left: 840px; top: 600px; width: 680px; height: 26px; border-radius: 0 0 20px 20px; background: #2f3a32; }
+#tab { left: 1100px; top: 640px; width: 400px; height: 290px; border-radius: 30px; }
+#tab .code { font-size: 52px; } #tab .code span { width: 42px; }
+#pho { left: 1530px; top: 330px; width: 200px; height: 400px; border-radius: 36px; }
+#pho .code { font-size: 40px; gap: 4px; } #pho .code span { width: 30px; } #pho .st { font-size: 28px; }
+#net { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; }
+#db { position: absolute; left: 1260px; top: 960px; transform-origin: 50% 50%; }
+</style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="G05" data-start="0" data-duration="8" data-width="1920" data-height="1080">
+      <div id="bg"><img id="leaf-a" class="leaf" data-layout-allow-overflow src="assets/leaf.png" alt="" /><img id="leaf-b" class="leaf" data-layout-allow-overflow src="assets/leaf.png" alt="" /></div>
+      <section id="sc" class="scene clip" data-start="0" data-duration="8" data-track-index="1">
+
+<div id="copy"><div class="head">Turn any course into a game</div><div class="sub">Friends join with one code, from any device, in real time.</div></div>
+<svg id="net" viewBox="0 0 1920 1080"><path id="netp" d="M1180 626 C1180 760 1300 800 1330 960 M1300 930 C1330 860 1630 820 1630 730" stroke="#a4d7a2" stroke-width="6" fill="none" stroke-linecap="round"/></svg>
+<div class="dev" id="lap"><div class="code"><span>4</span><span>8</span><span>2</span><span>1</span><span>9</span></div><div class="st"><i></i><em>host · waiting</em></div></div>
+<div id="lapbase"></div>
+<div class="dev" id="tab"><div class="code"><span>4</span><span>8</span><span>2</span><span>1</span><span>9</span></div><div class="st"><i></i><em>joining…</em></div></div>
+<div class="dev" id="pho"><div class="code"><span>4</span><span>8</span><span>2</span><span>1</span><span>9</span></div><div class="st"><i></i><em>joining…</em></div></div>
+<span class="chip mono" id="db" style="font-size:30px">SpacetimeDB</span>
+
+      </section>
+    </div>
+    <script>
+
+const tl = gsap.timeline({ paused: true });
+const E = { out: "power3.out", expo: "expo.out", back: "back.out(1.5)", soft: "sine.inOut", in: "power2.in" };
+function draw(sel, t, d, ease) {
+  document.querySelectorAll(sel).forEach((el) => {
+    const len = el.getTotalLength();
+    el.style.strokeDasharray = len + " " + len;
+    tl.set(el, { opacity: 0 }, 0);
+    tl.set(el, { opacity: 1 }, t);
+    tl.fromTo(el, { strokeDashoffset: len }, { strokeDashoffset: 0, duration: d, ease: ease || "power2.inOut" }, t);
+  });
+}
+function kick(t) {
+  tl.fromTo("#kick", { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: E.out }, t);
+  tl.fromTo("#kick i", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: E.soft }, t + 0.1);
+}
+function count(el, from, to, t, d, fmt) {
+  const o = { v: from };
+  const node = document.querySelector(el);
+  const f = fmt || ((v) => Math.round(v).toLocaleString("en-US"));
+  tl.to(o, { v: to, duration: d, ease: "power2.out", onUpdate: () => { node.textContent = f(o.v); } }, t);
+}
+
+tl.fromTo("#leaf-a", { rotate: -12, x: -40, y: -30 }, { rotate: 2, x: 0, y: 0, duration: 1.4, ease: E.out }, 0);
+tl.fromTo("#leaf-b", { rotate: 192, x: 40, y: 30 }, { rotate: 180, x: 0, y: 0, duration: 1.4, ease: E.out }, 0.1);
+tl.to("#leaf-a", { rotate: -5, duration: 6.5, ease: E.soft }, 1.4);
+tl.to("#leaf-b", { rotate: 186, duration: 6.5, ease: E.soft }, 1.5);
+
+
+tl.fromTo("#copy .head", { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: E.expo }, 0.2);
+tl.fromTo("#copy .sub", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: E.out }, 0.5);
+tl.fromTo("#lap, #lapbase", { y: 60, opacity: 0, rotate: -3 }, { y: 0, opacity: 1, rotate: 0, duration: 0.7, ease: E.expo }, 0.8);
+tl.fromTo("#tab", { y: 80, opacity: 0, rotate: 4 }, { y: 0, opacity: 1, rotate: 0, duration: 0.7, ease: E.expo }, 1.1);
+tl.fromTo("#pho", { x: 80, opacity: 0, rotate: 5 }, { x: 0, opacity: 1, rotate: 0, duration: 0.7, ease: E.expo }, 1.4);
+draw("#netp", 2.4, 1.0);
+tl.fromTo("#db", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: E.back }, 2.9);
+const join = (sel, t, label) => {
+  tl.to(sel + " .st i", { backgroundColor: "#4e8a5e", scale: 1.3, duration: 0.25, ease: E.out }, t);
+  tl.to(sel + " .st i", { scale: 1, duration: 0.3, ease: E.back }, t + 0.25);
+  tl.set(sel + " .st em", { textContent: label }, t);
+  tl.to(sel + " .st", { color: "#0b6122", duration: 0.3 }, t);
+};
+join("#lap", 3.4, "host · 3 players");
+join("#tab", 4.0, "joined");
+join("#pho", 4.6, "joined");
+
+window.__timelines["G05"] = tl;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>What's next</title>
+    <script src="assets/gsap.min.js"></script>
+    <style>
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Italic.ttf") format("truetype"); font-weight: 400; font-style: italic; }
+@font-face { font-family: "DejaVu Sans Mono"; src: url("assets/DejaVuSansMono.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+:root {
+  --paper: #fbf6ef; --cream: #f4eadf; --tan: #dccbb2; --green: #0b6122; --primary: #0a4d17;
+  --mid: #4e8a5e; --vein: #a4d7a2; --bloom: #e8a33d; --wilt: #b0584c; --focus: #1f6fb2; --ink: #222222;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: transparent; }
+#root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Instrument Serif", Georgia, serif; color: var(--ink); }
+.scene { position: absolute; inset: 0; }
+.abs { position: absolute; }
+#bg { position: absolute; inset: 0;
+  background: radial-gradient(1300px 900px at 18% 12%, #ffffff 0%, rgba(255,255,255,0) 70%),
+              radial-gradient(1200px 900px at 92% 95%, #dcebd3 0%, rgba(220,235,211,0) 70%), #f3ebdd; }
+.leaf { position: absolute; width: 300px; height: auto; opacity: 0.9; }
+#leaf-a { left: -90px; top: -80px; }
+#leaf-b { right: -100px; bottom: -90px; }
+.frost { background: rgba(255,255,255,0.66); border: 2px solid rgba(11,97,34,0.16); border-radius: 36px;
+  box-shadow: 0 30px 80px rgba(11,97,34,0.14), inset 0 2px 0 rgba(255,255,255,0.85); }
+.over .frost { background: rgba(255,253,249,0.95); }
+.solid { background: #fffdf9; border: 2px solid rgba(11,97,34,0.18); border-radius: 30px;
+  box-shadow: 0 24px 60px rgba(11,97,34,0.16); }
+.kicker { position: absolute; left: 192px; top: 120px; display: flex; align-items: center; gap: 20px;
+  font-style: italic; font-size: 44px; color: var(--mid); }
+.kicker i { display: block; width: 80px; height: 4px; background: var(--vein); transform-origin: 0 50%; }
+.head { font-size: 96px; line-height: 1.02; letter-spacing: -2px; color: var(--green); }
+.chip { display: inline-flex; align-items: center; gap: 14px; font-size: 38px; color: var(--green);
+  background: rgba(164,215,162,0.38); border-radius: 999px; padding: 6px 28px 10px; white-space: nowrap; }
+.pill { display: inline-flex; align-items: center; justify-content: center; gap: 16px; border-radius: 999px; white-space: nowrap; }
+.mono { font-family: "DejaVu Sans Mono", monospace; letter-spacing: -0.5px; }
+.it { font-style: italic; }
+.dot { width: 16px; height: 16px; border-radius: 50%; background: var(--mid); display: inline-block; flex: none; }
+.plant { position: absolute; width: 100%; height: 100%; left: 0; top: 0; }
+svg text { font-family: "Instrument Serif", Georgia, serif; }
+
+#q { position: absolute; left: 192px; top: 190px; }
+.pc { position: absolute; top: 384px; width: 190px; margin-left: -95px; display: flex; flex-direction: column; align-items: center; }
+.pc .pb { position: relative; width: 150px; height: 188px; }
+.pc .nm { font-size: 32px; text-align: center; margin-top: 10px; white-space: nowrap; }
+.pc .ms { font-size: 30px; font-style: italic; color: var(--mid); }
+.pc .lk { position: absolute; top: -8px; right: 26px; opacity: 0; }
+#bed { position: absolute; left: 192px; right: 192px; top: 572px; height: 18px; border-radius: 9px; background: var(--tan); }
+#halo { position: absolute; left: 390px; top: 360px; width: 220px; height: 330px; margin-left: -110px; border-radius: 40px; border: 5px solid var(--bloom); background: rgba(232,163,61,0.12); }
+#steps { position: absolute; left: 192px; top: 740px; display: flex; gap: 24px; }
+#steps .chip { font-size: 34px; }
+#steps .chip b { font-weight: 400; color: var(--mid); margin-right: 6px; }
+#pick { position: absolute; left: 192px; top: 830px; font-size: 52px; padding: 14px 44px 20px; background: var(--bloom); color: #3d2a08; }
+#src { position: absolute; left: 0; right: 192px; top: 860px; text-align: right; font-size: 34px; font-style: italic; color: var(--mid); }
+#src .mono { font-style: normal; font-size: 28px; color: var(--green); }
+</style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="G09" data-start="0" data-duration="16" data-width="1920" data-height="1080">
+      <div id="bg"><img id="leaf-a" class="leaf" data-layout-allow-overflow src="assets/leaf.png" alt="" /><img id="leaf-b" class="leaf" data-layout-allow-overflow src="assets/leaf.png" alt="" /></div>
+      <section id="sc" class="scene clip" data-start="0" data-duration="16" data-track-index="1">
+
+<div class="kicker" id="kick"><i></i><span>algorithm · the next concept</span></div>
+<div class="head" id="q">What should we learn next?</div>
+<div id="bed"></div>
+<div id="halo"></div>
+<div class="pc" id="c0" style="left:270px"><div class="pb"><img class="plant" src="assets/plant-4.svg" alt="" /></div><div class="lk"><svg viewBox="0 0 40 46" width="34" height="40"><rect x="4" y="19" width="32" height="25" rx="6" fill="#8a8a82"/><path d="M11 20 V13 a9 9 0 0 1 18 0 V20" stroke="#8a8a82" stroke-width="5" fill="none"/></svg></div><div class="nm">Arrays</div><div class="ms">92%</div></div>
+<div class="pc" id="c1" style="left:467px"><div class="pb"><img class="plant" src="assets/plant-4.svg" alt="" /></div><div class="lk"><svg viewBox="0 0 40 46" width="34" height="40"><rect x="4" y="19" width="32" height="25" rx="6" fill="#8a8a82"/><path d="M11 20 V13 a9 9 0 0 1 18 0 V20" stroke="#8a8a82" stroke-width="5" fill="none"/></svg></div><div class="nm">Linked lists</div><div class="ms">81%</div></div>
+<div class="pc" id="c2" style="left:664px"><div class="pb"><img class="plant" src="assets/plant-3.svg" alt="" /></div><div class="lk"><svg viewBox="0 0 40 46" width="34" height="40"><rect x="4" y="19" width="32" height="25" rx="6" fill="#8a8a82"/><path d="M11 20 V13 a9 9 0 0 1 18 0 V20" stroke="#8a8a82" stroke-width="5" fill="none"/></svg></div><div class="nm">Stacks & queues</div><div class="ms">74%</div></div>
+<div class="pc" id="c3" style="left:861px"><div class="pb"><img class="plant" src="assets/plant-2.svg" alt="" /></div><div class="lk"><svg viewBox="0 0 40 46" width="34" height="40"><rect x="4" y="19" width="32" height="25" rx="6" fill="#8a8a82"/><path d="M11 20 V13 a9 9 0 0 1 18 0 V20" stroke="#8a8a82" stroke-width="5" fill="none"/></svg></div><div class="nm">Recursion</div><div class="ms">55%</div></div>
+<div class="pc" id="c4" style="left:1058px"><div class="pb"><img class="plant" src="assets/plant-1.svg" alt="" /></div><div class="lk"><svg viewBox="0 0 40 46" width="34" height="40"><rect x="4" y="19" width="32" height="25" rx="6" fill="#8a8a82"/><path d="M11 20 V13 a9 9 0 0 1 18 0 V20" stroke="#8a8a82" stroke-width="5" fill="none"/></svg></div><div class="nm">Hash tables</div><div class="ms">38%</div></div>
+<div class="pc" id="c5" style="left:1255px"><div class="pb"><img class="plant" src="assets/plant-1.svg" alt="" /></div><div class="lk"><svg viewBox="0 0 40 46" width="34" height="40"><rect x="4" y="19" width="32" height="25" rx="6" fill="#8a8a82"/><path d="M11 20 V13 a9 9 0 0 1 18 0 V20" stroke="#8a8a82" stroke-width="5" fill="none"/></svg></div><div class="nm">Trees</div><div class="ms">30%</div></div>
+<div class="pc" id="c6" style="left:1452px"><div class="pb"><img class="plant" src="assets/plant-1.svg" alt="" /></div><div class="lk"><svg viewBox="0 0 40 46" width="34" height="40"><rect x="4" y="19" width="32" height="25" rx="6" fill="#8a8a82"/><path d="M11 20 V13 a9 9 0 0 1 18 0 V20" stroke="#8a8a82" stroke-width="5" fill="none"/></svg></div><div class="nm">Heaps</div><div class="ms">20%</div></div>
+<div class="pc" id="c7" style="left:1649px"><div class="pb"><img class="plant" src="assets/plant-0.svg" alt="" /></div><div class="lk"><svg viewBox="0 0 40 46" width="34" height="40"><rect x="4" y="19" width="32" height="25" rx="6" fill="#8a8a82"/><path d="M11 20 V13 a9 9 0 0 1 18 0 V20" stroke="#8a8a82" stroke-width="5" fill="none"/></svg></div><div class="nm">Graphs</div><div class="ms">10%</div></div>
+<div id="steps"><span class="chip" id="st1"><b>1</b>skip locked concepts</span><span class="chip" id="st2"><b>2</b>sort by mastery</span><span class="chip" id="st3"><b>3</b>take the weakest</span></div>
+<span class="pill" id="pick">Ready &amp; weakest → Hash tables</span>
+<div id="src">chosen by <span class="mono">compute_next_step</span> in SpacetimeDB, not by the model</div>
+
+      </section>
+    </div>
+    <script>
+
+const tl = gsap.timeline({ paused: true });
+const E = { out: "power3.out", expo: "expo.out", back: "back.out(1.5)", soft: "sine.inOut", in: "power2.in" };
+function draw(sel, t, d, ease) {
+  document.querySelectorAll(sel).forEach((el) => {
+    const len = el.getTotalLength();
+    el.style.strokeDasharray = len + " " + len;
+    tl.set(el, { opacity: 0 }, 0);
+    tl.set(el, { opacity: 1 }, t);
+    tl.fromTo(el, { strokeDashoffset: len }, { strokeDashoffset: 0, duration: d, ease: ease || "power2.inOut" }, t);
+  });
+}
+function kick(t) {
+  tl.fromTo("#kick", { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: E.out }, t);
+  tl.fromTo("#kick i", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: E.soft }, t + 0.1);
+}
+function count(el, from, to, t, d, fmt) {
+  const o = { v: from };
+  const node = document.querySelector(el);
+  const f = fmt || ((v) => Math.round(v).toLocaleString("en-US"));
+  tl.to(o, { v: to, duration: d, ease: "power2.out", onUpdate: () => { node.textContent = f(o.v); } }, t);
+}
+
+tl.fromTo("#leaf-a", { rotate: -12, x: -40, y: -30 }, { rotate: 2, x: 0, y: 0, duration: 1.4, ease: E.out }, 0);
+tl.fromTo("#leaf-b", { rotate: 192, x: 40, y: 30 }, { rotate: 180, x: 0, y: 0, duration: 1.4, ease: E.out }, 0.1);
+tl.to("#leaf-a", { rotate: -5, duration: 14.5, ease: E.soft }, 1.4);
+tl.to("#leaf-b", { rotate: 186, duration: 14.5, ease: E.soft }, 1.5);
+
+
+kick(0.2);
+tl.fromTo("#q", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: E.expo }, 0.4);
+tl.fromTo("#bed", { scaleX: 0, transformOrigin: "0 50%" }, { scaleX: 1, duration: 0.8, ease: E.out }, 0.8);
+tl.fromTo(".pc", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: E.back, stagger: 0.1 }, 1.0);
+tl.fromTo(".pc .pb", { scale: 0.3, transformOrigin: "50% 100%" }, { scale: 1, duration: 0.6, ease: E.back, stagger: 0.1 }, 1.0);
+// 1. filter locked
+tl.fromTo("#st1", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: E.out }, 3.4);
+
+
+
+
+
+tl.to("#c5 .lk", { opacity: 1, duration: 0.3 }, 3.8);
+tl.to("#c5 .pb, #c5 .nm, #c5 .ms", { opacity: 0.3, filter: "grayscale(1)", duration: 0.5 }, 3.8);
+tl.to("#c6 .lk", { opacity: 1, duration: 0.3 }, 4);
+tl.to("#c6 .pb, #c6 .nm, #c6 .ms", { opacity: 0.3, filter: "grayscale(1)", duration: 0.5 }, 4);
+tl.to("#c7 .lk", { opacity: 1, duration: 0.3 }, 4.2);
+tl.to("#c7 .pb, #c7 .nm, #c7 .ms", { opacity: 0.3, filter: "grayscale(1)", duration: 0.5 }, 4.2);
+// 2. sort the ready ones by mastery
+tl.fromTo("#st2", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: E.out }, 6.4);
+tl.to("#c0", { x: 908, duration: 1.1, ease: "power3.inOut" }, 6.8);
+tl.to("#c1", { x: 514, duration: 1.1, ease: "power3.inOut" }, 6.8);
+tl.to("#c2", { x: 120, duration: 1.1, ease: "power3.inOut" }, 6.8);
+tl.to("#c3", { x: -274, duration: 1.1, ease: "power3.inOut" }, 6.8);
+tl.to("#c4", { x: -668, duration: 1.1, ease: "power3.inOut" }, 6.8);
+tl.to("#c5", { x: 140, duration: 1.1, ease: "power3.inOut" }, 6.8);
+tl.to("#c6", { x: 140, duration: 1.1, ease: "power3.inOut" }, 6.8);
+tl.to("#c7", { x: 140, duration: 1.1, ease: "power3.inOut" }, 6.8);
+tl.to("#c5, #c6, #c7", { opacity: 0.55, duration: 0.6 }, 6.8);
+// 3. pick the weakest
+tl.fromTo("#st3", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: E.out }, 9.4);
+
+tl.fromTo("#halo", { scale: 0.7, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: E.back }, 9.8);
+tl.to("#c4", { y: -16, duration: 0.6, ease: E.back }, 9.8);
+tl.fromTo("#pick", { scale: 0.7, opacity: 0, transformOrigin: "0% 50%" }, { scale: 1, opacity: 1, duration: 0.6, ease: E.back }, 10.4);
+tl.fromTo("#src", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: E.out }, 12.2);
+
+window.__timelines["G09"] = tl;
+    </script>
+  </body>
+</html>

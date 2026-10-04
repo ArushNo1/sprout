@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>One system</title>
+    <script src="assets/gsap.min.js"></script>
+    <style>
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Italic.ttf") format("truetype"); font-weight: 400; font-style: italic; }
+@font-face { font-family: "DejaVu Sans Mono"; src: url("assets/DejaVuSansMono.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+:root {
+  --paper: #fbf6ef; --cream: #f4eadf; --tan: #dccbb2; --green: #0b6122; --primary: #0a4d17;
+  --mid: #4e8a5e; --vein: #a4d7a2; --bloom: #e8a33d; --wilt: #b0584c; --focus: #1f6fb2; --ink: #222222;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: transparent; }
+#root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Instrument Serif", Georgia, serif; color: var(--ink); }
+.scene { position: absolute; inset: 0; }
+.abs { position: absolute; }
+#bg { position: absolute; inset: 0;
+  background: radial-gradient(1300px 900px at 18% 12%, #ffffff 0%, rgba(255,255,255,0) 70%),
+              radial-gradient(1200px 900px at 92% 95%, #dcebd3 0%, rgba(220,235,211,0) 70%), #f3ebdd; }
+.leaf { position: absolute; width: 300px; height: auto; opacity: 0.9; }
+#leaf-a { left: -90px; top: -80px; }
+#leaf-b { right: -100px; bottom: -90px; }
+.frost { background: rgba(255,255,255,0.66); border: 2px solid rgba(11,97,34,0.16); border-radius: 36px;
+  box-shadow: 0 30px 80px rgba(11,97,34,0.14), inset 0 2px 0 rgba(255,255,255,0.85); }
+.over .frost { background: rgba(255,253,249,0.95); }
+.solid { background: #fffdf9; border: 2px solid rgba(11,97,34,0.18); border-radius: 30px;
+  box-shadow: 0 24px 60px rgba(11,97,34,0.16); }
+.kicker { position: absolute; left: 192px; top: 120px; display: flex; align-items: center; gap: 20px;
+  font-style: italic; font-size: 44px; color: var(--mid); }
+.kicker i { display: block; width: 80px; height: 4px; background: var(--vein); transform-origin: 0 50%; }
+.head { font-size: 96px; line-height: 1.02; letter-spacing: -2px; color: var(--green); }
+.chip { display: inline-flex; align-items: center; gap: 14px; font-size: 38px; color: var(--green);
+  background: rgba(164,215,162,0.38); border-radius: 999px; padding: 6px 28px 10px; white-space: nowrap; }
+.pill { display: inline-flex; align-items: center; justify-content: center; gap: 16px; border-radius: 999px; white-space: nowrap; }
+.mono { font-family: "DejaVu Sans Mono", monospace; letter-spacing: -0.5px; }
+.it { font-style: italic; }
+.dot { width: 16px; height: 16px; border-radius: 50%; background: var(--mid); display: inline-block; flex: none; }
+.plant { position: absolute; width: 100%; height: 100%; left: 0; top: 0; }
+svg text { font-family: "Instrument Serif", Georgia, serif; }
+
+.lyr { position: absolute; left: 230px; font-size: 34px; font-style: italic; color: var(--mid); width: 220px; }
+#fx { position: absolute; left: 430px; top: 150px; display: flex; gap: 16px; align-items: center; }
+#fx .chip { font-size: 34px; background: rgba(31,111,178,0.12); color: #164d7c; }
+#fx .ar { font-size: 34px; color: #8aa0b2; }
+#hub { position: absolute; left: 820px; top: 290px; width: 280px; height: 100px; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 64px; color: var(--green); border-radius: 999px; }
+.sp { position: absolute; top: 520px; width: 250px; height: 90px; margin-left: -125px; display: flex; align-items: center; justify-content: center; font-size: 42px; color: var(--green); border-radius: 999px; }
+#llm { position: absolute; left: 1600px; top: 380px; width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; color: #6b4b10; border: 3px dashed var(--bloom); background: rgba(232,163,61,0.1); }
+#soil { position: absolute; left: 192px; right: 192px; top: 760px; height: 172px; border-radius: 40px;
+  background: linear-gradient(180deg, rgba(220,203,178,0.85), rgba(196,174,140,0.9)); padding: 26px 40px; }
+#soil .t { font-size: 50px; color: #3f3324; }
+#soil .t small { font-size: 30px; font-style: italic; color: #5f5444; margin-left: 14px; }
+#red { display: flex; gap: 16px; margin-top: 22px; }
+#red span { font-size: 28px; padding: 8px 20px 10px; border-radius: 999px; background: rgba(255,253,249,0.75); color: #5f5444; }
+#links { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; }
+</style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="G15" data-start="0" data-duration="26" data-width="1920" data-height="1080">
+      <div id="bg"><img id="leaf-a" class="leaf" data-layout-allow-overflow src="assets/leaf.png" alt="" /><img id="leaf-b" class="leaf" data-layout-allow-overflow src="assets/leaf.png" alt="" /></div>
+      <section id="sc" class="scene clip" data-start="0" data-duration="26" data-track-index="1">
+
+<div class="kicker" id="kick" style="top:60px"><i></i><span>one system</span></div>
+<div id="dia" style="position:absolute;inset:0;transform:translateY(40px)">
+<div class="lyr" id="l1" style="top:160px">Fetch.ai</div>
+<div id="fx"><span class="chip" id="fx0">ASI:One</span><span class="ar" id="ar1">→</span><span class="chip" id="fx1">Agent Chat Protocol</span><span class="ar" id="ar2">→</span><span class="chip" id="fx2">Agentverse</span><span class="ar" id="ar3">+</span><span class="chip" id="fx3">interactive cards</span></div>
+<div class="lyr" id="l2" style="top:315px">agents</div>
+<svg id="links" viewBox="0 0 1920 1080">
+  <path id="k0" d="M960 215 L960 288" stroke="#8aa0b2" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path class="sk" d="M960 392 C960 450 520 450 520 518" stroke="#4e8a5e" stroke-width="5" fill="none" stroke-linecap="round"/><path class="sk" d="M960 392 C960 450 820 450 820 518" stroke="#4e8a5e" stroke-width="5" fill="none" stroke-linecap="round"/><path class="sk" d="M960 392 C960 450 1120 450 1120 518" stroke="#4e8a5e" stroke-width="5" fill="none" stroke-linecap="round"/><path class="sk" d="M960 392 C960 450 1420 450 1420 518" stroke="#4e8a5e" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path class="rt" d="M520 612 C490 660 550 700 520 758" stroke="#8b6f4e" stroke-width="5" fill="none" stroke-linecap="round"/><path class="rt" d="M820 612 C790 660 850 700 820 758" stroke="#8b6f4e" stroke-width="5" fill="none" stroke-linecap="round"/><path class="rt" d="M1120 612 C1090 660 1150 700 1120 758" stroke="#8b6f4e" stroke-width="5" fill="none" stroke-linecap="round"/><path class="rt" d="M1420 612 C1390 660 1450 700 1420 758" stroke="#8b6f4e" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path class="lm" d="M630 540 C820 470 1500 440 1598 440" stroke="#e8a33d" stroke-width="3" fill="none" stroke-dasharray="8 10"/><path class="lm" d="M930 540 C1120 470 1500 440 1598 440" stroke="#e8a33d" stroke-width="3" fill="none" stroke-dasharray="8 10"/><path class="lm" d="M1230 540 C1420 470 1500 440 1598 440" stroke="#e8a33d" stroke-width="3" fill="none" stroke-dasharray="8 10"/><path class="lm" d="M1530 540 C1720 470 1500 440 1598 440" stroke="#e8a33d" stroke-width="3" fill="none" stroke-dasharray="8 10"/>
+</svg>
+<div class="frost" id="hub">sprout</div>
+<div class="sp frost" id="s0" style="left:520px">Curriculum</div><div class="sp frost" id="s1" style="left:820px">Tutor</div><div class="sp frost" id="s2" style="left:1120px">Garden</div><div class="sp frost" id="s3" style="left:1420px">Arcade</div>
+<div id="llm">LLM</div>
+<div id="soil"><div class="t">SpacetimeDB<small>shared memory and decision logic</small></div>
+  <div id="red"><span>prerequisites</span><span>BKT mastery</span><span>SM-2 reviews</span><span>format bandit</span><span>game state</span></div></div>
+</div>
+
+      </section>
+    </div>
+    <script>
+
+const tl = gsap.timeline({ paused: true });
+const E = { out: "power3.out", expo: "expo.out", back: "back.out(1.5)", soft: "sine.inOut", in: "power2.in" };
+function draw(sel, t, d, ease) {
+  document.querySelectorAll(sel).forEach((el) => {
+    const len = el.getTotalLength();
+    el.style.strokeDasharray = len + " " + len;
+    tl.set(el, { opacity: 0 }, 0);
+    tl.set(el, { opacity: 1 }, t);
+    tl.fromTo(el, { strokeDashoffset: len }, { strokeDashoffset: 0, duration: d, ease: ease || "power2.inOut" }, t);
+  });
+}
+function kick(t) {
+  tl.fromTo("#kick", { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: E.out }, t);
+  tl.fromTo("#kick i", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: E.soft }, t + 0.1);
+}
+function count(el, from, to, t, d, fmt) {
+  const o = { v: from };
+  const node = document.querySelector(el);
+  const f = fmt || ((v) => Math.round(v).toLocaleString("en-US"));
+  tl.to(o, { v: to, duration: d, ease: "power2.out", onUpdate: () => { node.textContent = f(o.v); } }, t);
+}
+
+tl.fromTo("#leaf-a", { rotate: -12, x: -40, y: -30 }, { rotate: 2, x: 0, y: 0, duration: 1.4, ease: E.out }, 0);
+tl.fromTo("#leaf-b", { rotate: 192, x: 40, y: 30 }, { rotate: 180, x: 0, y: 0, duration: 1.4, ease: E.out }, 0.1);
+tl.to("#leaf-a", { rotate: -5, duration: 24.5, ease: E.soft }, 1.4);
+tl.to("#leaf-b", { rotate: 186, duration: 24.5, ease: E.soft }, 1.5);
+
+
+kick(0.2);
+tl.fromTo("#l1", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 3.0);
+tl.fromTo("#fx0", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: E.back }, 3.2);
+tl.fromTo("#fx1", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: E.back }, 4.300000000000001);
+tl.fromTo("#ar1", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 4.1);
+tl.fromTo("#fx2", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: E.back }, 5.4);
+tl.fromTo("#ar2", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 5.2);
+tl.fromTo("#fx3", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: E.back }, 6.5);
+tl.fromTo("#ar3", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 6.300000000000001);
+tl.fromTo("#l2", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 8.4);
+draw("#k0", 8.4, 0.5);
+tl.fromTo("#hub", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: E.back }, 8.8);
+draw(".sk", 9.6, 0.7);
+tl.fromTo("#s0", { y: 20, scale: 0.8, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.5, ease: E.back }, 10);
+tl.fromTo("#s1", { y: 20, scale: 0.8, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.5, ease: E.back }, 10.5);
+tl.fromTo("#s2", { y: 20, scale: 0.8, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.5, ease: E.back }, 11);
+tl.fromTo("#s3", { y: 20, scale: 0.8, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.5, ease: E.back }, 11.5);
+tl.fromTo("#soil", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: E.expo }, 13.4);
+draw(".rt", 13.9, 0.9, "power1.out");
+tl.fromTo("#red span", { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: E.out, stagger: 0.15 }, 14.6);
+// models generate content
+tl.fromTo("#llm", { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: E.back }, 17.2);
+tl.fromTo(".lm", { opacity: 0 }, { opacity: 1, duration: 0.6, stagger: 0.1 }, 17.5);
+// reducers enforce
+tl.to("#red span", { backgroundColor: "#0a4d17", color: "#f4eadf", duration: 0.4, stagger: 0.18 }, 19.6);
+tl.to(".rt", { stroke: "#0b6122", duration: 0.6 }, 19.6);
+
+window.__timelines["G15"] = tl;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>One state two screens</title>
+    <script src="assets/gsap.min.js"></script>
+    <style>
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Italic.ttf") format("truetype"); font-weight: 400; font-style: italic; }
+@font-face { font-family: "DejaVu Sans Mono"; src: url("assets/DejaVuSansMono.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+:root {
+  --paper: #fbf6ef; --cream: #f4eadf; --tan: #dccbb2; --green: #0b6122; --primary: #0a4d17;
+  --mid: #4e8a5e; --vein: #a4d7a2; --bloom: #e8a33d; --wilt: #b0584c; --focus: #1f6fb2; --ink: #222222;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: transparent; }
+#root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Instrument Serif", Georgia, serif; color: var(--ink); }
+.scene { position: absolute; inset: 0; }
+.abs { position: absolute; }
+#bg { position: absolute; inset: 0;
+  background: radial-gradient(1300px 900px at 18% 12%, #ffffff 0%, rgba(255,255,255,0) 70%),
+              radial-gradient(1200px 900px at 92% 95%, #dcebd3 0%, rgba(220,235,211,0) 70%), #f3ebdd; }
+.leaf { position: absolute; width: 300px; height: auto; opacity: 0.9; }
+#leaf-a { left: -90px; top: -80px; }
+#leaf-b { right: -100px; bottom: -90px; }
+.frost { background: rgba(255,255,255,0.66); border: 2px solid rgba(11,97,34,0.16); border-radius: 36px;
+  box-shadow: 0 30px 80px rgba(11,97,34,0.14), inset 0 2px 0 rgba(255,255,255,0.85); }
+.over .frost { background: rgba(255,253,249,0.95); }
+.solid { background: #fffdf9; border: 2px solid rgba(11,97,34,0.18); border-radius: 30px;
+  box-shadow: 0 24px 60px rgba(11,97,34,0.16); }
+.kicker { position: absolute; left: 192px; top: 120px; display: flex; align-items: center; gap: 20px;
+  font-style: italic; font-size: 44px; color: var(--mid); }
+.kicker i { display: block; width: 80px; height: 4px; background: var(--vein); transform-origin: 0 50%; }
+.head { font-size: 96px; line-height: 1.02; letter-spacing: -2px; color: var(--green); }
+.chip { display: inline-flex; align-items: center; gap: 14px; font-size: 38px; color: var(--green);
+  background: rgba(164,215,162,0.38); border-radius: 999px; padding: 6px 28px 10px; white-space: nowrap; }
+.pill { display: inline-flex; align-items: center; justify-content: center; gap: 16px; border-radius: 999px; white-space: nowrap; }
+.mono { font-family: "DejaVu Sans Mono", monospace; letter-spacing: -0.5px; }
+.it { font-style: italic; }
+.dot { width: 16px; height: 16px; border-radius: 50%; background: var(--mid); display: inline-block; flex: none; }
+.plant { position: absolute; width: 100%; height: 100%; left: 0; top: 0; }
+svg text { font-family: "Instrument Serif", Georgia, serif; }
+
+#node { position: absolute; left: 680px; top: 170px; width: 560px; padding: 30px 36px 34px; }
+#node .t { font-size: 34px; color: var(--green); margin-bottom: 14px; }
+#node .rr { display: flex; justify-content: space-between; font-size: 30px; height: 50px; align-items: center; border-top: 2px solid rgba(11,97,34,0.1); color: #4b453c; }
+#node .rr b { font-weight: 400; color: var(--green); }
+#wires { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; }
+.scr { position: absolute; border: 6px solid #2f3a32; background: #fffdf9; padding: 26px 24px; }
+#host { left: 192px; top: 470px; width: 560px; height: 360px; border-radius: 22px; }
+#hostb { position: absolute; left: 160px; top: 830px; width: 624px; height: 24px; border-radius: 0 0 18px 18px; background: #2f3a32; }
+#phone { left: 1450px; top: 420px; width: 280px; height: 520px; border-radius: 40px; padding: 30px 20px; }
+.scr .lab { font-size: 28px; font-style: italic; color: var(--mid); margin-bottom: 16px; }
+.lb { position: relative; height: 174px; }
+.lr { position: absolute; left: 0; right: 0; height: 50px; display: flex; align-items: center; gap: 12px; font-size: 30px; }
+.lr .nm { width: 80px; } .lr .tr { flex: 1; height: 18px; border-radius: 9px; background: var(--tan); overflow: hidden; }
+.lr .tr i { display: block; height: 100%; background: var(--mid); border-radius: 9px; }
+.lr .sc { width: 72px; text-align: right; color: var(--green); font-size: 26px; }
+#phone .lr .nm { width: 64px; font-size: 26px; } #phone .lr .sc { display: none; }
+#ans { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 30px; }
+#ans span { height: 70px; border-radius: 16px; background: var(--cream); border: 2px solid var(--tan); display: flex; align-items: center; justify-content: center; font-size: 34px; }
+#ans #ab { position: relative; }
+#rip { position: absolute; left: 50%; top: 50%; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; border: 4px solid var(--focus); opacity: 0; }
+.pk { position: absolute; left: 0; top: 0; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; background: var(--focus); box-shadow: 0 0 0 8px rgba(31,111,178,0.18); opacity: 0; }
+#mast { position: absolute; left: 720px; top: 860px; width: 480px; padding: 18px 28px 22px; }
+#mast .t { font-size: 30px; font-style: italic; color: var(--mid); }
+#mast .row { display: flex; align-items: center; gap: 16px; margin-top: 8px; font-size: 30px; }
+#mast .tr { flex: 1; height: 20px; border-radius: 10px; background: var(--tan); overflow: hidden; }
+#mast .tr i { display: block; height: 100%; width: 100%; background: var(--mid); transform-origin: 0 50%; }
+#cap { position: absolute; left: 780px; top: 560px; width: 330px; text-align: center; font-size: 38px; font-style: italic; color: var(--green); }
+</style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="G14" data-start="0" data-duration="18" data-width="1920" data-height="1080">
+      <div id="bg"><img id="leaf-a" class="leaf" data-layout-allow-overflow src="assets/leaf.png" alt="" /><img id="leaf-b" class="leaf" data-layout-allow-overflow src="assets/leaf.png" alt="" /></div>
+      <section id="sc" class="scene clip" data-start="0" data-duration="18" data-track-index="1">
+
+<svg id="wires" viewBox="0 0 1920 1080">
+  <path id="w1" d="M680 330 C560 330 480 380 470 466" stroke="#a4d7a2" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path id="w2" d="M1240 330 C1400 330 1580 340 1590 416" stroke="#a4d7a2" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path id="w3" d="M1160 485 L1160 856" stroke="#a4d7a2" stroke-width="6" fill="none" stroke-linecap="round" stroke-dasharray="4 14"/>
+</svg>
+<div class="frost" id="node"><div class="t mono">SpacetimeDB · game room</div>
+  <div class="rr"><span>timer</span><b id="tm">0:15</b></div>
+  <div class="rr"><span>answers</span><b id="an">2 / 3</b></div>
+  <div class="rr"><span>scores</span><b id="scor">updated</b></div>
+  <div class="rr"><span>standings</span><b id="sd">Maya · Dev · You</b></div>
+</div>
+<div class="scr" id="host"><div class="lab">host screen</div><div class="lb"><div class="lr" data-i="0" style="top:0px"><span class="nm">Maya</span><span class="tr"><i style="width:80%"></i></span><span class="sc">2400</span></div><div class="lr" data-i="1" style="top:58px"><span class="nm">Dev</span><span class="tr"><i style="width:71.66666666666667%"></i></span><span class="sc">2150</span></div><div class="lr" data-i="2" style="top:116px"><span class="nm">You</span><span class="tr"><i style="width:63.33333333333333%"></i></span><span class="sc">1900</span></div></div></div><div id="hostb"></div>
+<div class="scr" id="phone"><div class="lab">player phone</div><div class="lb"><div class="lr" data-i="0" style="top:0px"><span class="nm">Maya</span><span class="tr"><i style="width:80%"></i></span><span class="sc">2400</span></div><div class="lr" data-i="1" style="top:58px"><span class="nm">Dev</span><span class="tr"><i style="width:71.66666666666667%"></i></span><span class="sc">2150</span></div><div class="lr" data-i="2" style="top:116px"><span class="nm">You</span><span class="tr"><i style="width:63.33333333333333%"></i></span><span class="sc">1900</span></div></div><div id="ans"><span>A</span><span id="ab">B<i id="rip"></i></span><span>C</span><span>D</span></div></div>
+<div class="pk" id="up"></div><div class="pk" id="d1"></div><div class="pk" id="d2"></div>
+<div id="cap">one update redraws every screen</div>
+<div class="frost" id="mast"><div class="t">course owner's answer → same mastery update</div><div class="row"><span>Hash tables</span><span class="tr"><i id="mi"></i></span><span id="mv">0.41</span></div></div>
+
+      </section>
+    </div>
+    <script>
+
+const tl = gsap.timeline({ paused: true });
+const E = { out: "power3.out", expo: "expo.out", back: "back.out(1.5)", soft: "sine.inOut", in: "power2.in" };
+function draw(sel, t, d, ease) {
+  document.querySelectorAll(sel).forEach((el) => {
+    const len = el.getTotalLength();
+    el.style.strokeDasharray = len + " " + len;
+    tl.set(el, { opacity: 0 }, 0);
+    tl.set(el, { opacity: 1 }, t);
+    tl.fromTo(el, { strokeDashoffset: len }, { strokeDashoffset: 0, duration: d, ease: ease || "power2.inOut" }, t);
+  });
+}
+function kick(t) {
+  tl.fromTo("#kick", { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: E.out }, t);
+  tl.fromTo("#kick i", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: E.soft }, t + 0.1);
+}
+function count(el, from, to, t, d, fmt) {
+  const o = { v: from };
+  const node = document.querySelector(el);
+  const f = fmt || ((v) => Math.round(v).toLocaleString("en-US"));
+  tl.to(o, { v: to, duration: d, ease: "power2.out", onUpdate: () => { node.textContent = f(o.v); } }, t);
+}
+
+tl.fromTo("#leaf-a", { rotate: -12, x: -40, y: -30 }, { rotate: 2, x: 0, y: 0, duration: 1.4, ease: E.out }, 0);
+tl.fromTo("#leaf-b", { rotate: 192, x: 40, y: 30 }, { rotate: 180, x: 0, y: 0, duration: 1.4, ease: E.out }, 0.1);
+tl.to("#leaf-a", { rotate: -5, duration: 16.5, ease: E.soft }, 1.4);
+tl.to("#leaf-b", { rotate: 186, duration: 16.5, ease: E.soft }, 1.5);
+
+
+tl.fromTo("#node", { y: -40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: E.expo }, 0.2);
+tl.fromTo("#host, #hostb", { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.7, ease: E.expo }, 0.6);
+tl.fromTo("#phone", { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.7, ease: E.expo }, 0.8);
+draw("#w1, #w2", 1.3, 0.8);
+tl.set("#scor", { textContent: "–" }, 0);
+const secs = { v: 15 };
+tl.to(secs, { v: 3, duration: 12, ease: "none", onUpdate: () => { document.getElementById("tm").textContent = "0:" + String(Math.ceil(secs.v)).padStart(2, "0"); } }, 2.0);
+// player taps B
+tl.to("#ab", { scale: 0.92, backgroundColor: "#cfe6cc", duration: 0.1 }, 3.4);
+tl.to("#ab", { scale: 1, duration: 0.3, ease: E.back }, 3.5);
+tl.fromTo("#rip", { scale: 0.4, opacity: 0.9 }, { scale: 3, opacity: 0, duration: 0.5, ease: "power2.out" }, 3.4);
+tl.set("#up", { x: 1590, y: 416, opacity: 1 }, 3.7);
+tl.to("#up", { x: 1240, y: 330, duration: 0.9, ease: "power2.inOut" }, 3.7);
+tl.to("#up", { opacity: 0, duration: 0.15 }, 4.6);
+tl.set("#an", { textContent: "3 / 3" }, 4.7);
+tl.fromTo("#node", { scale: 1 }, { scale: 1.04, duration: 0.15, yoyo: true, repeat: 1 }, 4.7);
+tl.set("#scor", { textContent: "You +850" }, 5.1);
+tl.set("#sd", { textContent: "You · Maya · Dev" }, 5.1);
+// twin pulses down to both screens at once
+tl.set("#d1", { x: 680, y: 330, opacity: 1 }, 5.6);
+tl.set("#d2", { x: 1240, y: 330, opacity: 1 }, 5.6);
+tl.to("#d1", { x: 470, y: 466, duration: 0.8, ease: "power2.inOut" }, 5.6);
+tl.to("#d2", { x: 1590, y: 416, duration: 0.8, ease: "power2.inOut" }, 5.6);
+tl.to("#d1, #d2", { opacity: 0, duration: 0.15 }, 6.4);
+// both leaderboards reorder together: You 3rd → 1st
+for (const s of ["#host", "#phone"]) {
+  tl.to(s + " .lr[data-i='2']", { y: -116, duration: 0.7, ease: "power3.inOut" }, 6.5);
+  tl.to(s + " .lr[data-i='0']", { y: 58, duration: 0.7, ease: "power3.inOut" }, 6.5);
+  tl.to(s + " .lr[data-i='1']", { y: 58, duration: 0.7, ease: "power3.inOut" }, 6.5);
+  tl.to(s + " .lr[data-i='2'] .tr i", { width: "91.66666666666666%", backgroundColor: "#0b6122", duration: 0.7, ease: E.out }, 6.5);
+}
+const sc = { v: 1900 };
+tl.to(sc, { v: 2750, duration: 0.7, ease: E.out, onUpdate: () => { document.querySelector("#host .lr[data-i='2'] .sc").textContent = Math.round(sc.v); } }, 6.5);
+tl.fromTo("#cap", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: E.out }, 8.6);
+// owner's answers feed mastery
+draw("#w3", 10.8, 0.6);
+tl.set("#mi", { scaleX: 0.41 }, 0);
+tl.fromTo("#mast", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: E.out }, 11.2);
+tl.to("#mi", { scaleX: 0.47, duration: 0.9, ease: "power2.inOut" }, 12.2);
+count("#mv", 0.41, 0.47, 12.2, 0.9, (v) => v.toFixed(2));
+
+window.__timelines["G14"] = tl;
+    </script>
+  </body>
+</html>

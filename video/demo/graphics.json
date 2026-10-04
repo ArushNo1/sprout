@@ -1,0 +1,98 @@
+[
+  {
+    "id": "G01",
+    "title": "Learning is cumulative",
+    "dur": 14,
+    "overlay": false
+  },
+  {
+    "id": "G02",
+    "title": "The context pile",
+    "dur": 17,
+    "overlay": false
+  },
+  {
+    "id": "G03",
+    "title": "Sprout wordmark",
+    "dur": 7,
+    "overlay": false
+  },
+  {
+    "id": "G04",
+    "title": "Five verbs",
+    "dur": 18,
+    "overlay": false
+  },
+  {
+    "id": "G05",
+    "title": "Play together",
+    "dur": 8,
+    "overlay": false
+  },
+  {
+    "id": "G06",
+    "title": "The router",
+    "dur": 8,
+    "overlay": false
+  },
+  {
+    "id": "G07",
+    "title": "Clean graph",
+    "dur": 12,
+    "overlay": true
+  },
+  {
+    "id": "G08",
+    "title": "Draft to confirmed",
+    "dur": 8,
+    "overlay": true
+  },
+  {
+    "id": "G09",
+    "title": "What's next",
+    "dur": 16,
+    "overlay": false
+  },
+  {
+    "id": "G10",
+    "title": "Which format",
+    "dur": 12,
+    "overlay": false
+  },
+  {
+    "id": "G11",
+    "title": "One tap one transaction",
+    "dur": 28,
+    "overlay": false
+  },
+  {
+    "id": "G12",
+    "title": "The garden stays",
+    "dur": 10,
+    "overlay": false
+  },
+  {
+    "id": "G13",
+    "title": "Welcome back",
+    "dur": 14,
+    "overlay": true
+  },
+  {
+    "id": "G14",
+    "title": "One state two screens",
+    "dur": 18,
+    "overlay": false
+  },
+  {
+    "id": "G15",
+    "title": "One system",
+    "dur": 26,
+    "overlay": false
+  },
+  {
+    "id": "G16",
+    "title": "End card",
+    "dur": 10,
+    "overlay": false
+  }
+]

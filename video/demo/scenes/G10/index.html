@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Which format</title>
+    <script src="assets/gsap.min.js"></script>
+    <style>
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Italic.ttf") format("truetype"); font-weight: 400; font-style: italic; }
+@font-face { font-family: "DejaVu Sans Mono"; src: url("assets/DejaVuSansMono.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+:root {
+  --paper: #fbf6ef; --cream: #f4eadf; --tan: #dccbb2; --green: #0b6122; --primary: #0a4d17;
+  --mid: #4e8a5e; --vein: #a4d7a2; --bloom: #e8a33d; --wilt: #b0584c; --focus: #1f6fb2; --ink: #222222;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: transparent; }
+#root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Instrument Serif", Georgia, serif; color: var(--ink); }
+.scene { position: absolute; inset: 0; }
+.abs { position: absolute; }
+#bg { position: absolute; inset: 0;
+  background: radial-gradient(1300px 900px at 18% 12%, #ffffff 0%, rgba(255,255,255,0) 70%),
+              radial-gradient(1200px 900px at 92% 95%, #dcebd3 0%, rgba(220,235,211,0) 70%), #f3ebdd; }
+.leaf { position: absolute; width: 300px; height: auto; opacity: 0.9; }
+#leaf-a { left: -90px; top: -80px; }
+#leaf-b { right: -100px; bottom: -90px; }
+.frost { background: rgba(255,255,255,0.66); border: 2px solid rgba(11,97,34,0.16); border-radius: 36px;
+  box-shadow: 0 30px 80px rgba(11,97,34,0.14), inset 0 2px 0 rgba(255,255,255,0.85); }
+.over .frost { background: rgba(255,253,249,0.95); }
+.solid { background: #fffdf9; border: 2px solid rgba(11,97,34,0.18); border-radius: 30px;
+  box-shadow: 0 24px 60px rgba(11,97,34,0.16); }
+.kicker { position: absolute; left: 192px; top: 120px; display: flex; align-items: center; gap: 20px;
+  font-style: italic; font-size: 44px; color: var(--mid); }
+.kicker i { display: block; width: 80px; height: 4px; background: var(--vein); transform-origin: 0 50%; }
+.head { font-size: 96px; line-height: 1.02; letter-spacing: -2px; color: var(--green); }
+.chip { display: inline-flex; align-items: center; gap: 14px; font-size: 38px; color: var(--green);
+  background: rgba(164,215,162,0.38); border-radius: 999px; padding: 6px 28px 10px; white-space: nowrap; }
+.pill { display: inline-flex; align-items: center; justify-content: center; gap: 16px; border-radius: 999px; white-space: nowrap; }
+.mono { font-family: "DejaVu Sans Mono", monospace; letter-spacing: -0.5px; }
+.it { font-style: italic; }
+.dot { width: 16px; height: 16px; border-radius: 50%; background: var(--mid); display: inline-block; flex: none; }
+.plant { position: absolute; width: 100%; height: 100%; left: 0; top: 0; }
+svg text { font-family: "Instrument Serif", Georgia, serif; }
+
+#q { position: absolute; left: 192px; top: 190px; }
+.fc { position: absolute; top: 340px; width: 350px; height: 400px; padding: 28px 25px; }
+.fc .nm { font-size: 44px; color: var(--ink); }
+.fc svg { display: block; margin-top: 20px; overflow: visible; }
+.fc .val { font-size: 64px; color: var(--green); margin-top: 18px; }
+.fc .val small { font-size: 28px; font-style: italic; color: var(--mid); margin-left: 8px; }
+.fc .tag { position: absolute; right: 22px; top: -26px; font-size: 32px; padding: 6px 22px 10px; background: var(--primary); color: var(--cream); opacity: 0; }
+#lab { position: absolute; left: 192px; top: 790px; font-size: 40px; font-style: italic; color: var(--mid); }
+#line { position: absolute; left: 0; right: 0; top: 865px; text-align: center; font-size: 66px; color: var(--green); letter-spacing: -1px; }
+</style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="G10" data-start="0" data-duration="12" data-width="1920" data-height="1080">
+      <div id="bg"><img id="leaf-a" class="leaf" data-layout-allow-overflow src="assets/leaf.png" alt="" /><img id="leaf-b" class="leaf" data-layout-allow-overflow src="assets/leaf.png" alt="" /></div>
+      <section id="sc" class="scene clip" data-start="0" data-duration="12" data-track-index="1">
+
+<div class="kicker" id="kick"><i></i><span>algorithm · the teaching format</span></div>
+<div class="head" id="q" style="font-size:84px">Which way should it teach?</div>
+<div class="fc frost" id="f0" style="left:192px"><span class="pill tag">picked</span><div class="nm">Worked example</div>
+<svg width="300" height="150" viewBox="0 0 300 150"><path d="M0 150 L5.0 150.0 L10.0 150.0 L15.0 150.0 L20.0 150.0 L25.0 150.0 L30.0 150.0 L35.0 150.0 L40.0 150.0 L45.0 150.0 L50.0 150.0 L55.0 150.0 L60.0 150.0 L65.0 149.9 L70.0 149.9 L75.0 149.8 L80.0 149.7 L85.0 149.6 L90.0 149.3 L95.0 149.0 L100.0 148.6 L105.0 148.0 L110.0 147.3 L115.0 146.3 L120.0 145.1 L125.0 143.6 L130.0 141.7 L135.0 139.4 L140.0 136.7 L145.0 133.4 L150.0 129.6 L155.0 125.3 L160.0 120.3 L165.0 114.6 L170.0 108.4 L175.0 101.4 L180.0 93.9 L185.0 85.9 L190.0 77.4 L195.0 68.6 L200.0 59.6 L205.0 50.5 L210.0 41.8 L215.0 33.5 L220.0 25.9 L225.0 19.5 L230.0 14.4 L235.0 11.2 L240.0 10.0 L245.0 11.3 L250.0 15.2 L255.0 22.1 L260.0 32.0 L265.0 44.7 L270.0 60.2 L275.0 77.8 L280.0 96.6 L285.0 115.4 L290.0 132.3 L295.0 144.9 L300 150 Z" fill="rgba(164,215,162,0.45)" stroke="#4e8a5e" stroke-width="3"/><line id="mk0" x1="0" y1="0" x2="0" y2="150" stroke="#1f6fb2" stroke-width="4"/><circle id="md0" cx="0" cy="0" r="9" fill="#1f6fb2"/></svg>
+<div class="val"><span id="v0">0.00</span><small>sampled</small></div></div>
+<div class="fc frost" id="f1" style="left:587px"><span class="pill tag">picked</span><div class="nm">Flashcards</div>
+<svg width="300" height="150" viewBox="0 0 300 150"><path d="M0 150 L5.0 149.9 L10.0 149.5 L15.0 148.3 L20.0 146.2 L25.0 143.2 L30.0 139.1 L35.0 133.9 L40.0 127.7 L45.0 120.6 L50.0 112.7 L55.0 104.3 L60.0 95.3 L65.0 86.1 L70.0 76.8 L75.0 67.5 L80.0 58.5 L85.0 49.9 L90.0 41.8 L95.0 34.5 L100.0 27.9 L105.0 22.3 L110.0 17.7 L115.0 14.1 L120.0 11.6 L125.0 10.2 L130.0 10.0 L135.0 10.9 L140.0 12.8 L145.0 15.7 L150.0 19.6 L155.0 24.4 L160.0 29.9 L165.0 36.2 L170.0 42.9 L175.0 50.2 L180.0 57.7 L185.0 65.5 L190.0 73.4 L195.0 81.2 L200.0 89.0 L205.0 96.5 L210.0 103.6 L215.0 110.4 L220.0 116.7 L225.0 122.5 L230.0 127.7 L235.0 132.3 L240.0 136.3 L245.0 139.7 L250.0 142.5 L255.0 144.8 L260.0 146.6 L265.0 147.9 L270.0 148.8 L275.0 149.4 L280.0 149.7 L285.0 149.9 L290.0 150.0 L295.0 150.0 L300 150 Z" fill="rgba(164,215,162,0.45)" stroke="#4e8a5e" stroke-width="3"/><line id="mk1" x1="0" y1="0" x2="0" y2="150" stroke="#1f6fb2" stroke-width="4"/><circle id="md1" cx="0" cy="0" r="9" fill="#1f6fb2"/></svg>
+<div class="val"><span id="v1">0.00</span><small>sampled</small></div></div>
+<div class="fc frost" id="f2" style="left:982px"><span class="pill tag">picked</span><div class="nm">Diagram</div>
+<svg width="300" height="150" viewBox="0 0 300 150"><path d="M0 150 L5.0 150.0 L10.0 150.0 L15.0 149.9 L20.0 149.7 L25.0 149.4 L30.0 148.8 L35.0 147.9 L40.0 146.6 L45.0 144.8 L50.0 142.5 L55.0 139.7 L60.0 136.3 L65.0 132.3 L70.0 127.7 L75.0 122.5 L80.0 116.7 L85.0 110.4 L90.0 103.6 L95.0 96.5 L100.0 89.0 L105.0 81.2 L110.0 73.4 L115.0 65.5 L120.0 57.7 L125.0 50.2 L130.0 42.9 L135.0 36.2 L140.0 29.9 L145.0 24.4 L150.0 19.6 L155.0 15.7 L160.0 12.8 L165.0 10.9 L170.0 10.0 L175.0 10.2 L180.0 11.6 L185.0 14.1 L190.0 17.7 L195.0 22.3 L200.0 27.9 L205.0 34.5 L210.0 41.8 L215.0 49.9 L220.0 58.5 L225.0 67.5 L230.0 76.8 L235.0 86.1 L240.0 95.3 L245.0 104.3 L250.0 112.7 L255.0 120.6 L260.0 127.7 L265.0 133.9 L270.0 139.1 L275.0 143.2 L280.0 146.2 L285.0 148.3 L290.0 149.5 L295.0 149.9 L300 150 Z" fill="rgba(164,215,162,0.45)" stroke="#4e8a5e" stroke-width="3"/><line id="mk2" x1="0" y1="0" x2="0" y2="150" stroke="#1f6fb2" stroke-width="4"/><circle id="md2" cx="0" cy="0" r="9" fill="#1f6fb2"/></svg>
+<div class="val"><span id="v2">0.00</span><small>sampled</small></div></div>
+<div class="fc frost" id="f3" style="left:1377px"><span class="pill tag">picked</span><div class="nm">Analogy</div>
+<svg width="300" height="150" viewBox="0 0 300 150"><path d="M0 150 L5.0 134.8 L10.0 120.6 L15.0 107.4 L20.0 95.1 L25.0 83.8 L30.0 73.5 L35.0 64.0 L40.0 55.4 L45.0 47.6 L50.0 40.6 L55.0 34.5 L60.0 29.0 L65.0 24.4 L70.0 20.4 L75.0 17.1 L80.0 14.5 L85.0 12.5 L90.0 11.1 L95.0 10.3 L100.0 10.0 L105.0 10.3 L110.0 11.0 L115.0 12.2 L120.0 13.9 L125.0 16.0 L130.0 18.5 L135.0 21.4 L140.0 24.6 L145.0 28.1 L150.0 31.9 L155.0 35.9 L160.0 40.2 L165.0 44.8 L170.0 49.4 L175.0 54.3 L180.0 59.3 L185.0 64.4 L190.0 69.5 L195.0 74.8 L200.0 80.0 L205.0 85.2 L210.0 90.5 L215.0 95.6 L220.0 100.7 L225.0 105.7 L230.0 110.6 L235.0 115.2 L240.0 119.8 L245.0 124.1 L250.0 128.1 L255.0 131.9 L260.0 135.4 L265.0 138.6 L270.0 141.5 L275.0 144.0 L280.0 146.1 L285.0 147.8 L290.0 149.0 L295.0 149.7 L300 150 Z" fill="rgba(164,215,162,0.45)" stroke="#4e8a5e" stroke-width="3"/><line id="mk3" x1="0" y1="0" x2="0" y2="150" stroke="#1f6fb2" stroke-width="4"/><circle id="md3" cx="0" cy="0" r="9" fill="#1f6fb2"/></svg>
+<div class="val"><span id="v3">0.00</span><small>sampled</small></div></div>
+<div id="lab">Thompson sampling: draw from what has worked for you, then pick the highest.</div>
+<div id="line">The model writes the lesson. The database picks the path.</div>
+
+      </section>
+    </div>
+    <script>
+
+const tl = gsap.timeline({ paused: true });
+const E = { out: "power3.out", expo: "expo.out", back: "back.out(1.5)", soft: "sine.inOut", in: "power2.in" };
+function draw(sel, t, d, ease) {
+  document.querySelectorAll(sel).forEach((el) => {
+    const len = el.getTotalLength();
+    el.style.strokeDasharray = len + " " + len;
+    tl.set(el, { opacity: 0 }, 0);
+    tl.set(el, { opacity: 1 }, t);
+    tl.fromTo(el, { strokeDashoffset: len }, { strokeDashoffset: 0, duration: d, ease: ease || "power2.inOut" }, t);
+  });
+}
+function kick(t) {
+  tl.fromTo("#kick", { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: E.out }, t);
+  tl.fromTo("#kick i", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: E.soft }, t + 0.1);
+}
+function count(el, from, to, t, d, fmt) {
+  const o = { v: from };
+  const node = document.querySelector(el);
+  const f = fmt || ((v) => Math.round(v).toLocaleString("en-US"));
+  tl.to(o, { v: to, duration: d, ease: "power2.out", onUpdate: () => { node.textContent = f(o.v); } }, t);
+}
+
+tl.fromTo("#leaf-a", { rotate: -12, x: -40, y: -30 }, { rotate: 2, x: 0, y: 0, duration: 1.4, ease: E.out }, 0);
+tl.fromTo("#leaf-b", { rotate: 192, x: 40, y: 30 }, { rotate: 180, x: 0, y: 0, duration: 1.4, ease: E.out }, 0.1);
+tl.to("#leaf-a", { rotate: -5, duration: 10.5, ease: E.soft }, 1.4);
+tl.to("#leaf-b", { rotate: 186, duration: 10.5, ease: E.soft }, 1.5);
+
+
+kick(0.2);
+tl.fromTo("#q", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: E.expo }, 0.3);
+tl.fromTo(".fc", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: E.expo, stagger: 0.12 }, 0.7);
+const S = [[0.62,0.77,0.71,0.81],[0.52,0.31,0.49,0.46],[0.44,0.66,0.51,0.58],[0.21,0.55,0.3,0.39]];
+for (let i = 0; i < 4; i++) {
+  tl.set("#mk" + i + ", #md" + i, { opacity: 0 }, 0);
+  tl.to("#mk" + i + ", #md" + i, { opacity: 1, duration: 0.2 }, 2.0);
+  let t = 2.0;
+  for (let k = 0; k < S[i].length; k++) {
+    const x = S[i][k] * 300;
+    tl.to("#mk" + i, { attr: { x1: x, x2: x }, duration: 0.45, ease: "power2.inOut" }, t);
+    tl.to("#md" + i, { attr: { cx: x }, duration: 0.45, ease: "power2.inOut" }, t);
+    count("#v" + i, k ? S[i][k - 1] : 0, S[i][k], t, 0.45, (v) => v.toFixed(2));
+    t += 0.55;
+  }
+}
+tl.fromTo("#lab", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: E.out }, 2.2);
+tl.to("#f1, #f2, #f3", { opacity: 0.5, duration: 0.5 }, 4.6);
+tl.to("#f0", { y: -24, borderColor: "rgba(11,97,34,0.7)", duration: 0.6, ease: E.back }, 4.6);
+tl.to("#f0 .tag", { opacity: 1, duration: 0.3 }, 4.8);
+tl.to("#lab", { opacity: 0, duration: 0.4 }, 8.2);
+tl.fromTo("#line", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: E.expo }, 8.4);
+
+window.__timelines["G10"] = tl;
+    </script>
+  </body>
+</html>

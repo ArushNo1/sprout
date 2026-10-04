@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Five verbs</title>
+    <script src="assets/gsap.min.js"></script>
+    <style>
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+@font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-Italic.ttf") format("truetype"); font-weight: 400; font-style: italic; }
+@font-face { font-family: "DejaVu Sans Mono"; src: url("assets/DejaVuSansMono.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+:root {
+  --paper: #fbf6ef; --cream: #f4eadf; --tan: #dccbb2; --green: #0b6122; --primary: #0a4d17;
+  --mid: #4e8a5e; --vein: #a4d7a2; --bloom: #e8a33d; --wilt: #b0584c; --focus: #1f6fb2; --ink: #222222;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: transparent; }
+#root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Instrument Serif", Georgia, serif; color: var(--ink); }
+.scene { position: absolute; inset: 0; }
+.abs { position: absolute; }
+#bg { position: absolute; inset: 0;
+  background: radial-gradient(1300px 900px at 18% 12%, #ffffff 0%, rgba(255,255,255,0) 70%),
+              radial-gradient(1200px 900px at 92% 95%, #dcebd3 0%, rgba(220,235,211,0) 70%), #f3ebdd; }
+.leaf { position: absolute; width: 300px; height: auto; opacity: 0.9; }
+#leaf-a { left: -90px; top: -80px; }
+#leaf-b { right: -100px; bottom: -90px; }
+.frost { background: rgba(255,255,255,0.66); border: 2px solid rgba(11,97,34,0.16); border-radius: 36px;
+  box-shadow: 0 30px 80px rgba(11,97,34,0.14), inset 0 2px 0 rgba(255,255,255,0.85); }
+.over .frost { background: rgba(255,253,249,0.95); }
+.solid { background: #fffdf9; border: 2px solid rgba(11,97,34,0.18); border-radius: 30px;
+  box-shadow: 0 24px 60px rgba(11,97,34,0.16); }
+.kicker { position: absolute; left: 192px; top: 120px; display: flex; align-items: center; gap: 20px;
+  font-style: italic; font-size: 44px; color: var(--mid); }
+.kicker i { display: block; width: 80px; height: 4px; background: var(--vein); transform-origin: 0 50%; }
+.head { font-size: 96px; line-height: 1.02; letter-spacing: -2px; color: var(--green); }
+.chip { display: inline-flex; align-items: center; gap: 14px; font-size: 38px; color: var(--green);
+  background: rgba(164,215,162,0.38); border-radius: 999px; padding: 6px 28px 10px; white-space: nowrap; }
+.pill { display: inline-flex; align-items: center; justify-content: center; gap: 16px; border-radius: 999px; white-space: nowrap; }
+.mono { font-family: "DejaVu Sans Mono", monospace; letter-spacing: -0.5px; }
+.it { font-style: italic; }
+.dot { width: 16px; height: 16px; border-radius: 50%; background: var(--mid); display: inline-block; flex: none; }
+.plant { position: absolute; width: 100%; height: 100%; left: 0; top: 0; }
+svg text { font-family: "Instrument Serif", Georgia, serif; }
+
+#card { position: absolute; left: 192px; top: 230px; width: 600px; height: 620px; padding: 50px 54px; }
+#card .wm { position: relative; font-size: 168px; line-height: 1; color: var(--green); letter-spacing: -4px; margin-top: 40px; display: inline-block; padding-right: 50px; }
+#card .wm .lw { position: absolute; right: -2px; top: 18px; width: 48px; height: 48px; }
+#card .handle { font-size: 30px; color: var(--mid); margin-top: 18px; }
+#card .desc { font-size: 50px; font-style: italic; color: var(--ink); margin-top: 60px; line-height: 1.1; }
+.row { position: absolute; left: 960px; height: 120px; display: flex; align-items: center; gap: 30px; }
+.row .pb { position: relative; width: 84px; height: 105px; flex: none; }
+.row span { font-size: 60px; color: var(--ink); white-space: nowrap; }
+#loop { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; }
+#loopl { position: absolute; left: 1560px; display: none; top: 500px; font-size: 36px; font-style: italic; color: var(--mid); width: 170px; }
+</style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="G04" data-start="0" data-duration="18" data-width="1920" data-height="1080">
+      <div id="bg"><img id="leaf-a" class="leaf" data-layout-allow-overflow src="assets/leaf.png" alt="" /><img id="leaf-b" class="leaf" data-layout-allow-overflow src="assets/leaf.png" alt="" /></div>
+      <section id="sc" class="scene clip" data-start="0" data-duration="18" data-track-index="1">
+
+<div class="frost" id="card">
+  <span class="chip"><span class="dot"></span>in ASI:One</span><br/>
+  <div class="wm">sprout<div class="lw"><svg viewBox="0 0 70 70" width="100%" height="100%"><path class="lf" d="M5 62 C5 28 30 6 66 4 C66 38 44 64 5 62Z" fill="#0b6122"/><path d="M12 56 L52 18" stroke="#a4d7a2" stroke-width="3" stroke-linecap="round"/></svg></div></div>
+  <div class="handle mono">@blank-agent-184</div>
+  <div class="desc">an adaptive study partner, built from five agents</div>
+</div>
+<div class="row" id="r0" style="top:215px"><div class="pb"><img class="plant" src="assets/plant-0.svg" alt="" /></div><span>map the course</span></div>
+<div class="row" id="r1" style="top:347px"><div class="pb"><img class="plant" src="assets/plant-1.svg" alt="" /></div><span>find the gaps</span></div>
+<div class="row" id="r2" style="top:479px"><div class="pb"><img class="plant" src="assets/plant-2.svg" alt="" /></div><span>teach the next thing</span></div>
+<div class="row" id="r3" style="top:611px"><div class="pb"><img class="plant" src="assets/plant-3.svg" alt="" /></div><span>schedule the review</span></div>
+<div class="row" id="r4" style="top:743px"><div class="pb"><img class="plant" src="assets/plant-4.svg" alt="" /></div><span>pick up where you left off</span></div>
+<svg id="loop" viewBox="0 0 1920 1080"><path id="loopp" d="M950 815 C860 790 840 620 845 520 C850 400 870 300 948 275" stroke="#a4d7a2" stroke-width="6" fill="none" stroke-linecap="round"/><path id="loopa" d="M922 256 L950 275 L926 298" stroke="#a4d7a2" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+
+      </section>
+    </div>
+    <script>
+
+const tl = gsap.timeline({ paused: true });
+const E = { out: "power3.out", expo: "expo.out", back: "back.out(1.5)", soft: "sine.inOut", in: "power2.in" };
+function draw(sel, t, d, ease) {
+  document.querySelectorAll(sel).forEach((el) => {
+    const len = el.getTotalLength();
+    el.style.strokeDasharray = len + " " + len;
+    tl.set(el, { opacity: 0 }, 0);
+    tl.set(el, { opacity: 1 }, t);
+    tl.fromTo(el, { strokeDashoffset: len }, { strokeDashoffset: 0, duration: d, ease: ease || "power2.inOut" }, t);
+  });
+}
+function kick(t) {
+  tl.fromTo("#kick", { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: E.out }, t);
+  tl.fromTo("#kick i", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: E.soft }, t + 0.1);
+}
+function count(el, from, to, t, d, fmt) {
+  const o = { v: from };
+  const node = document.querySelector(el);
+  const f = fmt || ((v) => Math.round(v).toLocaleString("en-US"));
+  tl.to(o, { v: to, duration: d, ease: "power2.out", onUpdate: () => { node.textContent = f(o.v); } }, t);
+}
+
+tl.fromTo("#leaf-a", { rotate: -12, x: -40, y: -30 }, { rotate: 2, x: 0, y: 0, duration: 1.4, ease: E.out }, 0);
+tl.fromTo("#leaf-b", { rotate: 192, x: 40, y: 30 }, { rotate: 180, x: 0, y: 0, duration: 1.4, ease: E.out }, 0.1);
+tl.to("#leaf-a", { rotate: -5, duration: 16.5, ease: E.soft }, 1.4);
+tl.to("#leaf-b", { rotate: 186, duration: 16.5, ease: E.soft }, 1.5);
+
+
+tl.fromTo("#card", { x: -80, opacity: 0, scale: 0.96 }, { x: 0, opacity: 1, scale: 1, duration: 0.8, ease: E.expo }, 0.3);
+tl.fromTo("#card .lw", { scale: 0, rotate: -60 }, { scale: 1, rotate: 0, duration: 0.6, ease: E.back }, 0.9);
+tl.fromTo("#r0", { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: E.out }, 2);
+tl.fromTo("#r0 .pb", { scale: 0.4, transformOrigin: "50% 100%" }, { scale: 1, duration: 0.6, ease: E.back }, 2);
+tl.fromTo("#r1", { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: E.out }, 4.6);
+tl.fromTo("#r1 .pb", { scale: 0.4, transformOrigin: "50% 100%" }, { scale: 1, duration: 0.6, ease: E.back }, 4.6);
+tl.fromTo("#r2", { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: E.out }, 7);
+tl.fromTo("#r2 .pb", { scale: 0.4, transformOrigin: "50% 100%" }, { scale: 1, duration: 0.6, ease: E.back }, 7);
+tl.fromTo("#r3", { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: E.out }, 9.4);
+tl.fromTo("#r3 .pb", { scale: 0.4, transformOrigin: "50% 100%" }, { scale: 1, duration: 0.6, ease: E.back }, 9.4);
+tl.fromTo("#r4", { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: E.out }, 11.8);
+tl.fromTo("#r4 .pb", { scale: 0.4, transformOrigin: "50% 100%" }, { scale: 1, duration: 0.6, ease: E.back }, 11.8);
+tl.to("#r0, #r1, #r2, #r3", { opacity: 0.55, duration: 0.6 }, 13.2);
+draw("#loopp", 13.4, 1.4, "power2.inOut");
+tl.fromTo("#loopa", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 14.7);
+tl.to("#r0, #r1, #r2, #r3", { opacity: 1, duration: 0.6, stagger: 0.12 }, 14.8);
+
+window.__timelines["G04"] = tl;
+    </script>
+  </body>
+</html>
