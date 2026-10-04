@@ -21,6 +21,19 @@ class TopicListTest(unittest.TestCase):
         self.assertFalse(mappable("", ""))
 
 
+class SubjectRequestTest(unittest.TestCase):
+    def test_a_named_subject_is_enough_but_chatter_is_not(self):
+        from curriculum.skill import subject_request
+        for text in ("linear algebra", "teach me organic chemistry", "I want to learn music theory for fun", "AP Bio"):
+            self.assertTrue(subject_request(text), text)
+        for text in ("", "hi", "Hello!", "help", "what can you do?", "ok", "json", "@agent1qx {\"selection\": {}}", "x" * 400):
+            self.assertFalse(subject_request(text), text)
+
+    def test_the_prompt_tells_the_model_not_to_ask_for_more(self):
+        from curriculum.prompt import SYSTEM_PROMPT
+        self.assertIn("Never ask for more", SYSTEM_PROMPT)
+
+
 class NormalizeTest(unittest.TestCase):
     def test_example_order_respects_prerequisites(self):
         m = normalize(json.loads(EXAMPLE.read_text()))

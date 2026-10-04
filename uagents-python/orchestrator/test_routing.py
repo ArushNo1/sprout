@@ -45,6 +45,20 @@ class RoutingTest(unittest.TestCase):
             self.assertEqual((r.specialist, r.text), (CURRICULUM, text))
         self.assertEqual(choose_route("quiz, review, teach me", False, TUTOR, True).specialist, TUTOR)
 
+    def test_a_bare_topic_becomes_a_course(self):
+        for text in ("linear algebra", "I want to learn organic chemistry", "AP Bio"):
+            r = choose_route(text, False, None, has_course=False)
+            self.assertEqual((r.specialist, r.text, r.start), (CURRICULUM, text, False), text)
+        for text in ("hi", "Hello!", "help", "what can you do?"):  # chatter still gets the welcome
+            r = choose_route(text, False, None, has_course=False)
+            self.assertEqual((r.specialist, r.text, r.start), (CURRICULUM, "", True), text)
+
+    def test_a_new_subject_mid_course_goes_to_curriculum(self):
+        for text in ("I want to learn music theory", "i'm taking organic chemistry", "help me learn Spanish"):
+            self.assertEqual(choose_route(text, False, TUTOR, True).specialist, CURRICULUM, text)
+        for text in ("teach me heaps", "I want to learn more", "I need to study for my midterm", "prepare for the exam"):
+            self.assertEqual(choose_route(text, False, TUTOR, True).specialist, TUTOR, text)
+
     def test_games(self):
         r = choose_route("let's play a kahoot game with my friends", False, TUTOR, True)
         self.assertEqual((r.specialist, r.text, r.start), (TUTOR, "let's play a kahoot game with my friends", False))

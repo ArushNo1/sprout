@@ -12,6 +12,13 @@ STUDY_WORDS = re.compile(r"\b(keep going|continue|study|quiz|review|teach|learn|
                          r"diagnostic|where (was|did) i|pick up|let'?s go|ready)\b", re.I)
 FORGET_WORDS = re.compile(r"\b(forget|delete|remove|erase)\b.*\b(course|class|progress|data|history)\b", re.I)
 GAME_WORDS = re.compile(r"\b(games?|kahoot|gimkit|blooket|quiz (my|with) friends|play with|arcade|nexus|runner|meteor|blaster|video ?games?)\b", re.I)
+# Plain chatter that says nothing about a subject. (curriculum/skill.py has the same list for the standalone agent.)
+SMALLTALK = re.compile(r"^\W*(hi+|hello|hey|yo|sup|start|menu|help|thanks?( you)?|ok(ay)?|cool|test|"
+                       r"what can you do|who are you|how does this work)\W*$", re.I)
+# "I want to learn X", "I'm taking X": a new subject, even mid-course. "Teach me X" or "prepare for X" aren't
+# here because they usually mean the course the student already has.
+NEW_SUBJECT = re.compile(r"\b(i (want|need|'?d like|wanna) to (learn|study|master)|help me (learn|study)|"
+                         r"i'?m (studying|learning|taking))\s+(?!(this|that|it|more|next|the next|again|for)\b)\S", re.I)
 SYLLABUS_HINTS = re.compile(r"\b(week|unit|chapter|lecture|module|midterm|final|exam)\b", re.I)
 
 
@@ -61,7 +68,12 @@ def choose_route(text: str, new_chat: bool, cards_from, has_course: bool) -> Rou
     if looks_like_syllabus(text) or COURSE_WORDS.search(text):
         return Route(CURRICULUM, text=text if looks_like_syllabus(text) else "", start=not looks_like_syllabus(text),
                      why="course setup")
+    if NEW_SUBJECT.search(text) and len(text) <= 300:
+        return Route(CURRICULUM, text=text, why="new subject")
     if not has_course:
+        # Anything that names a subject becomes a course; the curriculum agent fills in the rest.
+        if text and not SMALLTALK.match(text) and len(text) <= 300:
+            return Route(CURRICULUM, text=text, why="topic, no course yet")
         return Route(CURRICULUM, start=True, why="no course yet")
     if GAME_WORDS.search(text):
         return Route(TUTOR, text=text, why="live game")

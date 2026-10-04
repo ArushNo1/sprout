@@ -30,6 +30,9 @@ from .prompt import SYSTEM_PROMPT, user_prompt
 ASI_URL = "https://api.asi1.ai/v1/chat/completions"
 MODEL = os.getenv("ASI_ONE_MODEL", "asi1-mini")
 MIN_SYLLABUS_CHARS = 80
+# Chatter and questions about the bot: not a subject to build a course from.
+SMALLTALK = re.compile(r"^\W*(hi+|hello|hey|yo|sup|start|menu|help|thanks?( you)?|ok(ay)?|cool|test|json|"
+                       r"what can you do|who are you|how does this work)\W*$", re.I)
 TOPIC_SPLIT = re.compile(r"[\n,;•·]|\s-\s|^\s*[-*\d.)]+\s", re.M)
 
 
@@ -42,6 +45,15 @@ def mappable(syllabus: str, course_name: str = "") -> bool:
     """Enough to build a map from: a real syllabus, a list of two or more topics, or a course name
     (the model fills in a standard sequence for those)."""
     return len(syllabus.strip()) >= MIN_SYLLABUS_CHARS or len(topics(syllabus)) >= 2 or bool(course_name.strip())
+
+
+def subject_request(text: str) -> bool:
+    """A short plain-language message that names something to learn ("linear algebra", "I want to
+    learn organic chemistry for the MCAT"). The model works out the subject, level and syllabus
+    from it, so the student isn't asked for more."""
+    text = (text or "").strip()
+    return (3 <= len(text) <= 300 and not SMALLTALK.match(text) and not text.startswith(("@", "{", "["))
+            and bool(re.search(r"[A-Za-z]{3}", text)))
 
 
 def map_key(sender: str, what: str) -> str:
@@ -129,7 +141,8 @@ def save_course(address: str, cmap: dict, syllabus: str, course_id=None):
     return int(course_id)
 
 
-async def reply_with_map(ctx: Context, sender: str, syllabus: str, course_name=None, exam_date=None):
+async def reply_with_map(ctx: Context, sender: str, syllabus: str, course_name=None, exam_date=None,
+                         inferred: bool = False):
     try:
         cmap = await build_map(syllabus, course_name, exam_date)
     except Exception as err:
@@ -152,6 +165,10 @@ async def reply_with_map(ctx: Context, sender: str, syllabus: str, course_name=N
         "syllabus": syllabus,
         "course_id": course_id,
     })
+    if inferred:
+        await ctx.send(sender, text_message(
+            f"I didn't have a syllabus, so I filled in a standard {cmap['course']['name']} sequence myself. "
+            "Tap Edit to change anything, or Looks right to start."))
     await ctx.send(sender, map_card(cmap))
 
 
@@ -196,7 +213,7 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
             await ctx.send(sender, upload_card(name, selection.get("exam_date", ""), syllabus))
             return
         await reply_with_map(ctx, sender, syllabus or f"A standard course in {name}.", name or None,
-                             selection.get("exam_date") or None)
+                             selection.get("exam_date") or None, inferred=len(syllabus) < MIN_SYLLABUS_CHARS)
     elif action == "sample":
         await reply_with_map(ctx, sender, SAMPLE_SYLLABUS, SAMPLE_COURSE, selection.get("exam_date") or None)
     elif action == "edit_map":
@@ -220,7 +237,9 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
     elif text.lower() == "json" and ctx.storage.get(map_key(sender, "map")):
         await ctx.send(sender, text_message(f"```json\n{json.dumps(ctx.storage.get(map_key(sender, 'map')), indent=2)}\n```"))
     elif len(text) >= MIN_SYLLABUS_CHARS or len(topics(text)) >= 3:
-        await reply_with_map(ctx, sender, text)
+        await reply_with_map(ctx, sender, text, inferred=len(text) < MIN_SYLLABUS_CHARS)
+    elif subject_request(text):
+        await reply_with_map(ctx, sender, text, inferred=True)
     else:
         await ctx.send(sender, upload_card())
 

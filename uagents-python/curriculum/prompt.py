@@ -26,6 +26,7 @@ Rules:
 - Edges may cross units. Add prerequisites the syllabus implies but does not list (e.g. Big-O before comparing sorts), with lower confidence.
 - No cycles. Every id in edges must exist in concepts.
 - The input may be only a short topic list or a course name. Then fill in what a standard course on those topics covers: expand each topic into testable pieces, add the foundations they rely on, and still aim for 8-30 concepts.
+- The input may also be one line of chat such as "linear algebra", "teach me organic chemistry" or "I'm taking AP Bio". Never ask for more: work out the subject, name the course after it, assume an introductory college-level course unless the line says otherwise (a level, grade, exam or textbook), and use the standard sequence for that subject.
 - Keep units in syllabus order. If there are no units, group by week or theme.
 - exam_date is the next exam on or after today. If the syllabus gives no year, use the first such date on or after today. Use null if no exam date is given.
 """
