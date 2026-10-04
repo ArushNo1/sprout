@@ -2,6 +2,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.tsx';
+import Host from './play/Host.tsx';
+import Player from './play/Player.tsx';
+import { parseRoute } from './play/route.ts';
+import './play/play.css';
 import { Identity } from 'spacetimedb';
 import { SpacetimeDBProvider } from 'spacetimedb/react';
 import { DbConnection, ErrorContext } from './module_bindings/index.ts';
@@ -39,10 +43,20 @@ const connectionBuilder = DbConnection.builder()
   .onDisconnect(onDisconnect)
   .onConnectError(onConnectError);
 
+// /play and /host are live games; everything else is the garden.
+const route = parseRoute(window.location.pathname, window.location.search);
+if (route) document.title = route.kind === 'host' ? `Host ${route.code} · Sprout live` : 'Sprout live';
+const page =
+  route?.kind === 'host' ? (
+    <Host code={route.code} hostKey={route.key} />
+  ) : route?.kind === 'play' ? (
+    <Player code={route.code} playKey={route.key} />
+  ) : (
+    <App />
+  );
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <SpacetimeDBProvider connectionBuilder={connectionBuilder}>
-      <App />
-    </SpacetimeDBProvider>
+    <SpacetimeDBProvider connectionBuilder={connectionBuilder}>{page}</SpacetimeDBProvider>
   </StrictMode>
 );

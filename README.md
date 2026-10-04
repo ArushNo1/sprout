@@ -16,7 +16,7 @@ Open [ASI:One](https://asi1.ai) and message **Sprout** (`@blank-agent-184`). Tap
 | Agent | Handle | Address | What it does |
 | --- | --- | --- | --- |
 | **Sprout** (talk to this one) | `@blank-agent-184` | `agent1q27e9dntmewremft08ehnpdd7davz8kgy7dz744gr87q9jfqvewuq2h7q4g` | Chat Protocol agent students use. Routes each turn to the curriculum or tutor logic and runs it in-process. [Code](uagents-python/orchestrator) |
-| Sprout Tutor | `@blank-agent-183` | `agent1qfd9vn03a5udss62gpl9nag9r6qljz9td0ngmrdfzea70csvk04hwpc5upy` | Diagnostics, lessons, flashcards, reviews, the journey map. Also runs standalone. [Code](uagents-python/tutor) |
+| Sprout Tutor | `@blank-agent-183` | `agent1qfd9vn03a5udss62gpl9nag9r6qljz9td0ngmrdfzea70csvk04hwpc5upy` | Diagnostics, lessons, flashcards, reviews, the journey map, live multiplayer games. Also runs standalone. [Code](uagents-python/tutor) |
 | Sprout Curriculum | `@blank-agent-181` | `agent1qtddszc00qe3jgkpsu652wvp0nm4j4tywcpjt554ct5acn09gs3lu3nk8nh` | Syllabus to concept map, saved to the database. Also answers `GetConceptMap` / `ParseSyllabusRequest` from other agents. [Code](uagents-python/curriculum) |
 
 All three are hosted on Agentverse and use the Agent Chat Protocol with ASI:One interactive cards.
@@ -28,6 +28,7 @@ All three are hosted on Agentverse and use the Agent Chat Protocol with ASI:One 
 | Shared database (BKT mastery, SM-2 reviews, Thompson sampling over teaching formats, next-concept choice) | SpacetimeDB Maincloud, database `sprout-live` | [`spacetimedb/spacetimedb`](spacetimedb/spacetimedb), reducers in [API.md](spacetimedb/API.md) |
 | Card images (progress, course map, journey map) | https://sprout-cards-six.vercel.app | [`cards`](cards) |
 | Knowledge garden: every concept as a plant that grows with live mastery | https://sprout-garden-seven.vercel.app (`?u=<learner address>`) | [`spacetimedb/src`](spacetimedb/src) |
+| Live games (Kahoot-style): Sprout writes a quiz on your weak spots, friends join with a code, and your answers update your mastery | https://sprout-garden-seven.vercel.app/play | [`spacetimedb/src/play`](spacetimedb/src/play), plan and status in [docs/games-plan.md](docs/games-plan.md) |
 | Mastery models in Python: BKT parameter fitting from the attempt log, mastery labels | runs offline against `sprout-live` | [`mastery`](mastery) |
 
 ## How it fits together
@@ -64,9 +65,9 @@ Each agent prints an inspector link; connect it to a mailbox to reach it from AS
 ## Tests
 
 ```bash
-cd uagents-python && python -m unittest orchestrator.test_routing orchestrator.test_inprocess tutor.test_tutor curriculum.test_concept_map
+cd uagents-python && python -m unittest orchestrator.test_routing orchestrator.test_inprocess tutor.test_tutor tutor.test_game curriculum.test_concept_map
 python -m pytest mastery                 # from the repo root
-cd spacetimedb && npm test               # database algorithms and the garden
+cd spacetimedb && npm test               # database algorithms, game scoring, the garden and play-site helpers
 ```
 
 ## Deploy

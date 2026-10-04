@@ -2,6 +2,19 @@
 
 A student asks Sprout for a game ("make a game for my study group", or taps Play a game on a card). An agent builds a Kahoot/Gimkit-style quiz from the concepts that student is weakest on, creates a live room in SpacetimeDB, and replies with a card holding a join code and a Vercel link. Friends join from their phones, everyone plays in real time, and every answer from a Sprout learner feeds the same mastery model the tutor uses.
 
+## Status (Oct 3)
+
+Classic mode is built and tested against a local SpacetimeDB. It goes live once the module is published to `sprout-live` and Sprout's hosted files are redeployed.
+
+What changed from the plan below:
+
+- The game logic lives in the tutor (`uagents-python/tutor/game.py`), not a separate arcade agent. A game is one more action in the same in-process skill: "play a game" in chat, or Live game with friends on the progress card.
+- The play site is part of the garden app (`spacetimedb/src/play`, Vercel project `sprout-garden`), not a new project. Routes are `/play`, `/play/CODE`, `/play/CODE?k=KEY` (the student who made the game, whose answers count toward mastery) and `/host/CODE?k=KEY`.
+- The host key replaces `?u=<address>`. Putting a learner address in a shareable link would let anyone write to that learner's mastery, so the agent makes a random key per game and only the student's own chat gets it.
+- Linked players' answers update mastery at each reveal (attempt kind `game`), so the garden moves during the game, not just at the end.
+- Questions are written in parallel, one model call per concept, then a blind check pass answers each one and drops any whose key it disagrees with or finds ambiguous. A game of 8 questions takes about 6 s.
+- Not built yet: gold mode, the results card in chat, Rematch, the solo Kaplay mode and the Playwright smoke test.
+
 ## What we take from Nexus, and what we don't
 
 Nexus (`ArushNo1/Nexus`, `nexus-agent/`) generates a whole single-player game per lesson:

@@ -23,7 +23,7 @@ HERE = Path(__file__).parent
 DIST = HERE / "dist"
 SHARED = ["sprout_db", "relay"]
 PACKAGES = {
-    "tutor": ["learning", "content", "cards", "skill"],
+    "tutor": ["learning", "content", "cards", "game", "skill"],
     "curriculum": ["concept_map", "prompt", "cards", "skill"],
 }
 

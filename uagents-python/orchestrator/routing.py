@@ -11,6 +11,7 @@ COURSE_WORDS = re.compile(r"\b(syllabus|new course|add (a )?course|another cours
 STUDY_WORDS = re.compile(r"\b(keep going|continue|study|quiz|review|teach|learn|practice|progress|"
                          r"diagnostic|where (was|did) i|pick up|let'?s go|ready)\b", re.I)
 FORGET_WORDS = re.compile(r"\b(forget|delete|remove|erase)\b.*\b(course|class|progress|data|history)\b", re.I)
+GAME_WORDS = re.compile(r"\b(games?|kahoot|gimkit|blooket|quiz (my|with) friends|play with)\b", re.I)
 SYLLABUS_HINTS = re.compile(r"\b(week|unit|chapter|lecture|module|midterm|final|exam)\b", re.I)
 
 
@@ -54,6 +55,8 @@ def choose_route(text: str, new_chat: bool, cards_from, has_course: bool) -> Rou
                      why="course setup")
     if not has_course:
         return Route(CURRICULUM, start=True, why="no course yet")
+    if GAME_WORDS.search(text):
+        return Route(TUTOR, text=text, why="live game")
     if new_chat or not text or STUDY_WORDS.search(text):
         return Route(TUTOR, start=True, why="studying")
     return Route(TUTOR, start=True, why="default to studying")

@@ -113,7 +113,7 @@ def home_card(course_name: str, snap: dict, exam_days, insight=None, opener: str
              _button("Diagnostic quiz", "diagnostic", True) if snap["untested"] else None),
         _row(_button("See my journey", "journey"),
              _button(f"Review ({snap['due']} due)", "review") if snap["due"] else None),
-        _row(_button("Done for today", "done")),
+        _row(_button("Live game with friends", "game"), _button("Done for today", "done")),
     )
     text = opener or f"Here's where you are in {course_name}."
     return _card(f"{text} [Open your garden]({garden})" if garden else text, root)
@@ -191,6 +191,23 @@ def forget_card(course_name: str, course_id: int) -> ChatMessage:
         _row(_button("Forget it", "forget_confirm", True, course_id=course_id), _button("Keep it", "home")),
     )
     return _card(f"Forget {course_name}?", root)
+
+
+def game_card(course_name: str, game: dict, questions: int, seconds: int, topics: list) -> ChatMessage:
+    """A live game is ready: the join code, plus links to host it and to play as yourself."""
+    root = _section(
+        {"type": "heading", "value": f"Game code {game['code']}", "level": 1},
+        {"type": "text", "style": "muted",
+         "value": f"{questions} questions, {seconds} seconds each, on {', '.join(clip_label(t, 26) for t in topics)}"},
+        {"type": "text", "style": "body",
+         "value": f"Friends go to {game['join_display']} and type the code. Your own answers count toward your "
+                  "garden when you play from your link."},
+        _row(_button("Make another game", "game"), _button("Back to my course", "home")),
+    )
+    text = (f"Your {course_name} game is ready. Code **{game['code']}**.\n\n"
+            f"[Open the host screen]({game['host']}) on a laptop or TV and press Start when everyone's in. "
+            f"[Play as you]({game['self']}) on your phone so your answers grow your garden.")
+    return _card(text, root)
 
 
 def course_picker_card(courses: list) -> ChatMessage:

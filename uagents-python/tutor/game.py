@@ -1,0 +1,135 @@
+"""Live multiplayer games (Kahoot-style) on the play site (spacetimedb/src/play).
+
+Sprout writes a short quiz on the student's weakest and due concepts, stores it in SpacetimeDB
+with create_game, and sends back a six-character join code and two links: the host screen, which
+goes on a big screen and runs the game, and the student's own player link, whose answers update
+their mastery. Friends join at /play with the code. The database runs the game from there: timers,
+scoring and the live leaderboard all happen in reducers, and every screen follows by subscription.
+"""
+
+import json
+import os
+import secrets
+
+from sprout_db import call, sql, sql_str
+from .cards import GARDEN_URL
+from .content import _json_object, call_llm, clean_question
+from .learning import MASTERED, micros
+
+PLAY_URL = os.getenv("SPROUT_PLAY_URL", GARDEN_URL).rstrip("/")
+GAME_QUESTIONS = 8
+GAME_CONCEPTS = 4
+SECONDS_PER_QUESTION = 20
+MAX_PROMPT = 160
+MAX_CHOICE = 70
+
+
+def pick_concepts(concepts: list, n: int = GAME_CONCEPTS) -> list:
+    """Due reviews first, then the weakest tested concepts, then untested ones, then mastered ones."""
+    def rank(c):
+        p = c["p"]
+        if c["due"]:
+            tier = 0
+        elif p is not None and c["attempts"] and p < MASTERED:
+            tier = 1
+        elif not c["attempts"]:
+            tier = 2
+        else:
+            tier = 3
+        return tier, p if p is not None else 0.5, c["id"]
+    return sorted(concepts, key=rank)[:n]
+
+
+def split(total: int, parts: int) -> list:
+    """`total` questions over `parts` concepts, as evenly as possible: split(8, 3) == [3, 3, 2]."""
+    return [total // parts + (i < total % parts) for i in range(parts)] if parts else []
+
+
+def interleave(batches: list) -> list:
+    """One question from each concept in turn, so the same topic doesn't come up twice in a row."""
+    out = []
+    for i in range(max((len(b) for b in batches), default=0)):
+        out.extend(b[i] for b in batches if i < len(b))
+    return out
+
+
+def clean_game_question(raw: dict, concept_id: int):
+    """A model-written question fit for a timed game, or None: four short choices, a short prompt."""
+    try:
+        q = clean_question(raw)
+    except (ValueError, KeyError, TypeError):
+        return None
+    if len(q["choices"]) != 4 or len(q["question"]) > MAX_PROMPT or any(len(c) > MAX_CHOICE for c in q["choices"]):
+        return None
+    return {"concept_id": concept_id, "prompt": q["question"], "choices": q["choices"],
+            "answer": q["correct_index"], "explanation": q["explanation"][:300]}
+
+
+def write_questions(course_name: str, concept: dict, count: int) -> list:
+    """Up to `count` model-written questions on one concept, cleaned for a timed game."""
+    prompt = (f"Course: {course_name}\nConcept: {concept['name']}: {concept['summary']}\n\n"
+              f"Write {count} different multiple-choice questions on this concept for a live quiz game "
+              f"where players have {SECONDS_PER_QUESTION} seconds each. Each question should be answerable "
+              f"in that time without paper: short (under {MAX_PROMPT} characters), at the level of a course "
+              f"exam, testing understanding rather than wording. Give exactly 4 short choices (under "
+              f"{MAX_CHOICE} characters) with exactly one correct answer, true in every case, and plausible "
+              "wrong ones.\n\n"
+              'Return only JSON: {"questions": [{"question": str, "choices": [str, str, str, str], '
+              '"correct_index": int, "explanation": "one sentence on why the answer is right"}]}')
+    good = []
+    for _ in range(2):
+        try:
+            raw = _json_object(call_llm(prompt, temperature=0.7)).get("questions", [])
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError):
+            continue
+        seen = {q["prompt"] for q in good}
+        for item in raw if isinstance(raw, list) else []:
+            q = clean_game_question(item, concept["id"]) if isinstance(item, dict) else None
+            if q and q["prompt"] not in seen:
+                good.append(q)
+                seen.add(q["prompt"])
+        if len(good) >= count:
+            break
+    return good[:count]
+
+
+def check_answers(course_name: str, questions: list) -> list:
+    """Keeps the questions whose answer key a second, blind pass agrees with and doesn't find
+    ambiguous. A wrong key costs a player points in front of their friends, so a doubtful question
+    is dropped. If the check itself fails, the questions are kept as they are."""
+    if not questions:
+        return []
+    listing = "\n".join(f"{i}. {q['prompt']}\n" + "\n".join(f"   {j}: {c}" for j, c in enumerate(q["choices"]))
+                        for i, q in enumerate(questions))
+    prompt = (f"Course: {course_name}\n\nAnswer each multiple-choice question yourself. If more than one choice "
+              "could reasonably be called correct, or none is, mark it ambiguous.\n\n"
+              f"{listing}\n\n"
+              'Return only JSON: {"answers": [{"question": int, "choice": int, "ambiguous": bool}]}')
+    try:
+        answers = _json_object(call_llm(prompt, temperature=0)).get("answers", [])
+        verdicts = {int(a["question"]): a for a in answers if isinstance(a, dict)}
+    except (ValueError, KeyError, TypeError, json.JSONDecodeError):
+        return questions
+    return [q for i, q in enumerate(questions)
+            if i in verdicts and not verdicts[i].get("ambiguous") and verdicts[i].get("choice") == q["answer"]]
+
+
+def game_questions(course_name: str, concept: dict, count: int) -> list:
+    """`count` checked questions on one concept. Writes one spare, since the check drops some.
+    Blocks on the model, so callers run it in a thread."""
+    return check_answers(course_name, write_questions(course_name, concept, count + 1))[:count]
+
+
+def game_links(code: str, key: str) -> dict:
+    return {"code": code, "host": f"{PLAY_URL}/host/{code}?k={key}", "self": f"{PLAY_URL}/play/{code}?k={key}",
+            "join": f"{PLAY_URL}/play/{code}", "join_display": f"{PLAY_URL.split('://', 1)[-1]}/play"}
+
+
+def create_game(address: str, course_id: int, title: str, questions: list) -> dict:
+    """Stores the game and returns its code and links. The key in the host and player links is what
+    lets someone run the game or play as this student, so only the student's own chat gets it."""
+    key = secrets.token_urlsafe(18)
+    call("create_game", address, int(course_id), title, SECONDS_PER_QUESTION, key, questions)
+    rows = sql(f"SELECT code, created_at FROM game WHERE host_address = {sql_str(address)} AND status = 'lobby'")
+    newest = max(rows, key=lambda r: micros(r["created_at"]))
+    return game_links(newest["code"], key)

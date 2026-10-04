@@ -38,6 +38,12 @@ class RoutingTest(unittest.TestCase):
         r = choose_route("please forget my course", False, TUTOR, True)
         self.assertEqual((r.specialist, r.text, r.start), (TUTOR, "please forget my course", False))
 
+    def test_games(self):
+        r = choose_route("let's play a kahoot game with my friends", False, TUTOR, True)
+        self.assertEqual((r.specialist, r.text, r.start), (TUTOR, "let's play a kahoot game with my friends", False))
+        self.assertEqual(choose_route("play a game", False, TUTOR, False).specialist, CURRICULUM)  # no course yet
+        self.assertEqual(choose_route(tap("game"), False, TUTOR, True).specialist, TUTOR)
+
     def test_card_action(self):
         self.assertEqual(card_action(tap("sample")), "sample")
         self.assertIsNone(card_action("hello"))

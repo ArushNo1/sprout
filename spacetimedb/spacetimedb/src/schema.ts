@@ -184,6 +184,110 @@ const studyCard = table(
   }
 );
 
+// ── Live games (Kahoot-style; see docs/games-plan.md) ───────────────────────
+
+// One live room. Players join with `code`; the host screen proves itself with
+// the private host key the agent put in its link.
+const game = table(
+  { name: 'game', public: true },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    code: t.string().unique(),
+    hostAddress: t.string().index('btree'),
+    courseId: t.u64(),
+    title: t.string(),
+    // 'lobby' | 'question' | 'reveal' | 'finished'
+    status: t.string(),
+    questionIndex: t.u32(),
+    questionCount: t.u32(),
+    secondsPerQuestion: t.u32(),
+    questionStartedAt: t.option(t.timestamp()),
+    hostIdentity: t.option(t.identity()),
+    createdAt: t.timestamp(),
+    finishedAt: t.option(t.timestamp()),
+  }
+);
+
+// What players see. `correctIndex`, `explanation` and `choiceCounts` stay empty
+// until the question is revealed.
+const gameQuestion = table(
+  { name: 'game_question', public: true },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    gameId: t.u64().index('btree'),
+    index: t.u32(),
+    conceptId: t.u64(),
+    prompt: t.string(),
+    choices: t.array(t.string()),
+    correctIndex: t.option(t.u32()),
+    explanation: t.option(t.string()),
+    choiceCounts: t.array(t.u32()),
+  }
+);
+
+// Private: the answer key and the host link key.
+const gameSecret = table(
+  { name: 'game_secret' },
+  {
+    gameId: t.u64().primaryKey(),
+    hostKey: t.string(),
+    answers: t.array(t.u32()),
+    explanations: t.array(t.string()),
+  }
+);
+
+const player = table(
+  { name: 'player', public: true },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    gameId: t.u64().index('btree'),
+    identity: t.identity().index('btree'),
+    name: t.string(),
+    score: t.u32(),
+    streak: t.u32(),
+    correctCount: t.u32(),
+    // Set only for the course owner joining through the host link, whose
+    // answers then update their Sprout mastery.
+    learnerAddress: t.option(t.string()),
+    joinedAt: t.timestamp(),
+  }
+);
+
+// One row per answer. `correct` and `points` are filled at the reveal, so the
+// table never gives the answer away early.
+const playerAnswer = table(
+  { name: 'player_answer', public: true },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    gameId: t.u64().index('btree'),
+    playerId: t.u64().index('btree'),
+    questionIndex: t.u32(),
+    answeredMs: t.u32(),
+    correct: t.option(t.bool()),
+    points: t.u32(),
+  }
+);
+
+// Private: the option each player picked, until the reveal publishes counts.
+const gameChoice = table(
+  { name: 'game_choice' },
+  {
+    answerId: t.u64().primaryKey(),
+    choice: t.u32(),
+  }
+);
+
+// Ends a question when its time runs out (see the `end_question` reducer).
+export const gameTimer = table(
+  { name: 'game_timer' },
+  {
+    scheduledId: t.u64().primaryKey().autoInc(),
+    scheduledAt: t.scheduleAt(),
+    gameId: t.u64(),
+    questionIndex: t.u32(),
+  }
+);
+
 const spacetimedb = schema({
   config,
   agent,
@@ -197,6 +301,13 @@ const spacetimedb = schema({
   session,
   nextStep,
   studyCard,
+  game,
+  gameQuestion,
+  gameSecret,
+  player,
+  playerAnswer,
+  gameChoice,
+  gameTimer,
 });
 
 export default spacetimedb;

@@ -36,12 +36,18 @@ import {
 // Import all reducer arg schemas
 import AddConceptReducer from "./add_concept_reducer";
 import AddPrerequisiteReducer from "./add_prerequisite_reducer";
+import AdvanceGameReducer from "./advance_game_reducer";
+import ClaimHostReducer from "./claim_host_reducer";
 import ComputeNextStepReducer from "./compute_next_step_reducer";
 import ConfirmCourseReducer from "./confirm_course_reducer";
 import CreateCourseReducer from "./create_course_reducer";
+import CreateGameReducer from "./create_game_reducer";
+import EndGameReducer from "./end_game_reducer";
 import EndSessionReducer from "./end_session_reducer";
 import ForgetCourseReducer from "./forget_course_reducer";
 import IngestConceptGraphReducer from "./ingest_concept_graph_reducer";
+import JoinGameReducer from "./join_game_reducer";
+import LeaveGameReducer from "./leave_game_reducer";
 import RecordAttemptReducer from "./record_attempt_reducer";
 import RegisterAgentReducer from "./register_agent_reducer";
 import RemoveAgentReducer from "./remove_agent_reducer";
@@ -49,9 +55,11 @@ import RemoveConceptReducer from "./remove_concept_reducer";
 import RemovePrerequisiteReducer from "./remove_prerequisite_reducer";
 import SaveStudyCardReducer from "./save_study_card_reducer";
 import SeedDemoReducer from "./seed_demo_reducer";
+import SetConceptParamsReducer from "./set_concept_params_reducer";
 import SetPreferredFormatReducer from "./set_preferred_format_reducer";
 import SetStudyCardStatusReducer from "./set_study_card_status_reducer";
 import StartSessionReducer from "./start_session_reducer";
+import SubmitAnswerReducer from "./submit_answer_reducer";
 import UpdateConceptReducer from "./update_concept_reducer";
 import UpdateCourseReducer from "./update_course_reducer";
 import UpsertLearnerReducer from "./upsert_learner_reducer";
@@ -63,9 +71,13 @@ import AttemptRow from "./attempt_table";
 import ConceptRow from "./concept_table";
 import CourseRow from "./course_table";
 import FormatWeightRow from "./format_weight_table";
+import GameRow from "./game_table";
+import GameQuestionRow from "./game_question_table";
 import LearnerRow from "./learner_table";
 import MasteryRow from "./mastery_table";
 import NextStepRow from "./next_step_table";
+import PlayerRow from "./player_table";
+import PlayerAnswerRow from "./player_answer_table";
 import PrerequisiteRow from "./prerequisite_table";
 import SessionRow from "./session_table";
 import StudyCardRow from "./study_card_table";
@@ -136,6 +148,38 @@ const tablesSchema = __schema({
       { name: 'format_weight_key_key', constraint: 'unique', columns: ['key'] },
     ],
   }, FormatWeightRow),
+  game: __table({
+    name: 'game',
+    indexes: [
+      { accessor: 'code', name: 'game_code_idx_btree', algorithm: 'btree', columns: [
+        'code',
+      ] },
+      { accessor: 'hostAddress', name: 'game_host_address_idx_btree', algorithm: 'btree', columns: [
+        'hostAddress',
+      ] },
+      { accessor: 'id', name: 'game_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+    ],
+    constraints: [
+      { name: 'game_code_key', constraint: 'unique', columns: ['code'] },
+      { name: 'game_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, GameRow),
+  gameQuestion: __table({
+    name: 'game_question',
+    indexes: [
+      { accessor: 'gameId', name: 'game_question_game_id_idx_btree', algorithm: 'btree', columns: [
+        'gameId',
+      ] },
+      { accessor: 'id', name: 'game_question_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+    ],
+    constraints: [
+      { name: 'game_question_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, GameQuestionRow),
   learner: __table({
     name: 'learner',
     indexes: [
@@ -178,6 +222,40 @@ const tablesSchema = __schema({
       { name: 'next_step_key_key', constraint: 'unique', columns: ['key'] },
     ],
   }, NextStepRow),
+  player: __table({
+    name: 'player',
+    indexes: [
+      { accessor: 'gameId', name: 'player_game_id_idx_btree', algorithm: 'btree', columns: [
+        'gameId',
+      ] },
+      { accessor: 'id', name: 'player_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'identity', name: 'player_identity_idx_btree', algorithm: 'btree', columns: [
+        'identity',
+      ] },
+    ],
+    constraints: [
+      { name: 'player_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, PlayerRow),
+  playerAnswer: __table({
+    name: 'player_answer',
+    indexes: [
+      { accessor: 'gameId', name: 'player_answer_game_id_idx_btree', algorithm: 'btree', columns: [
+        'gameId',
+      ] },
+      { accessor: 'id', name: 'player_answer_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'playerId', name: 'player_answer_player_id_idx_btree', algorithm: 'btree', columns: [
+        'playerId',
+      ] },
+    ],
+    constraints: [
+      { name: 'player_answer_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, PlayerAnswerRow),
   prerequisite: __table({
     name: 'prerequisite',
     indexes: [
@@ -235,12 +313,18 @@ const tablesSchema = __schema({
 const reducersSchema = __reducers(
   __reducerSchema("add_concept", AddConceptReducer),
   __reducerSchema("add_prerequisite", AddPrerequisiteReducer),
+  __reducerSchema("advance_game", AdvanceGameReducer),
+  __reducerSchema("claim_host", ClaimHostReducer),
   __reducerSchema("compute_next_step", ComputeNextStepReducer),
   __reducerSchema("confirm_course", ConfirmCourseReducer),
   __reducerSchema("create_course", CreateCourseReducer),
+  __reducerSchema("create_game", CreateGameReducer),
+  __reducerSchema("end_game", EndGameReducer),
   __reducerSchema("end_session", EndSessionReducer),
   __reducerSchema("forget_course", ForgetCourseReducer),
   __reducerSchema("ingest_concept_graph", IngestConceptGraphReducer),
+  __reducerSchema("join_game", JoinGameReducer),
+  __reducerSchema("leave_game", LeaveGameReducer),
   __reducerSchema("record_attempt", RecordAttemptReducer),
   __reducerSchema("register_agent", RegisterAgentReducer),
   __reducerSchema("remove_agent", RemoveAgentReducer),
@@ -248,9 +332,11 @@ const reducersSchema = __reducers(
   __reducerSchema("remove_prerequisite", RemovePrerequisiteReducer),
   __reducerSchema("save_study_card", SaveStudyCardReducer),
   __reducerSchema("seed_demo", SeedDemoReducer),
+  __reducerSchema("set_concept_params", SetConceptParamsReducer),
   __reducerSchema("set_preferred_format", SetPreferredFormatReducer),
   __reducerSchema("set_study_card_status", SetStudyCardStatusReducer),
   __reducerSchema("start_session", StartSessionReducer),
+  __reducerSchema("submit_answer", SubmitAnswerReducer),
   __reducerSchema("update_concept", UpdateConceptReducer),
   __reducerSchema("update_course", UpdateCourseReducer),
   __reducerSchema("upsert_learner", UpsertLearnerReducer),

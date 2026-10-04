@@ -8,14 +8,18 @@ import {
   type InferSchema,
   type ReducerCtx,
 } from 'spacetimedb/server';
-import { Timestamp } from 'spacetimedb';
-import spacetimedb from './schema';
+import { ScheduleAt, Timestamp } from 'spacetimedb';
+import spacetimedb, { gameTimer } from './schema';
 import {
   BKT_DEFAULTS,
   FORMATS,
   SM2_INITIAL,
   bktUpdate,
   clampBktParam,
+  cleanPlayerName,
+  gameCode,
+  normalizeCode,
+  scorePoints,
   pickNextConcept,
   sm2Update,
   thompsonPick,
@@ -31,7 +35,7 @@ type Ctx = ReducerCtx<InferSchema<typeof spacetimedb>>;
 
 const DAY = 86_400_000_000n; // microseconds
 const HOUR = DAY / 24n;
-const ATTEMPT_KINDS = ['diagnostic', 'check', 'practice', 'review'];
+const ATTEMPT_KINDS = ['diagnostic', 'check', 'practice', 'review', 'game'];
 // Only attempts made after teaching in a specific format say anything about it.
 const BANDIT_KINDS = ['check', 'practice', 'review'];
 const CARD_KINDS = [
@@ -564,6 +568,100 @@ export const end_session = spacetimedb.reducer(
 
 // ── Answers: BKT + spaced repetition + format bandit ─────────────────────────
 
+type AttemptInput = {
+  address: string;
+  conceptId: bigint;
+  correct: boolean;
+  kind: string;
+  format?: string;
+  sessionId?: bigint;
+  question?: string;
+};
+
+// Shared by `record_attempt` (agents) and live games (linked players).
+function applyAttempt(
+  ctx: Ctx,
+  { address, conceptId, correct, kind, format, sessionId, question }: AttemptInput
+) {
+  requireLearner(ctx, address);
+  oneOf(kind, ATTEMPT_KINDS, 'kind');
+  if (format !== undefined) oneOf(format, FORMATS, 'format');
+  const concept = requireConcept(ctx, conceptId);
+  const course = requireCourse(ctx, concept.courseId, address);
+  const now = ctx.timestamp;
+
+  // 1. Knowledge tracing.
+  const m = ensureMastery(ctx, address, course.id, concept);
+  const pAfter = bktUpdate(m.pMastered, correct, {
+    learn: concept.pLearn,
+    slip: concept.pSlip,
+    guess: concept.pGuess,
+  });
+
+  // 2. Review schedule. Several answers in one sitting count as one review.
+  const fresh =
+    !m.lastSeen ||
+    now.microsSinceUnixEpoch - m.lastSeen.microsSinceUnixEpoch > 12n * HOUR;
+  let { ease, intervalDays, repetitions } = m;
+  let nextReview = m.nextReview;
+  if (fresh) {
+    const quality = correct ? (pAfter > 0.85 ? 5 : 4) : 1;
+    ({ ease, intervalDays, repetitions } = sm2Update(m, quality));
+    nextReview = addDays(now, intervalDays);
+  } else if (!nextReview) {
+    nextReview = addDays(now, 1);
+  }
+  // Never schedule past the day before the exam (but not in the past either).
+  if (course.examDate) {
+    const cap = addDays(course.examDate, -1);
+    const floor = addMicros(now, HOUR);
+    const limit =
+      cap.microsSinceUnixEpoch > floor.microsSinceUnixEpoch ? cap : floor;
+    if (nextReview.microsSinceUnixEpoch > limit.microsSinceUnixEpoch)
+      nextReview = limit;
+  }
+
+  ctx.db.mastery.key.update({
+    ...m,
+    pMastered: pAfter,
+    attempts: m.attempts + 1,
+    correct: m.correct + (correct ? 1 : 0),
+    lastSeen: now,
+    nextReview,
+    ease,
+    intervalDays,
+    repetitions,
+  });
+
+  // 3. Format bandit.
+  if (format !== undefined && BANDIT_KINDS.includes(kind)) {
+    ensureFormatWeights(ctx, address);
+    const arm = ctx.db.formatWeight.key.find(`${address}:${format}`)!;
+    ctx.db.formatWeight.key.update({
+      ...arm,
+      alpha: arm.alpha + (correct ? 1 : 0),
+      beta: arm.beta + (correct ? 0 : 1),
+      uses: arm.uses + 1,
+    });
+  }
+
+  // 4. Evidence log.
+  ctx.db.attempt.insert({
+    id: 0n,
+    userAddress: address,
+    courseId: course.id,
+    conceptId,
+    sessionId,
+    kind,
+    format,
+    question,
+    correct,
+    pBefore: m.pMastered,
+    pAfter,
+    createdAt: now,
+  });
+}
+
 export const record_attempt = spacetimedb.reducer(
   {
     address: t.string(),
@@ -574,85 +672,9 @@ export const record_attempt = spacetimedb.reducer(
     sessionId: t.option(t.u64()),
     question: t.option(t.string()),
   },
-  (ctx, { address, conceptId, correct, kind, format, sessionId, question }) => {
+  (ctx, args) => {
     requireAgent(ctx);
-    requireLearner(ctx, address);
-    oneOf(kind, ATTEMPT_KINDS, 'kind');
-    if (format !== undefined) oneOf(format, FORMATS, 'format');
-    const concept = requireConcept(ctx, conceptId);
-    const course = requireCourse(ctx, concept.courseId, address);
-    const now = ctx.timestamp;
-
-    // 1. Knowledge tracing.
-    const m = ensureMastery(ctx, address, course.id, concept);
-    const pAfter = bktUpdate(m.pMastered, correct, {
-      learn: concept.pLearn,
-      slip: concept.pSlip,
-      guess: concept.pGuess,
-    });
-
-    // 2. Review schedule. Several answers in one sitting count as one review.
-    const fresh =
-      !m.lastSeen ||
-      now.microsSinceUnixEpoch - m.lastSeen.microsSinceUnixEpoch > 12n * HOUR;
-    let { ease, intervalDays, repetitions } = m;
-    let nextReview = m.nextReview;
-    if (fresh) {
-      const quality = correct ? (pAfter > 0.85 ? 5 : 4) : 1;
-      ({ ease, intervalDays, repetitions } = sm2Update(m, quality));
-      nextReview = addDays(now, intervalDays);
-    } else if (!nextReview) {
-      nextReview = addDays(now, 1);
-    }
-    // Never schedule past the day before the exam (but not in the past either).
-    if (course.examDate) {
-      const cap = addDays(course.examDate, -1);
-      const floor = addMicros(now, HOUR);
-      const limit =
-        cap.microsSinceUnixEpoch > floor.microsSinceUnixEpoch ? cap : floor;
-      if (nextReview.microsSinceUnixEpoch > limit.microsSinceUnixEpoch)
-        nextReview = limit;
-    }
-
-    ctx.db.mastery.key.update({
-      ...m,
-      pMastered: pAfter,
-      attempts: m.attempts + 1,
-      correct: m.correct + (correct ? 1 : 0),
-      lastSeen: now,
-      nextReview,
-      ease,
-      intervalDays,
-      repetitions,
-    });
-
-    // 3. Format bandit.
-    if (format !== undefined && BANDIT_KINDS.includes(kind)) {
-      ensureFormatWeights(ctx, address);
-      const arm = ctx.db.formatWeight.key.find(`${address}:${format}`)!;
-      ctx.db.formatWeight.key.update({
-        ...arm,
-        alpha: arm.alpha + (correct ? 1 : 0),
-        beta: arm.beta + (correct ? 0 : 1),
-        uses: arm.uses + 1,
-      });
-    }
-
-    // 4. Evidence log.
-    ctx.db.attempt.insert({
-      id: 0n,
-      userAddress: address,
-      courseId: course.id,
-      conceptId,
-      sessionId,
-      kind,
-      format,
-      question,
-      correct,
-      pBefore: m.pMastered,
-      pAfter,
-      createdAt: now,
-    });
+    applyAttempt(ctx, args);
   }
 );
 
@@ -947,5 +969,394 @@ export const seed_demo = spacetimedb.reducer(
         createdAt: hoursAgo(h),
       });
     }
+  }
+);
+
+// ── Live games (Kahoot-style) ────────────────────────────────────────────────
+//
+// The agent writes a game with `create_game`; players join from the play site
+// with the six-character code. The host screen proves itself with the private
+// key from the agent's link (`claim_host`) and moves the game along with
+// `advance_game`. Each question ends when its timer fires (`end_question`), when
+// everyone has answered, or when the host skips ahead.
+
+const GAME_STATUSES = ['lobby', 'question', 'reveal', 'finished'];
+const MAX_PLAYERS = 200;
+const MAX_QUESTIONS = 20;
+// Answers sent right at the buzzer still count.
+const GRACE_MICROS = 750_000n;
+// Games are cleared a day after they were made.
+const GAME_LIFETIME = DAY;
+
+const GameQuestionInput = t.object('GameQuestionInput', {
+  conceptId: t.u64(),
+  prompt: t.string(),
+  choices: t.array(t.string()),
+  answer: t.u32(),
+  explanation: t.string(),
+});
+
+function findGame(ctx: Ctx, code: string) {
+  const game = ctx.db.game.code.find(normalizeCode(code));
+  if (!game) throw new SenderError(`No game with code '${code}'`);
+  return game;
+}
+
+type Game = NonNullable<ReturnType<typeof findGame>>;
+
+function requireHost(ctx: Ctx, game: Game) {
+  if (!game.hostIdentity || !game.hostIdentity.isEqual(ctx.sender))
+    throw new SenderError('Only the host screen can do that');
+}
+
+const gamePlayers = (ctx: Ctx, gameId: bigint) => [
+  ...ctx.db.player.gameId.filter(gameId),
+];
+
+const questionAnswers = (ctx: Ctx, gameId: bigint, index: number) =>
+  [...ctx.db.playerAnswer.gameId.filter(gameId)].filter(
+    a => a.questionIndex === index
+  );
+
+function deleteGame(ctx: Ctx, gameId: bigint) {
+  for (const q of [...ctx.db.gameQuestion.gameId.filter(gameId)])
+    ctx.db.gameQuestion.id.delete(q.id);
+  for (const a of [...ctx.db.playerAnswer.gameId.filter(gameId)]) {
+    ctx.db.gameChoice.answerId.delete(a.id);
+    ctx.db.playerAnswer.id.delete(a.id);
+  }
+  for (const pl of gamePlayers(ctx, gameId)) ctx.db.player.id.delete(pl.id);
+  for (const tick of [...ctx.db.gameTimer.iter()])
+    if (tick.gameId === gameId) ctx.db.gameTimer.scheduledId.delete(tick.scheduledId);
+  ctx.db.gameSecret.gameId.delete(gameId);
+  ctx.db.game.id.delete(gameId);
+}
+
+function startQuestion(ctx: Ctx, game: Game, index: number) {
+  ctx.db.game.id.update({
+    ...game,
+    status: 'question',
+    questionIndex: index,
+    questionStartedAt: ctx.timestamp,
+  });
+  const limit = BigInt(game.secondsPerQuestion) * 1_000_000n + GRACE_MICROS;
+  ctx.db.gameTimer.insert({
+    scheduledId: 0n,
+    scheduledAt: ScheduleAt.time(ctx.timestamp.microsSinceUnixEpoch + limit),
+    gameId: game.id,
+    questionIndex: index,
+  });
+}
+
+// Scores the current question, publishes the answer and how many picked each
+// choice, and records linked players' answers as mastery evidence.
+function revealQuestion(ctx: Ctx, game: Game) {
+  const index = game.questionIndex;
+  const secret = ctx.db.gameSecret.gameId.find(game.id)!;
+  const answer = secret.answers[index];
+  const question = [...ctx.db.gameQuestion.gameId.filter(game.id)].find(
+    q => q.index === index
+  )!;
+  const counts = question.choices.map(() => 0);
+  const limitMs = game.secondsPerQuestion * 1000;
+  const byPlayer = new Map<bigint, { correct: boolean; answeredMs: number }>();
+
+  for (const a of questionAnswers(ctx, game.id, index)) {
+    const choice = ctx.db.gameChoice.answerId.find(a.id);
+    const picked = choice ? choice.choice : -1;
+    if (picked >= 0 && picked < counts.length) counts[picked]++;
+    byPlayer.set(a.playerId, { correct: picked === answer, answeredMs: a.answeredMs });
+    ctx.db.gameChoice.answerId.delete(a.id);
+  }
+
+  for (const pl of gamePlayers(ctx, game.id)) {
+    const result = byPlayer.get(pl.id);
+    const correct = result?.correct ?? false;
+    const streak = correct ? pl.streak + 1 : 0;
+    const points = result
+      ? scorePoints(correct, result.answeredMs, limitMs, streak)
+      : 0;
+    ctx.db.player.id.update({
+      ...pl,
+      score: pl.score + points,
+      streak,
+      correctCount: pl.correctCount + (correct ? 1 : 0),
+    });
+    if (result) {
+      const row = questionAnswers(ctx, game.id, index).find(
+        a => a.playerId === pl.id
+      )!;
+      ctx.db.playerAnswer.id.update({ ...row, correct, points });
+    }
+    // Only answered questions count; a timeout says nothing about knowledge.
+    if (result && pl.learnerAddress) recordGameAttempt(ctx, pl.learnerAddress, question, correct);
+  }
+
+  ctx.db.gameQuestion.id.update({
+    ...question,
+    correctIndex: answer,
+    explanation: secret.explanations[index] || undefined,
+    choiceCounts: counts,
+  });
+  ctx.db.game.id.update({ ...game, status: 'reveal' });
+}
+
+// The game outlives the course if the learner deletes it mid-game; skip then.
+function recordGameAttempt(
+  ctx: Ctx,
+  address: string,
+  question: { conceptId: bigint; prompt: string },
+  correct: boolean
+) {
+  const concept = ctx.db.concept.id.find(question.conceptId);
+  const course = concept && ctx.db.course.id.find(concept.courseId);
+  if (!course || course.userAddress !== address) return;
+  if (!ctx.db.learner.address.find(address)) return;
+  applyAttempt(ctx, {
+    address,
+    conceptId: question.conceptId,
+    correct,
+    kind: 'game',
+    question: question.prompt,
+  });
+}
+
+function finishGame(ctx: Ctx, game: Game) {
+  ctx.db.game.id.update({
+    ...game,
+    status: 'finished',
+    finishedAt: ctx.timestamp,
+  });
+}
+
+export const create_game = spacetimedb.reducer(
+  {
+    hostAddress: t.string(),
+    courseId: t.u64(),
+    title: t.string(),
+    secondsPerQuestion: t.u32(),
+    hostKey: t.string(),
+    questions: t.array(GameQuestionInput),
+  },
+  (ctx, { hostAddress, courseId, title, secondsPerQuestion, hostKey, questions }) => {
+    requireAgent(ctx);
+    requireLearner(ctx, hostAddress);
+    requireCourse(ctx, courseId, hostAddress);
+    if (hostKey.length < 16) throw new SenderError('Host key is too short');
+    if (secondsPerQuestion < 5 || secondsPerQuestion > 120)
+      throw new SenderError('secondsPerQuestion must be 5-120');
+    if (questions.length < 1 || questions.length > MAX_QUESTIONS)
+      throw new SenderError(`A game needs 1-${MAX_QUESTIONS} questions`);
+    for (const [i, q] of questions.entries()) {
+      if (q.choices.length < 2 || q.choices.length > 4)
+        throw new SenderError(`Question ${i + 1} needs 2-4 choices`);
+      if (q.answer >= q.choices.length)
+        throw new SenderError(`Question ${i + 1} has no such answer`);
+      const concept = requireConcept(ctx, q.conceptId);
+      if (concept.courseId !== courseId)
+        throw new SenderError(`Question ${i + 1} is about another course`);
+    }
+
+    // Clear this host's old games so the tables stay small.
+    for (const old of [...ctx.db.game.hostAddress.filter(hostAddress)])
+      if (
+        ctx.timestamp.microsSinceUnixEpoch - old.createdAt.microsSinceUnixEpoch >
+          GAME_LIFETIME ||
+        old.status === 'finished'
+      )
+        deleteGame(ctx, old.id);
+
+    let code = gameCode(n => ctx.random.integerInRange(0, n - 1));
+    while (ctx.db.game.code.find(code))
+      code = gameCode(n => ctx.random.integerInRange(0, n - 1));
+
+    const game = ctx.db.game.insert({
+      id: 0n,
+      code,
+      hostAddress,
+      courseId,
+      title: title.trim().slice(0, 80) || 'Sprout game',
+      status: 'lobby',
+      questionIndex: 0,
+      questionCount: questions.length,
+      secondsPerQuestion,
+      questionStartedAt: undefined,
+      hostIdentity: undefined,
+      createdAt: ctx.timestamp,
+      finishedAt: undefined,
+    });
+    for (const [index, q] of questions.entries())
+      ctx.db.gameQuestion.insert({
+        id: 0n,
+        gameId: game.id,
+        index,
+        conceptId: q.conceptId,
+        prompt: q.prompt,
+        choices: q.choices,
+        correctIndex: undefined,
+        explanation: undefined,
+        choiceCounts: [],
+      });
+    ctx.db.gameSecret.insert({
+      gameId: game.id,
+      hostKey,
+      answers: questions.map(q => q.answer),
+      explanations: questions.map(q => q.explanation),
+    });
+  }
+);
+
+// Makes the caller the host screen for a game. The key comes from the link
+// the agent sent, so whoever opens it last is the host.
+export const claim_host = spacetimedb.reducer(
+  { code: t.string(), hostKey: t.string() },
+  (ctx, { code, hostKey }) => {
+    const game = findGame(ctx, code);
+    const secret = ctx.db.gameSecret.gameId.find(game.id);
+    if (!secret || secret.hostKey !== hostKey)
+      throw new SenderError('That host link is not valid');
+    ctx.db.game.id.update({ ...game, hostIdentity: ctx.sender });
+  }
+);
+
+// Joins (or renames, if already in) a game. With the host key the player is
+// linked to the learner who made the game, and their answers update mastery.
+export const join_game = spacetimedb.reducer(
+  { code: t.string(), name: t.string(), hostKey: t.option(t.string()) },
+  (ctx, { code, name, hostKey }) => {
+    const game = findGame(ctx, code);
+    if (game.status === 'finished') throw new SenderError('That game has ended');
+    const cleaned = cleanPlayerName(name);
+    if (!cleaned) throw new SenderError('Pick a name');
+    const players = gamePlayers(ctx, game.id);
+    const me = players.find(pl => pl.identity.isEqual(ctx.sender));
+    if (
+      players.some(
+        pl => pl !== me && pl.name.toLowerCase() === cleaned.toLowerCase()
+      )
+    )
+      throw new SenderError('Someone already has that name');
+
+    let learnerAddress = me?.learnerAddress;
+    if (hostKey !== undefined) {
+      const secret = ctx.db.gameSecret.gameId.find(game.id);
+      if (secret && secret.hostKey === hostKey) learnerAddress = game.hostAddress;
+    }
+
+    if (me) {
+      ctx.db.player.id.update({ ...me, name: cleaned, learnerAddress });
+      return;
+    }
+    if (players.length >= MAX_PLAYERS) throw new SenderError('This game is full');
+    ctx.db.player.insert({
+      id: 0n,
+      gameId: game.id,
+      identity: ctx.sender,
+      name: cleaned,
+      score: 0,
+      streak: 0,
+      correctCount: 0,
+      learnerAddress,
+      joinedAt: ctx.timestamp,
+    });
+  }
+);
+
+export const leave_game = spacetimedb.reducer(
+  { code: t.string() },
+  (ctx, { code }) => {
+    const game = findGame(ctx, code);
+    // Scores stay on the board once the game is running.
+    if (game.status !== 'lobby') return;
+    for (const pl of gamePlayers(ctx, game.id))
+      if (pl.identity.isEqual(ctx.sender)) ctx.db.player.id.delete(pl.id);
+  }
+);
+
+// The host's one button: start, skip to the answer, next question, finish.
+export const advance_game = spacetimedb.reducer(
+  { code: t.string() },
+  (ctx, { code }) => {
+    const game = findGame(ctx, code);
+    requireHost(ctx, game);
+    oneOf(game.status, GAME_STATUSES, 'status');
+    if (game.status === 'lobby') {
+      if (gamePlayers(ctx, game.id).length === 0)
+        throw new SenderError('Wait for someone to join');
+      startQuestion(ctx, game, 0);
+    } else if (game.status === 'question') {
+      revealQuestion(ctx, game);
+    } else if (game.status === 'reveal') {
+      if (game.questionIndex + 1 < game.questionCount)
+        startQuestion(ctx, game, game.questionIndex + 1);
+      else finishGame(ctx, game);
+    }
+  }
+);
+
+export const end_game = spacetimedb.reducer(
+  { code: t.string() },
+  (ctx, { code }) => {
+    const game = findGame(ctx, code);
+    requireHost(ctx, game);
+    if (game.status === 'question') revealQuestion(ctx, game);
+    if (game.status !== 'finished') finishGame(ctx, ctx.db.game.id.find(game.id)!);
+  }
+);
+
+export const submit_answer = spacetimedb.reducer(
+  { code: t.string(), questionIndex: t.u32(), choice: t.u32() },
+  (ctx, { code, questionIndex, choice }) => {
+    const game = findGame(ctx, code);
+    if (game.status !== 'question' || game.questionIndex !== questionIndex)
+      throw new SenderError('Time is up for that question');
+    const me = gamePlayers(ctx, game.id).find(pl =>
+      pl.identity.isEqual(ctx.sender)
+    );
+    if (!me) throw new SenderError('Join the game first');
+    const answers = questionAnswers(ctx, game.id, questionIndex);
+    if (answers.some(a => a.playerId === me.id))
+      throw new SenderError('You already answered');
+    const question = [...ctx.db.gameQuestion.gameId.filter(game.id)].find(
+      q => q.index === questionIndex
+    )!;
+    if (choice >= question.choices.length) throw new SenderError('No such choice');
+
+    const elapsed =
+      ctx.timestamp.microsSinceUnixEpoch -
+      game.questionStartedAt!.microsSinceUnixEpoch;
+    const row = ctx.db.playerAnswer.insert({
+      id: 0n,
+      gameId: game.id,
+      playerId: me.id,
+      questionIndex,
+      answeredMs: Math.max(0, Number(elapsed / 1000n)),
+      correct: undefined,
+      points: 0,
+    });
+    ctx.db.gameChoice.insert({ answerId: row.id, choice });
+
+    // Everyone's in: no need to wait for the timer.
+    if (answers.length + 1 >= gamePlayers(ctx, game.id).length)
+      revealQuestion(ctx, game);
+  }
+);
+
+// Fires when a question's time runs out. Stale ticks (the host already moved
+// on) do nothing.
+export const end_question = spacetimedb.reducer(
+  { onSchedule: gameTimer },
+  { timer: gameTimer.rowType },
+  (ctx, { timer }) => {
+    if (!ctx.sender.isEqual(ctx.identity))
+      throw new SenderError('end_question is run by the scheduler');
+    const game = ctx.db.game.id.find(timer.gameId);
+    if (
+      !game ||
+      game.status !== 'question' ||
+      game.questionIndex !== timer.questionIndex
+    )
+      return;
+    revealQuestion(ctx, game);
   }
 );

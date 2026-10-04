@@ -13,6 +13,7 @@ Status vs. the Product Development Plan (Oct 3, 2026). Goal: a brand-new ASI:One
 | Interactive Cards infra | Done: `cards/` on Vercel |
 | Paid packs (Payment Protocol) | **Removed**: the store agent and the payment tables were deleted upstream |
 | Garden view | Live: https://sprout-garden-seven.vercel.app, linked from the progress card |
+| Live multiplayer games | Built: tables and reducers, play site at `/play` and `/host` (deployed), tutor action and card. Needs the module published and Sprout's files redeployed |
 | Calendar / Canvas sync | Not started (stretch) |
 
 ## P0: make the core loop demo-ready
@@ -34,7 +35,12 @@ Status vs. the Product Development Plan (Oct 3, 2026). Goal: a brand-new ASI:One
 - [ ] **Decide on monetization.** Payments and the store agent were removed, but the plan scores the Payment Protocol under Fetch.ai technology and wants one paid unlock (mock exam) in the demo. Either restore it (the old code is in git history before commit `6928a1c`) or drop the claim from the pitch and README.
 - [ ] **Publish `set_concept_params` and run the BKT fitter.** `mastery/` now reads and writes SpacetimeDB through `sprout_db.py` (no more Supabase). Publish the module so the new reducer exists, then run `python -m mastery.fit_params --course <id> --dry-run` once a course has 30+ answers per concept. See `mastery/README.md`.
 
+- [ ] **Turn on live games.** Publish the module to `sprout-live` (adds the game tables and `set_concept_params`), then redeploy Sprout's hosted files from `python uagents-python/build_hosted.py` (adds `tutor_skill.py`'s game code). Then ask Sprout for a game and play it from two phones.
+- [ ] **Game results in chat:** a card after the game with the podium and which concepts moved, plus Rematch (see docs/games-plan.md).
+
 ## P2: stretch
+
+- [ ] **Gold mode** (Gimkit-style shop between questions) and a solo mode from Nexus's `quizrunner` template.
 
 - [x] **Knowledge garden view** in `spacetimedb/src/App.tsx`: concepts as plants that grow with mastery and wilt when due (`depth` = row, unit = column). Deploy and link it from chat.
 - [ ] **Calendar / Canvas sync** for exam dates (cut first if time runs short).

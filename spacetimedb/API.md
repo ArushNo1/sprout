@@ -55,6 +55,13 @@ Reads are open: all tables except `config` and `agent` are public, so learner da
 | `session` | `id` | start/end, recap summary used to open the next chat |
 | `next_step` | `address:course_id` | latest recommendation from `compute_next_step` |
 | `study_card` | `id` | generated quiz / flashcard / worked-example payloads (JSON) |
+| `game` | `id` (`code` unique) | a live game: status `lobby`/`question`/`reveal`/`finished`, current question, timer start, host identity |
+| `game_question` | `id` | prompt and choices; `correct_index`, `explanation` and `choice_counts` stay empty until the reveal |
+| `game_secret` | `game_id` | **private**: host key and answer key |
+| `player` | `id` | name, score, streak, correct count, and `learner_address` when playing from the student's own link |
+| `player_answer` | `id` | one per player per question: time taken; `correct` and `points` are filled at the reveal |
+| `game_choice` | `answer_id` | **private**: the choice behind each answer, deleted at the reveal |
+| `game_timer` | `scheduled_id` | scheduled: ends a question when its time is up (`end_question`) |
 
 ## Reducers
 
@@ -79,10 +86,25 @@ Reads are open: all tables except `config` and `agent` are public, so learner da
 ### Learning loop
 | Reducer | Arguments | Notes |
 |---|---|---|
-| `record_attempt` | `address, concept_id, correct, kind, format?, session_id?, question?` | `kind`: `diagnostic`/`check`/`practice`/`review`. Runs the BKT update, reschedules review (SM-2, capped at the day before the exam), updates the format bandit (for `check`/`practice`/`review` with a `format`) and logs the attempt |
+| `record_attempt` | `address, concept_id, correct, kind, format?, session_id?, question?` | `kind`: `diagnostic`/`check`/`practice`/`review` (live games add `game`). Runs the BKT update, reschedules review (SM-2, capped at the day before the exam), updates the format bandit (for `check`/`practice`/`review` with a `format`) and logs the attempt |
 | `compute_next_step` | `address, course_id, mode` | `mode`: `teach` (weakest concept with prerequisites > 0.7, format by Thompson sampling), `review` (most overdue), `diagnostic` (untested concept most others depend on, skipping ones above a known gap). Result lands in `next_step`; `mode = 'complete'` means nothing left |
 | `start_session` / `end_session` | `address, course_id?` / `address, session_id, summary, last_concept_id?` | The latest `summary` opens the next chat |
 | `save_study_card` / `set_study_card_status` | see source | `kind`: `quiz`/`flashcards`/`worked_example`/`snapshot`/`review_reminder`; `payload_json` must be valid JSON |
+
+### Live games
+Players and hosts call these from the play site with their own (anonymous) identity; only `create_game` needs an agent.
+
+| Reducer | Arguments | Notes |
+|---|---|---|
+| `create_game` | `host_address, course_id, title, seconds_per_question, host_key, questions[]` | Agents only. `questions`: `{concept_id, prompt, choices[2-4], answer, explanation}`, 1-20 of them, all from that course. Makes a six-character code (read it back with `SELECT code, created_at FROM game WHERE host_address = ...`). Clears the host's finished games and any older than a day |
+| `claim_host` | `code, host_key` | Makes the caller the host screen; the last screen to claim wins |
+| `join_game` | `code, name, host_key?` | Names are 1-20 characters and unique per game (case-insensitive). With the right key the player is linked to `host_address` and their answers update mastery. Calling it again renames |
+| `leave_game` | `code` | Lobby only |
+| `advance_game` | `code` | Host only: lobby → first question (needs a player), question → reveal, reveal → next question or finished |
+| `end_game` | `code` | Host only: reveals the current question if needed, then finishes |
+| `submit_answer` | `code, question_index, choice` | One per player per question, only while the question is open. Reveals early once everyone has answered |
+
+Scoring (`scorePoints` in `algorithms.ts`): a correct answer earns 500-1000 points depending on time left, plus 100 per answer in a row after the first (capped at 500). At each reveal, a linked player's answer runs the same update as `record_attempt` with kind `game`; unanswered questions don't count.
 
 ### Admin and demo
 | Reducer | Arguments | Notes |
@@ -104,4 +126,4 @@ SELECT format, alpha, beta, uses FROM format_weight WHERE user_address = '<addr>
 
 ## Tests
 
-`npx vitest run src/algorithms.test.ts` covers the BKT (including the `set_concept_params` clamp), SM-2, bandit and graph logic in [spacetimedb/src/algorithms.ts](spacetimedb/src/algorithms.ts).
+`npx vitest run src/algorithms.test.ts` covers the BKT (including the `set_concept_params` clamp), SM-2, bandit and graph logic in [spacetimedb/src/algorithms.ts](spacetimedb/src/algorithms.ts); `src/games.test.ts` covers game scoring, codes and names.

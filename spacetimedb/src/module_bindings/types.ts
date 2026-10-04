@@ -89,6 +89,67 @@ export const FormatWeight = __t.object("FormatWeight", {
 });
 export type FormatWeight = __Infer<typeof FormatWeight>;
 
+export const Game = __t.object("Game", {
+  id: __t.u64(),
+  code: __t.string(),
+  hostAddress: __t.string(),
+  courseId: __t.u64(),
+  title: __t.string(),
+  status: __t.string(),
+  questionIndex: __t.u32(),
+  questionCount: __t.u32(),
+  secondsPerQuestion: __t.u32(),
+  questionStartedAt: __t.option(__t.timestamp()),
+  hostIdentity: __t.option(__t.identity()),
+  createdAt: __t.timestamp(),
+  finishedAt: __t.option(__t.timestamp()),
+});
+export type Game = __Infer<typeof Game>;
+
+export const GameChoice = __t.object("GameChoice", {
+  answerId: __t.u64(),
+  choice: __t.u32(),
+});
+export type GameChoice = __Infer<typeof GameChoice>;
+
+export const GameQuestion = __t.object("GameQuestion", {
+  id: __t.u64(),
+  gameId: __t.u64(),
+  index: __t.u32(),
+  conceptId: __t.u64(),
+  prompt: __t.string(),
+  choices: __t.array(__t.string()),
+  correctIndex: __t.option(__t.u32()),
+  explanation: __t.option(__t.string()),
+  choiceCounts: __t.array(__t.u32()),
+});
+export type GameQuestion = __Infer<typeof GameQuestion>;
+
+export const GameQuestionInput = __t.object("GameQuestionInput", {
+  conceptId: __t.u64(),
+  prompt: __t.string(),
+  choices: __t.array(__t.string()),
+  answer: __t.u32(),
+  explanation: __t.string(),
+});
+export type GameQuestionInput = __Infer<typeof GameQuestionInput>;
+
+export const GameSecret = __t.object("GameSecret", {
+  gameId: __t.u64(),
+  hostKey: __t.string(),
+  answers: __t.array(__t.u32()),
+  explanations: __t.array(__t.string()),
+});
+export type GameSecret = __Infer<typeof GameSecret>;
+
+export const GameTimer = __t.object("GameTimer", {
+  scheduledId: __t.u64(),
+  scheduledAt: __t.scheduleAt(),
+  gameId: __t.u64(),
+  questionIndex: __t.u32(),
+});
+export type GameTimer = __Infer<typeof GameTimer>;
+
 export const Learner = __t.object("Learner", {
   address: __t.string(),
   displayName: __t.option(__t.string()),
@@ -125,6 +186,30 @@ export const NextStep = __t.object("NextStep", {
   computedAt: __t.timestamp(),
 });
 export type NextStep = __Infer<typeof NextStep>;
+
+export const Player = __t.object("Player", {
+  id: __t.u64(),
+  gameId: __t.u64(),
+  identity: __t.identity(),
+  name: __t.string(),
+  score: __t.u32(),
+  streak: __t.u32(),
+  correctCount: __t.u32(),
+  learnerAddress: __t.option(__t.string()),
+  joinedAt: __t.timestamp(),
+});
+export type Player = __Infer<typeof Player>;
+
+export const PlayerAnswer = __t.object("PlayerAnswer", {
+  id: __t.u64(),
+  gameId: __t.u64(),
+  playerId: __t.u64(),
+  questionIndex: __t.u32(),
+  answeredMs: __t.u32(),
+  correct: __t.option(__t.bool()),
+  points: __t.u32(),
+});
+export type PlayerAnswer = __Infer<typeof PlayerAnswer>;
 
 export const Prerequisite = __t.object("Prerequisite", {
   id: __t.u64(),

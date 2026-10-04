@@ -26,15 +26,17 @@ from uagents_core.contrib.protocols.chat import (
 
 from sprout_db import DbError, enabled
 from .cards import (course_picker_card, feedback_card, flashcard_back, flashcard_front, flashcard_summary,
-                   forget_card, garden_link, home_card, journey_card, lesson_card, mastered_card, parse_selection,
-                   question_card, summary_card, text_message)
+                   forget_card, game_card, garden_link, home_card, journey_card, lesson_card, mastered_card,
+                   parse_selection, question_card, summary_card, text_message)
 from .content import make_lesson, make_question
+from .game import GAME_QUESTIONS, SECONDS_PER_QUESTION, create_game, game_questions, interleave, pick_concepts, split
 from .learning import (FORMATS, active_courses, concept, course, days_until, end_session, forget_course, format_insight,
                        format_stats, journey, next_step, record, snapshot, start_session, upcoming_review)
 
 CURRICULUM_HANDLE = os.getenv("CURRICULUM_HANDLE", "@blank-agent-181")
 QUESTIONS = {"diagnostic": 5, "review": 3, "check": 2}
 FORGET = re.compile(r"\b(forget|delete|remove|erase)\b.*\b(course|class|progress|data|history)\b", re.I)
+GAME = re.compile(r"\b(games?|kahoot|gimkit|blooket|quiz (my|with) friends|play with)\b", re.I)
 
 
 def run(fn, *args):
@@ -56,7 +58,7 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
         return
     text = "".join(c.text for c in msg.content if isinstance(c, TextContent)).strip()
     sel = {} if any(isinstance(c, StartSessionContent) for c in msg.content) else parse_selection(text)
-    action = sel.get("action") or ("forget_ask" if FORGET.search(text) else "start")
+    action = sel.get("action") or ("forget_ask" if FORGET.search(text) else "game" if GAME.search(text) else "start")
     try:
         await handle(ctx, sender, action, sel)
     except DbError as err:
@@ -105,6 +107,8 @@ async def handle(ctx: Context, sender: str, action: str, sel: dict):
         await answer(ctx, sender, state, sel.get("choice"))
     elif action == "done":
         await finish(ctx, sender, state)
+    elif action == "game":
+        await start_game(ctx, sender, state)
     elif action == "forget_ask":
         name = state.get("course_name") or (await run(course, state["course_id"]))["name"]
         await ctx.send(sender, forget_card(name, state["course_id"]))
@@ -152,6 +156,30 @@ async def show_home(ctx: Context, sender: str, state: dict, welcome: bool = Fals
     state["course_name"] = c["name"]
     save(ctx, sender, state)
     await ctx.send(sender, home_card(c["name"], snap, days, insight, opener, garden_link(sender, state["course_id"])))
+
+
+async def start_game(ctx: Context, sender: str, state: dict):
+    """Writes a quick quiz on the concepts that need work and opens it as a live game."""
+    c = await run(course, state["course_id"])
+    snap = await run(snapshot, sender, state["course_id"])
+    picks = pick_concepts(snap["concepts"])
+    if not picks:
+        await ctx.send(sender, text_message("This course has no concepts yet, so there's nothing to play."))
+        return
+    # One model call per concept, all at once: about as long as writing a single lesson.
+    batches = await asyncio.gather(*(run(game_questions, c["name"], p, n)
+                                     for p, n in zip(picks, split(GAME_QUESTIONS, len(picks)))),
+                                   return_exceptions=True)
+    for b in batches:
+        if isinstance(b, Exception):
+            ctx.logger.warning(f"game questions: {b}")
+    questions = interleave([b for b in batches if isinstance(b, list)])
+    if len(questions) < 3:
+        raise ValueError(f"only {len(questions)} usable game questions")
+    game = await run(create_game, sender, state["course_id"], f"{c['name']} review", questions)
+    topics = [p["name"] for p in picks if any(q["concept_id"] == p["id"] for q in questions)]
+    ctx.logger.info(f"game {game['code']}: {len(questions)} questions on {len(topics)} concepts")
+    await ctx.send(sender, game_card(c["name"], game, len(questions), SECONDS_PER_QUESTION, topics))
 
 
 async def teach(ctx: Context, sender: str, state: dict, again: bool = False, concept_id=None):

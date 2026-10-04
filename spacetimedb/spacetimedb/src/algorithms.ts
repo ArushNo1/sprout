@@ -182,3 +182,45 @@ export function pickNextConcept(
   const pool = eligible.length ? eligible : unmastered;
   return pool.reduce((a, b) => (b.p < a.p ? b : a)).id;
 }
+
+// ── Live games (Kahoot-style) ────────────────────────────────────────────────
+
+export const GAME_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O, 1/I/L
+export const GAME_CODE_LENGTH = 6;
+export const MAX_POINTS = 1000;
+export const STREAK_BONUS = 100;
+export const MAX_STREAK_BONUS = 500;
+
+/**
+ * Points for one answer: a correct answer earns 500-1000 depending on how much
+ * of the time limit was left, plus 100 per answer in a row after the first
+ * (capped at 500). `streak` counts this answer. Wrong answers earn nothing.
+ */
+export function scorePoints(
+  correct: boolean,
+  elapsedMs: number,
+  limitMs: number,
+  streak: number
+): number {
+  if (!correct) return 0;
+  const used = Math.min(1, Math.max(0, elapsedMs / limitMs));
+  const base = Math.round(MAX_POINTS * (1 - used / 2));
+  return base + Math.min(MAX_STREAK_BONUS, STREAK_BONUS * Math.max(0, streak - 1));
+}
+
+/** A join code from `randomIndex(n)`, which returns an integer in [0, n). */
+export function gameCode(randomIndex: (n: number) => number): string {
+  let code = '';
+  for (let i = 0; i < GAME_CODE_LENGTH; i++)
+    code += GAME_CODE_ALPHABET[randomIndex(GAME_CODE_ALPHABET.length)];
+  return code;
+}
+
+/** Normalizes a typed join code: uppercase, no spaces or dashes. */
+export const normalizeCode = (code: string) => code.replace(/[\s-]/g, '').toUpperCase();
+
+/** A display name trimmed to 1-20 characters, or null when nothing usable is left. */
+export function cleanPlayerName(name: string): string | null {
+  const cleaned = name.replace(/\s+/g, ' ').trim().slice(0, 20).trim();
+  return cleaned.length > 0 ? cleaned : null;
+}
