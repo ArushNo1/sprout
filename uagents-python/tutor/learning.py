@@ -11,7 +11,7 @@ from datetime import date, datetime, timezone
 from sprout_db import NONE, call, opt, some, sql, sql_str
 
 FORMATS = ["worked_example", "flashcards", "diagram", "analogy"]
-PREREQ_SOLID = 0.7   # same cut-offs as spacetimedb/src/algorithms.ts
+PREREQ_SOLID = 0.7   # same cut-offs as spacetimedb/spacetimedb/src/algorithms.ts
 MASTERED = 0.95
 
 

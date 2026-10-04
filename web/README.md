@@ -1,13 +1,16 @@
 # Sprout web
 
-The pages that don't fit in an ASI:One card: the knowledge graph and (soon) multiplayer games. Next.js (App Router), deployed on Vercel.
+The pages that don't fit in an ASI:One card: the garden, the knowledge graph, and the live multiplayer games and arcade. Next.js (App Router), deployed on Vercel.
 
 | URL | Page |
 |---|---|
 | `/` | Landing |
 | `/<user id>` | The learner's garden: links to the graph and games |
 | `/<user id>/kgraph` | Prerequisite graph for each course. Nodes grow with mastery (seed, shaky, growing, solid) and show a dashed red ring when a review is due. Click for details, drag to pan, scroll to zoom. `?course=<id>` picks a course. |
-| `/<user id>/<game>/<room code>` | Game lobby. Placeholder for now. Games live in `lib/games.ts`; room codes are 4-8 letters or digits and are redirected to uppercase. |
+| `/<user id>/<game>/<room code>` | Placeholder lobby from `lib/games.ts`. The real games are the next three rows. |
+| `/play`, `/play/<code>` | Join a live Kahoot-style game. `?k=<key>` links the player's answers to their mastery. |
+| `/host/<code>?k=<key>` | Host screen for a live game. |
+| `/arcade/<code>` | Solo arcade game (Quiz Runner, Meteor Blaster) filled with Sprout's questions. |
 
 `<user id>` is the learner's ASI:One address, the same key the database uses. Unknown learners, games, or malformed room codes show a 404.
 

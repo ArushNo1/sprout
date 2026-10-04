@@ -43,7 +43,7 @@ The agents never compute mastery themselves: they call reducers and display what
 | Upload, concept map | `curriculum/cards.py` |
 | Progress (with a link to the garden), journey map with tappable next topics, question, feedback, lesson, one-at-a-time flashcards, session summary, course mastered, forget-course confirmation | `tutor/cards.py` |
 | Progress, map and journey images | `cards/` on Vercel (`/api/card`, `/api/journey`), drawn with @vercel/og |
-| Knowledge garden | `spacetimedb/src` on Vercel; subscribes to `sprout-live` directly, read-only |
+| Knowledge garden | `web/` (Next.js on Vercel) at `/<learner>/garden`; reads `sprout-live` on the server |
 
 ## Deploying
 

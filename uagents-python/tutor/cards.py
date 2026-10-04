@@ -13,7 +13,8 @@ from uuid import uuid4
 from uagents_core.contrib.protocols.chat import ChatMessage, EndSessionContent, MetadataContent, TextContent
 
 CARDS_URL = os.getenv("SPROUT_CARDS_URL", "https://sprout-cards-six.vercel.app")
-GARDEN_URL = os.getenv("SPROUT_GARDEN_URL", "https://sprout-garden-seven.vercel.app")
+# The Next.js site in web/: garden at /<learner>/garden, games at /play, /host, /arcade.
+WEB_URL = os.getenv("SPROUT_WEB_URL") or os.getenv("SPROUT_GARDEN_URL", "https://sprout-garden-seven.vercel.app")
 CARD_WIDTH = "560"
 MAX_ROWS = 8
 FORMAT_LABELS = {"worked_example": "Worked example", "flashcards": "Flashcards",
@@ -99,8 +100,8 @@ def snapshot_image(course_name: str, snap: dict, exam_days) -> tuple:
 
 
 def garden_link(address: str, course_id: int) -> str:
-    """The live knowledge garden (spacetimedb/src) for this student and course."""
-    return f"{GARDEN_URL}/?{urlencode({'u': address, 'course': course_id})}"
+    """The live knowledge garden (web/) for this student and course."""
+    return f"{WEB_URL.rstrip('/')}/{quote(address, safe='')}/garden?{urlencode({'course': course_id})}"
 
 
 def home_card(course_name: str, snap: dict, exam_days, insight=None, opener: str = "", garden: str = "") -> ChatMessage:

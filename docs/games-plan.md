@@ -9,7 +9,7 @@ Classic mode is built and tested against a local SpacetimeDB. It goes live once 
 What changed from the plan below:
 
 - The game logic lives in the tutor (`uagents-python/tutor/game.py`), not a separate arcade agent. A game is one more action in the same in-process skill: "play a game" in chat, or Live game with friends on the progress card.
-- The play site is part of the garden app (`spacetimedb/src/play`, Vercel project `sprout-garden`), not a new project. Routes are `/play`, `/play/CODE`, `/play/CODE?k=KEY` (the student who made the game, whose answers count toward mastery) and `/host/CODE?k=KEY`.
+- The play site is part of the `web/` Next.js site (`web/components/play`), not a new project. Routes are `/play`, `/play/CODE`, `/play/CODE?k=KEY` (the student who made the game, whose answers count toward mastery) and `/host/CODE?k=KEY`.
 - The host key replaces `?u=<address>`. Putting a learner address in a shareable link would let anyone write to that learner's mastery, so the agent makes a random key per game and only the student's own chat gets it.
 - Linked players' answers update mastery at each reveal (attempt kind `game`), so the garden moves during the game, not just at the end.
 - Questions are written in parallel, one model call per concept, then a blind check pass answers each one and drops any whose key it disagrees with or finds ambiguous. A game of 8 questions takes about 6 s.
@@ -90,7 +90,7 @@ Pure functions (`scorePoints`, `goldFor`, `upgradeCost`) go in `algorithms.ts` w
 
 ## 3. Play site (Vercel project `sprout-play`)
 
-A Vite + React app built on the SpacetimeDB React hooks and generated bindings in `spacetimedb/src`. It's deployed like `sprout-cards`.
+A Next.js app (now `web/`) built on the SpacetimeDB React hooks and the generated bindings in `web/lib/module_bindings`. It deploys as the `sprout-web` Vercel project.
 
 - `/g/CODE`, the player on a phone:
   1. enter a name

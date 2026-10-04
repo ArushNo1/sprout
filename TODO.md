@@ -11,18 +11,18 @@ Status vs. the Product Development Plan (Oct 3, 2026). Goal: a brand-new ASI:One
 | Tutor: progress, journey map, diagnostic, full lessons, flashcards, reviews, session summary | Live: `uagents-python/tutor` (runs inside Sprout and standalone) |
 | Orchestrator (Chat Protocol, routing) | Live as Sprout `@blank-agent-184`; runs the tutor and curriculum in-process (one hop per tap) |
 | Interactive Cards infra | Done: `cards/` on Vercel |
-| Paid packs (Payment Protocol) | **Removed**: the store agent and the payment tables were deleted upstream |
-| Garden view | Live: https://sprout-garden-seven.vercel.app, linked from the progress card |
+| Paid packs (Payment Protocol) | **Dropped**: no payments in the product or the pitch |
+| Garden view | Live in `web/` at `/<learner>/garden`, linked from the progress card |
 | Live multiplayer games + arcade | Built and deployed (play site, cards, Sprout's code): Kahoot-style `/play` + `/host`, arcade `/arcade` (Quiz Runner, Meteor Blaster from Nexus's templates), invite and results cards. **Waiting on the module publish to `sprout-live`** |
 | Calendar / Canvas sync | Not started (stretch) |
 
 ## P0: make the core loop demo-ready
 
 - [x] **Deploy and wire all three agents.** All three hosted on Agentverse with their secrets and running the current code.
-- [ ] **Switch the agents to a registered agent token** (`register_agent`) instead of the owner token.
+- [ ] **Switch the agents to a registered agent token.** Three agent identities are registered on `sprout-live` and their tokens are in `uagents-python/.env.agents` (gitignored). Still to do: paste each into that agent's own `SPACETIMEDB_TOKEN` on Agentverse and restart it.
 - [ ] **ASI:One discovery test.** Clear name, description and keywords on the orchestrator; confirm "help me study for my data structures midterm" routes to it. Keep the Agentverse profile link as a backup.
 - [x] **End-to-end run in ASI:One:** paste syllabus -> confirm map -> diagnostic -> a wrong answer drops a concept to shaky -> teach -> close the chat -> new chat, "let's keep going" gets the recap (shaky, due, days to exam). Fix whatever breaks.
-- [ ] **Seed the demo account** (`seed_demo`) with two days of history and an exam date; check it matches the CS persona.
+- [x] **Seed the demo account** (`seed_demo`): "CS 201: Data Structures" (10 concepts, 8 tested, exam in 7 days) added to the main learner (course id 5), next to the existing course.
 - [x] **Pre-test extraction** on `curriculum/examples/data_structures_syllabus.txt`.
 - [x] **Latency check:** a card tap is about 9 s end to end (was about 22 s) since Sprout runs the specialists in-process; ~4 s of that is Agentverse's own overhead. Each turn logs its time and database share.
 - [x] **Failure handling:** retries on DB/LLM calls, and a plain message when something fails (a cheap bonus area).
@@ -32,7 +32,7 @@ Status vs. the Product Development Plan (Oct 3, 2026). Goal: a brand-new ASI:One
 - [ ] **Show the format insight** ("worked examples raised your scores 30% more than flashcards"). The tutor surfaces the best format once there's evidence; make sure the demo account has enough data and the line is explicit.
 - [ ] **Form card** for course name / current unit / exam date (the plan's onboarding step 1) and for editing exam dates.
 - [x] **Forget a course:** the `forget_course` reducer exists but no agent calls it. Add "forget this course" in chat (privacy requirement).
-- [ ] **Decide on monetization.** Payments and the store agent were removed, but the plan scores the Payment Protocol under Fetch.ai technology and wants one paid unlock (mock exam) in the demo. Either restore it (the old code is in git history before commit `6928a1c`) or drop the claim from the pitch and README.
+- [x] **Monetization: dropped.** Payments and the store agent stay removed (old code is in git history before commit `6928a1c`). Don't claim the Payment Protocol in the pitch, README or Devpost.
 - [ ] **Publish `set_concept_params` and run the BKT fitter.** `mastery/` now reads and writes SpacetimeDB through `sprout_db.py` (no more Supabase). Publish the module so the new reducer exists, then run `python -m mastery.fit_params --course <id> --dry-run` once a course has 30+ answers per concept. See `mastery/README.md`.
 
 - [ ] **Turn on games.** Publish the module to `sprout-live` (adds the game tables, arcade mode and `set_concept_params`); Sprout's hosted files are already deployed. Then ask Sprout for a game and play it from two phones.
@@ -42,7 +42,7 @@ Status vs. the Product Development Plan (Oct 3, 2026). Goal: a brand-new ASI:One
 
 - [ ] **Gold mode** (Gimkit-style shop between questions) and a solo mode from Nexus's `quizrunner` template.
 
-- [x] **Knowledge garden view** in `spacetimedb/src/App.tsx`: concepts as plants that grow with mastery and wilt when due (`depth` = row, unit = column). Deploy and link it from chat.
+- [x] **Knowledge garden view** in `web/components/GardenView.tsx`: concepts as plants that grow with mastery and wilt when due (`depth` = row, unit = column). Deploy and link it from chat.
 - [ ] **Calendar / Canvas sync** for exam dates (cut first if time runs short).
 - [ ] **Embedding concept graph, BKT tuning, PDF slide ingestion** (post-hackathon roadmap).
 
@@ -68,4 +68,4 @@ Status vs. the Product Development Plan (Oct 3, 2026). Goal: a brand-new ASI:One
 
 - [x] Remove the template `uagents-python/agent.py` and `test-agent.py`
 - [x] Add `docs/architecture.md` that matches what shipped (orchestrator + curriculum + tutor + SpacetimeDB, not the plan's five agents)
-- [ ] Run the unit tests (`curriculum`, `tutor`, `orchestrator`, `spacetimedb` via `npm test`) in CI
+- [x] Run the unit tests in CI (`.github/workflows/ci.yml`: agents, mastery, `spacetimedb`, `web` tests and build)

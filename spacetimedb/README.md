@@ -1,86 +1,25 @@
-# SpacetimeDB TypeScript Quickstart Chat
+# Sprout database
 
-This is a simple chat application that demonstrates how to use SpacetimeDB with TypeScript and React. The chat application is a simple chat room where users can send messages to each other. The chat application uses SpacetimeDB to store the chat messages.
+The SpacetimeDB module (TypeScript) that holds everything Sprout knows: learners, courses, the concept graph, mastery (BKT), reviews (SM-2), the teaching-format bandit and the live games. Source: [spacetimedb/src](spacetimedb/src). Reducers and tables: [API.md](API.md).
 
-It is based directly on the plain React + TypeScript + Vite template. You can follow the quickstart guide for how creating this project from scratch at [SpacetimeDB TypeScript Quickstart](https://spacetimedb.com/docs/quickstarts/typescript).
+The Next.js site in [`../web`](../web) is the only frontend. Its generated bindings live in `web/lib/module_bindings`.
 
-You can follow the instructions for creating your own SpacetimeDB module here: [SpacetimeDB Rust Module Quickstart](https://spacetimedb.com/docs/quickstarts/rust). Place the module in the `quickstart-chat/server` directory for compability with this project.
+## Work on it
 
-## Running with npm
+Prerequisites: [Node.js](https://nodejs.org/) and the [SpacetimeDB CLI](https://spacetimedb.com/install).
 
-Prerequisites: [Node.js](https://nodejs.org/) (with npm) and the [SpacetimeDB CLI](https://spacetimedb.com/install).
-
-1. Install dependencies (client, then the module):
-   ```
-   npm install
-   cd spacetimedb
-   npm install
-   cd ..
-   ```
-2. Start a local SpacetimeDB server (in a separate terminal): `spacetime start`
-3. Publish the module and generate the client bindings:
-   ```
-   spacetime publish --module-path spacetimedb --server local <database-name>
-   npm run spacetime:generate
-   ```
-4. Run the dev server: `npm run dev`
-
-Other useful scripts:
-
-- `npm run build` - type-check and build for production
-- `npm run preview` - preview the production build
-- `npm test` - run the tests (Vitest)
-- `npm run lint` / `npm run format` - lint / format the code
-
-Below is copied from the original template README:
-
-# React + TypeScript + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-});
+```bash
+npm install            # tests only
+npm test               # algorithms (BKT, SM-2, bandit) and game scoring
+cd spacetimedb && npm install
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## Publish (database owner only)
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react';
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-});
+```bash
+spacetime login
+spacetime publish sprout-live --module-path spacetimedb --server maincloud
+npm run generate       # regenerates ../web/lib/module_bindings
 ```
+
+Register each agent once with `spacetime call sprout-live register_agent '["0x<identity>"]' '"<name>"'`, then give that agent its own token as `SPACETIMEDB_TOKEN`.

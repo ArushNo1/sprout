@@ -1,4 +1,4 @@
-"""Live multiplayer games (Kahoot-style) on the play site (spacetimedb/src/play).
+"""Live multiplayer games (Kahoot-style) on the play site (web/components/play).
 
 Sprout writes a short quiz on the student's weakest and due concepts, stores it in SpacetimeDB
 with create_game, and sends back a six-character join code and two links: the host screen, which
@@ -12,11 +12,11 @@ import os
 import secrets
 
 from sprout_db import call, sql, sql_str
-from .cards import GARDEN_URL
+from .cards import WEB_URL
 from .content import _json_object, call_llm, clean_question
 from .learning import MASTERED, micros
 
-PLAY_URL = os.getenv("SPROUT_PLAY_URL", GARDEN_URL).rstrip("/")
+PLAY_URL = os.getenv("SPROUT_PLAY_URL", WEB_URL).rstrip("/")
 GAME_QUESTIONS = 8
 GAME_CONCEPTS = 4
 SECONDS_PER_QUESTION = 20

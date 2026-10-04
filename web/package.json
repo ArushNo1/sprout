@@ -6,7 +6,7 @@
     "dev": "next dev -p 3200",
     "build": "next build",
     "start": "next start -p 3200",
-    "test": "tsx --test lib/*.test.ts"
+    "test": "tsx --test lib/*.test.ts components/play/*.test.ts"
   },
   "dependencies": {
     "@types/qrcode": "^1.5.6",
