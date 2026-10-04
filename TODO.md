@@ -17,10 +17,10 @@ Status vs. the Product Development Plan (Oct 3, 2026). Goal: a brand-new ASI:One
 
 ## P0: make the core loop demo-ready
 
-- [x] **Deploy and wire all three agents.** All three hosted on Agentverse with their secrets.
+- [x] **Deploy and wire all three agents.** All three hosted on Agentverse with their secrets and running the current code.
 - [ ] **Switch the agents to a registered agent token** (`register_agent`) instead of the owner token.
 - [ ] **ASI:One discovery test.** Clear name, description and keywords on the orchestrator; confirm "help me study for my data structures midterm" routes to it. Keep the Agentverse profile link as a backup.
-- [ ] **End-to-end run in ASI:One:** paste syllabus -> confirm map -> diagnostic -> a wrong answer drops a concept to shaky -> teach -> close the chat -> new chat, "let's keep going" gets the recap (shaky, due, days to exam). Fix whatever breaks.
+- [x] **End-to-end run in ASI:One:** paste syllabus -> confirm map -> diagnostic -> a wrong answer drops a concept to shaky -> teach -> close the chat -> new chat, "let's keep going" gets the recap (shaky, due, days to exam). Fix whatever breaks.
 - [ ] **Seed the demo account** (`seed_demo`) with two days of history and an exam date; check it matches the CS persona.
 - [x] **Pre-test extraction** on `curriculum/examples/data_structures_syllabus.txt`.
 - [x] **Latency check:** a card tap is about 9 s end to end (was about 22 s) since Sprout runs the specialists in-process; ~4 s of that is Agentverse's own overhead. Each turn logs its time and database share.
@@ -47,7 +47,7 @@ Status vs. the Product Development Plan (Oct 3, 2026). Goal: a brand-new ASI:One
 - [ ] Full primary workflow works inside an ASI:One conversation
 - [x] Public GitHub repo with run and test instructions (root `README.md`)
 - [x] README lists every agent's name and address plus extras (cards and garden URLs, SpacetimeDB database)
-- [ ] Innovation Lab and hackathon badges in **each** agent's README: done in the repo READMEs; still to add to each agent's Agentverse profile README
+- [x] Innovation Lab and hackathon badges in **each** agent's README (repo READMEs and all three Agentverse profile READMEs)
 - [ ] Demo video, 3-5 min, plus a recorded backup
 - [ ] Devpost submission
 - [ ] Register through the MHacks ASI:One Submission Agent
