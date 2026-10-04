@@ -1,34 +1,76 @@
-## How to Deploy
+# Sprout
 
-1. Create a Python env and install deps:
-   ```
-   python -m venv .venv
-   .venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
-2. Configure the agent:
-   ```
-   cd uagents-python
-   copy .env.example .env   # then edit AGENT_SEED to a long secret phrase
-   ```
-3. Run it: `python agent.py`
-4. The log prints an **Agent inspector** link. Open it and click **Connect → Mailbox** to link the agent to Agentverse.
-5. In Agentverse, open the agent's dashboard, add a README and keywords, and it's discoverable on ASI:One via the chat protocol.
+![tag:innovationlab](https://img.shields.io/badge/innovationlab-3D8BD3)
+![tag:hackathon](https://img.shields.io/badge/hackathon-5F43F1)
 
-The agent keeps running only while `python agent.py` is running, so host it somewhere persistent (VM, Railway, Render, etc.) with `AGENT_SEED` set as an env var. Keep the same seed, since it fixes the agent's address.
+Sprout is a study partner in ASI:One that remembers what you know. Paste a syllabus and it builds a map of the course: concepts and the order to learn them. From then on it quizzes you, teaches what you're shaky on in the format that works for you, schedules reviews before your exam, and picks up exactly where you left off in every new chat. Everything it knows about you lives in a shared SpacetimeDB database, so nothing is lost when a chat ends.
 
-Put your logic in `handle_text` in `uagents-python/agent.py`.
+Built for MHacks 2026 (Fetch.ai track).
+
+## Try it
+
+Open [ASI:One](https://asi1.ai) and message **Sprout** (`@blank-agent-184`). Tap "Try a sample" if you don't have a syllabus handy.
 
 ## Agents
 
-| Agent | Address | Code |
+| Agent | Handle | Address | What it does |
+| --- | --- | --- | --- |
+| **Sprout** (talk to this one) | `@blank-agent-184` | `agent1q27e9dntmewremft08ehnpdd7davz8kgy7dz744gr87q9jfqvewuq2h7q4g` | Chat Protocol agent students use. Routes each turn to the curriculum or tutor logic and runs it in-process. [Code](uagents-python/orchestrator) |
+| Sprout Tutor | `@blank-agent-183` | `agent1qfd9vn03a5udss62gpl9nag9r6qljz9td0ngmrdfzea70csvk04hwpc5upy` | Diagnostics, lessons, flashcards, reviews, the journey map. Also runs standalone. [Code](uagents-python/tutor) |
+| Sprout Curriculum | `@blank-agent-181` | `agent1qtddszc00qe3jgkpsu652wvp0nm4j4tywcpjt554ct5acn09gs3lu3nk8nh` | Syllabus to concept map, saved to the database. Also answers `GetConceptMap` / `ParseSyllabusRequest` from other agents. [Code](uagents-python/curriculum) |
+
+All three are hosted on Agentverse and use the Agent Chat Protocol with ASI:One interactive cards.
+
+## The other pieces
+
+| Piece | Where | Code |
 | --- | --- | --- |
-| Sprout orchestrator (the one students talk to) | not deployed yet | [`uagents-python/orchestrator`](uagents-python/orchestrator) |
-| Sprout Curriculum (hosted on Agentverse, @blank-agent-181) | `agent1qtddszc00qe3jgkpsu652wvp0nm4j4tywcpjt554ct5acn09gs3lu3nk8nh` | [`uagents-python/curriculum`](uagents-python/curriculum) |
-| Sprout Tutor | not deployed yet | [`uagents-python/tutor`](uagents-python/tutor) |
+| Shared database (BKT mastery, SM-2 reviews, Thompson sampling over teaching formats, next-concept choice) | SpacetimeDB Maincloud, database `sprout-live` | [`spacetimedb/spacetimedb`](spacetimedb/spacetimedb), reducers in [API.md](spacetimedb/API.md) |
+| Card images (progress, course map, journey map) | https://sprout-cards-six.vercel.app | [`cards`](cards) |
+| Knowledge garden: every concept as a plant that grows with live mastery | https://sprout-garden-seven.vercel.app (`?u=<learner address>`) | [`spacetimedb/src`](spacetimedb/src) |
+| Mastery models in Python: BKT parameter fitting from the attempt log, mastery labels | runs offline against `sprout-live` | [`mastery`](mastery) |
 
-Students talk to the orchestrator, which routes each message to the curriculum or tutor agent and relays their cards back. See its [README](uagents-python/orchestrator/README.md).
+## How it fits together
 
-The curriculum agent turns a pasted syllabus into a concept map and replies with interactive cards in ASI:One. See its [README](uagents-python/curriculum/README.md).
+```
+ASI:One ──chat──► Sprout (Agentverse)
+                    ├─ curriculum skill: syllabus → concept map → create_course / ingest_concept_graph
+                    └─ tutor skill: compute_next_step → question or lesson → record_attempt
+                               │
+                               ▼
+                    SpacetimeDB sprout-live  ◄── garden page subscribes live
+                               ▲
+                    mastery/fit_params.py fits per-concept BKT parameters offline
+```
 
-The tutor agent runs diagnostics, lessons in the format that works for each student, and reviews, reading and writing everything through the shared SpacetimeDB database. See its [README](uagents-python/tutor/README.md).
+Sprout runs the tutor and curriculum logic in the same process, so a card tap is one hosted-agent hop. The same code also runs as the two standalone agents above, and the relay protocol in [`relay.py`](uagents-python/relay.py) lets any orchestrator use them remotely.
+
+More detail: [docs/architecture.md](docs/architecture.md).
+
+## Run locally
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp uagents-python/.env.example uagents-python/.env   # fill in the keys (ask the team)
+cd uagents-python
+python -m orchestrator.agent      # Sprout, with the tutor and curriculum in-process
+python -m tutor.agent             # optional: the standalone tutor
+python -m curriculum.agent        # optional: the standalone curriculum agent
+```
+
+Each agent prints an inspector link; connect it to a mailbox to reach it from ASI:One.
+
+## Tests
+
+```bash
+cd uagents-python && python -m unittest orchestrator.test_routing orchestrator.test_inprocess tutor.test_tutor curriculum.test_concept_map
+python -m pytest mastery                 # from the repo root
+cd spacetimedb && npm test               # database algorithms and the garden
+```
+
+## Deploy
+
+- **Agents:** `python uagents-python/build_hosted.py` writes the files to paste into each hosted agent's editor: `dist/sprout/` (six files, multi-file hosted agent), `dist/tutor/agent.py` and `dist/curriculum/agent.py`. Stop the agent before editing, save, then start it. Secrets go in each agent's `.env` in the editor: `ASI_ONE_API_KEY`, `SPACETIMEDB_TOKEN`, `SPACETIMEDB_DB=sprout-live`.
+- **Cards and garden:** Vercel projects `sprout-cards` (`cards/`) and `sprout-garden` (`spacetimedb/`, Vite). `vercel deploy --prod` from each folder.
+- **Database:** `spacetime publish` from `spacetimedb/spacetimedb` (owner only).
