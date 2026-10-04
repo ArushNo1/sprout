@@ -1,3 +1,5 @@
-renders/
+renders/*.mov
+renders/work-*/
+renders/.*
 snapshots/
 .hyperframes/
