@@ -1,0 +1,160 @@
+{
+    "route:agent1q0mpp2s7k8prwukf7ppfns8e263csrh04a39rxtgkfpc5gnaudazgy52jdu": {
+        "cards_from": "curriculum"
+    },
+    "map:agent1q0mpp2s7k8prwukf7ppfns8e263csrh04a39rxtgkfpc5gnaudazgy52jdu": {
+        "version": 1,
+        "course": {
+            "name": "CALC101",
+            "code": "CALC101",
+            "exam_date": null
+        },
+        "units": [
+            {
+                "id": "limits-and-derivatives",
+                "name": "Limits and Derivatives",
+                "order": 1
+            },
+            {
+                "id": "integration",
+                "name": "Integration",
+                "order": 2
+            }
+        ],
+        "concepts": [
+            {
+                "id": "limit-definition",
+                "name": "Limit Definition",
+                "summary": "I can define a limit using the epsilon-delta definition or describe intuitive behavior near a point.",
+                "unit": "limits-and-derivatives",
+                "kind": "concept",
+                "source": "imits",
+                "depth": 0
+            },
+            {
+                "id": "continuity-check",
+                "name": "Continuity Check",
+                "summary": "I can determine if a function is continuous at a point by checking limits and function values.",
+                "unit": "limits-and-derivatives",
+                "kind": "skill",
+                "source": "imits",
+                "depth": 1
+            },
+            {
+                "id": "derivative-definition",
+                "name": "Derivative as Limit",
+                "summary": "I can compute the derivative of a function from first principles using the limit definition.",
+                "unit": "limits-and-derivatives",
+                "kind": "skill",
+                "source": "derivatives",
+                "depth": 1
+            },
+            {
+                "id": "power-rule",
+                "name": "Power Rule",
+                "summary": "I can differentiate polynomial terms using the power rule.",
+                "unit": "limits-and-derivatives",
+                "kind": "skill",
+                "source": "derivatives",
+                "depth": 2
+            },
+            {
+                "id": "chain-rule",
+                "name": "Chain Rule",
+                "summary": "I can differentiate composite functions by applying the chain rule correctly.",
+                "unit": "limits-and-derivatives",
+                "kind": "skill",
+                "source": "chain rule",
+                "depth": 3
+            },
+            {
+                "id": "antiderivative-concept",
+                "name": "Antiderivative Concept",
+                "summary": "I understand that an antiderivative is a function whose derivative is the original function.",
+                "unit": "integration",
+                "kind": "concept",
+                "source": "integrals",
+                "depth": 2
+            },
+            {
+                "id": "basic-integration-rules",
+                "name": "Basic Integration Rules",
+                "summary": "I can find indefinite integrals of basic functions like polynomials, exponentials, and trigonometric functions.",
+                "unit": "integration",
+                "kind": "skill",
+                "source": "integrals",
+                "depth": 3
+            },
+            {
+                "id": "fundamental-theorem-calculus",
+                "name": "Fundamental Theorem of Calculus",
+                "summary": "I can use the Fundamental Theorem of Calculus to evaluate definite integrals.",
+                "unit": "integration",
+                "kind": "concept",
+                "source": "integrals",
+                "depth": 4
+            }
+        ],
+        "edges": [
+            {
+                "from": "limit-definition",
+                "to": "continuity-check",
+                "confidence": 0.95,
+                "reason": "Continuity relies on limits."
+            },
+            {
+                "from": "limit-definition",
+                "to": "derivative-definition",
+                "confidence": 0.95,
+                "reason": "Derivatives are defined via limits."
+            },
+            {
+                "from": "derivative-definition",
+                "to": "power-rule",
+                "confidence": 0.8,
+                "reason": "Power rule is derived from limit definition."
+            },
+            {
+                "from": "derivative-definition",
+                "to": "antiderivative-concept",
+                "confidence": 0.6,
+                "reason": "Understanding derivatives helps grasp antiderivatives."
+            },
+            {
+                "from": "power-rule",
+                "to": "chain-rule",
+                "confidence": 0.7,
+                "reason": "Chain rule extends differentiation skills."
+            },
+            {
+                "from": "antiderivative-concept",
+                "to": "basic-integration-rules",
+                "confidence": 0.9,
+                "reason": "Rules implement the concept."
+            },
+            {
+                "from": "basic-integration-rules",
+                "to": "fundamental-theorem-calculus",
+                "confidence": 0.85,
+                "reason": "FTC connects integration to derivatives."
+            }
+        ],
+        "order": [
+            "limit-definition",
+            "continuity-check",
+            "derivative-definition",
+            "power-rule",
+            "antiderivative-concept",
+            "chain-rule",
+            "basic-integration-rules",
+            "fundamental-theorem-calculus"
+        ]
+    },
+    "draft:agent1q0mpp2s7k8prwukf7ppfns8e263csrh04a39rxtgkfpc5gnaudazgy52jdu": {
+        "course_name": "CALC101",
+        "exam_date": "",
+        "syllabus": "imits, derivatives, chain rule, integrals",
+        "course_id": null
+    },
+    "confirmed:agent1q0mpp2s7k8prwukf7ppfns8e263csrh04a39rxtgkfpc5gnaudazgy52jdu": true
+}
