@@ -93,6 +93,96 @@ export function parseCardQuery(params) {
   };
 }
 
+// Journey map: rows of concept boxes joined by arrows. Done concepts are faded green,
+// the current one dark green, next ones tan; positions are computed here, since
+// Satori has no layout engine for free-floating boxes and lines.
+const JOURNEY = {
+  boxH: 80, rowGap: 110, top: 40 + 80 + 44 + 44, bottom: 44, maxBoxW: 400, boxGap: 40,
+  fill: { done: COLORS.barFill, current: COLORS.primary, next: COLORS.track, later: COLORS.track },
+  text: { done: "#B9D3BF", current: COLORS.card, next: COLORS.green, later: COLORS.green },
+};
+
+export function journeyLayout(nodes) {
+  const rows = [...new Set(nodes.map((n) => n.row))].sort((a, b) => a - b);
+  const width = CARD_W - 2 * PAD_X;
+  const placed = nodes.map((n) => ({ ...n }));
+  rows.forEach((row, r) => {
+    const inRow = placed.filter((n) => n.row === row);
+    const w = Math.min(JOURNEY.maxBoxW, Math.floor((width - (inRow.length - 1) * JOURNEY.boxGap) / inRow.length));
+    const total = inRow.length * w + (inRow.length - 1) * JOURNEY.boxGap;
+    inRow.forEach((n, i) => {
+      n.x = PAD_X + Math.round((width - total) / 2) + i * (w + JOURNEY.boxGap);
+      n.y = JOURNEY.top + r * (JOURNEY.boxH + JOURNEY.rowGap);
+      n.w = w;
+    });
+  });
+  const height = JOURNEY.top + rows.length * JOURNEY.boxH + Math.max(0, rows.length - 1) * JOURNEY.rowGap + JOURNEY.bottom;
+  return { nodes: placed, size: { width: CARD_W, height } };
+}
+
+function arrow(from, to) {
+  // Leaves the bottom of one box on the side nearest its target and lands on the top of the next.
+  const toMid = to.x + to.w / 2, fromMid = from.x + from.w / 2;
+  const x1 = Math.max(from.x + from.w * 0.2, Math.min(from.x + from.w * 0.8, fromMid + (toMid - fromMid) * 0.5));
+  const x2 = Math.max(to.x + to.w * 0.2, Math.min(to.x + to.w * 0.8, toMid + (fromMid - toMid) * 0.35));
+  const y1 = from.y + JOURNEY.boxH + 6, y2 = to.y - 8;
+  const angle = Math.atan2(y2 - y1, x2 - x1), head = 20, spread = 0.5;
+  const hx = (a) => x2 - head * Math.cos(angle + a), hy = (a) => y2 - head * Math.sin(angle + a);
+  const stroke = { stroke: COLORS.primary, strokeWidth: 5, strokeLinecap: "round", fill: "none" };
+  return [
+    { type: "line", props: { x1, y1, x2, y2, ...stroke } },
+    { type: "polyline", props: { points: `${hx(spread)},${hy(spread)} ${x2},${y2} ${hx(-spread)},${hy(-spread)}`, ...stroke } },
+  ];
+}
+
+// Largest size (40 down to 26) at which the label fits on one line, or else on two.
+function boxFontSize(label, boxW) {
+  const room = boxW - 36, width = (size) => label.length * 0.43 * size;
+  if (width(40) <= room) return 40;
+  return Math.max(26, Math.min(36, Math.floor((room * 1.8) / (label.length * 0.43))));
+}
+
+export function journeyTree({ title, subtitle, nodes, edges }, layout) {
+  const boxes = layout.nodes.map((n) => h("div", {
+    display: "flex", position: "absolute", left: n.x, top: n.y, width: n.w, height: JOURNEY.boxH,
+    alignItems: "center", justifyContent: "center", textAlign: "center", borderRadius: 16, padding: "0 18px",
+    backgroundColor: JOURNEY.fill[n.state], color: JOURNEY.text[n.state],
+    fontSize: boxFontSize(n.label, n.w), lineHeight: 1.0, overflow: "hidden",
+  }, n.label));
+  const lines = edges.flatMap(([a, b]) => (layout.nodes[a] && layout.nodes[b] ? arrow(layout.nodes[a], layout.nodes[b]) : []));
+  return h("div", {
+    display: "flex", position: "relative", width: "100%", height: "100%", backgroundColor: COLORS.card,
+    borderRadius: 32, flexDirection: "column", padding: `40px ${PAD_X}px 0`, fontFamily: "Instrument Serif",
+  }, [
+    h("div", { display: "flex", height: 80, alignItems: "flex-end", fontSize: titleSize(title), color: COLORS.green, lineHeight: 1.05, whiteSpace: "nowrap" }, title),
+    h("div", { display: "flex", fontSize: 36, fontStyle: "italic", color: COLORS.green, marginTop: 4, whiteSpace: "nowrap" }, subtitle || "your learning journey"),
+    { type: "svg", props: {
+      width: layout.size.width, height: layout.size.height, viewBox: `0 0 ${layout.size.width} ${layout.size.height}`,
+      style: { position: "absolute", left: 0, top: 0 }, children: lines,
+    } },
+    ...boxes,
+  ]);
+}
+
+// Query: title, subtitle, repeated n=row~state~label (state: done/current/next/later)
+// and e=a-b arrows between node indexes in the order given.
+export function parseJourneyQuery(params) {
+  const states = new Set(["done", "current", "next", "later"]);
+  const nodes = params.getAll("n").slice(0, 12).map((raw) => {
+    const [row = "0", state = "next", ...label] = raw.split("~");
+    return { row: Number(row) || 0, state: states.has(state) ? state : "next", label: clip(label.join("~").trim(), 48) };
+  });
+  const edges = params.getAll("e").slice(0, 24)
+    .map((raw) => raw.split("-").map(Number))
+    .filter(([a, b]) => Number.isInteger(a) && Number.isInteger(b));
+  return {
+    title: clip(params.get("title") || "Your course", 46),
+    subtitle: clip(params.get("subtitle") || "", 60),
+    nodes,
+    edges,
+  };
+}
+
 // Product tile for the store carousel: 4:3, leaf in the corner, name, price, delivery tag.
 export const PRODUCT_SIZE = { width: 1200, height: 900 };
 const LEAF = `data:image/png;base64,${readFileSync(join(process.cwd(), "public", "leaf.png")).toString("base64")}`;

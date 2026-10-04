@@ -1,6 +1,6 @@
 // Renders sample PNGs into preview/ so the design can be checked without deploying.
 import { mkdirSync, writeFileSync } from "node:fs";
-import { BUTTON_SIZE, PRODUCT_SIZE, PRODUCT_WIDE_SIZE, productWideTree, buttonTree, cardSize, cardTree, parseCardQuery, parseProductQuery, png, productTree } from "../lib/render.js";
+import { journeyLayout, journeyTree, parseJourneyQuery, BUTTON_SIZE, PRODUCT_SIZE, PRODUCT_WIDE_SIZE, productWideTree, buttonTree, cardSize, cardTree, parseCardQuery, parseProductQuery, png, productTree } from "../lib/render.js";
 
 mkdirSync("preview", { recursive: true });
 const save = async (name, res) => writeFileSync(`preview/${name}.png`, Buffer.from(await res.arrayBuffer()));
@@ -21,4 +21,9 @@ for (const [file, q] of [
   ["product-ships", "name=TI-84 Plus CE Graphing Calculator&category=School supplies&price=$119.99&tag=Ships&desc=Allowed on the SAT, ACT and AP exams"],
 ]) await save(file, png(productTree(parseProductQuery(new URLSearchParams(q))), PRODUCT_SIZE));
 await save("product-wide", png(productWideTree(parseProductQuery(new URLSearchParams("name=TI-84 Plus CE Graphing Calculator&category=School supplies&tag=Ships"))), PRODUCT_WIDE_SIZE));
+const journey = parseJourneyQuery(new URLSearchParams(
+  "title=Linear Algebra&n=0~done~Linear Systems&n=1~current~Augmented Matrices&n=2~next~Row Operations" +
+  "&n=2~next~REF %26 RREF&n=3~later~Next Topic&e=0-1&e=1-2&e=1-3&e=2-4&e=3-4"));
+const journeyBox = journeyLayout(journey.nodes);
+await save("journey", png(journeyTree(journey, journeyBox), journeyBox.size));
 console.log("wrote preview/*.png");
