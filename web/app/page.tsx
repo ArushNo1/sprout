@@ -1,9 +1,20 @@
+import SiteHeader from '@/components/SiteHeader';
+
 export default function Home() {
   return (
-    <div className="empty">
-      <h1>Sprout</h1>
-      <p className="muted">Your study buddy lives in ASI:One. Ask it for your garden and it will send you a link here.</p>
-      <p className="muted">Links look like <code>/&lt;your id&gt;/garden</code>.</p>
-    </div>
+    <>
+      <SiteHeader />
+      <main className="wrap">
+        <div className="hero">
+          <h1 className="title">sprout</h1>
+          <p className="eyebrow">It grows with you</p>
+          <p className="lead">A study partner that remembers what you know. Paste a syllabus in ASI:One and watch your course grow into a garden you can explore here.</p>
+          <div className="actions">
+            <a className="cta" href="https://asi1.ai">Open Sprout in ASI:One</a>
+            <a className="cta cta--ghost" href="/play">Join a game</a>
+          </div>
+        </div>
+      </main>
+    </>
   );
 }

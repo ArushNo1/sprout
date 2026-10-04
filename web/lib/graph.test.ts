@@ -58,7 +58,7 @@ test('known games resolve', () => {
   assert.equal(gameBySlug('nope'), undefined);
 });
 
-import { courseSummary, nextUp, sortSummaries } from './garden.ts';
+import { courseSummary, sortSummaries } from './garden.ts';
 
 const node = (id: number, name: string, mastery: number, attempts: number, due = false) =>
   ({ id, name, summary: '', depth: 0, mastery, attempts, stage: 'sprout' as const, due, nextReview: null });
@@ -81,11 +81,8 @@ test('courses sort by exam, no-exam last', () => {
   assert.deepEqual(sortSummaries(list).map(s => s.name), ['C', 'A', 'B']);
 });
 
-test('next up lists due concepts across courses, soonest exam first', () => {
+test('summary has one plant per concept, prerequisites first', () => {
   const now = 1_800_000_000_000;
-  const g = [
-    course(1, 'Far', [node(1, 'a', 0.5, 2, true)], 20, now),
-    course(2, 'Near', [node(2, 'b', 0.6, 2, true), node(3, 'c', 0.1, 2, true), node(4, 'd', 0.1, 0, true)], 2, now),
-  ];
-  assert.deepEqual(nextUp(g, now).map(u => u.concept), ['c', 'b', 'a']); // untested 'd' is not "due"
+  const g = course(1, 'A', [{ ...node(1, 'late', 0.9, 3), depth: 2 }, { ...node(2, 'early', 0, 0), depth: 0 }], null, now);
+  assert.deepEqual(courseSummary(g, now).stages.map(s => s.stage), ['seed', 'budding']);
 });

@@ -33,18 +33,18 @@ export default async function GameRoom({ params }: { params: Promise<Params> }) 
   if (live) redirect(live);
 
   return (
-    <>
-      <div className="crumbs">
+    <main className="wrap">
+      <p className="crumbs">
         <Link href={`/${encodeURIComponent(userId)}`}>Sprout</Link> / {game.name}
-      </div>
-      <h1>{game.name}</h1>
-      <p className="muted">{game.blurb}</p>
-      <div className="card">
-        <p>Room code</p>
-        <h1 style={{ letterSpacing: '0.2em' }}>{code}</h1>
+      </p>
+      <h1 className="title">{game.name}</h1>
+      <p className="eyebrow">{game.blurb}</p>
+      <div className="lobby panel">
+        <p className="eyebrow">Room code</p>
+        <p className="code" aria-label={`Room code ${code.split('').join(' ')}`}>{code}</p>
         <p className="muted">Playing as <code>{userId.slice(0, 18)}{userId.length > 18 ? '…' : ''}</code></p>
-        <span className="pill">Lobby coming soon</span>
+        <p style={{ marginTop: 14 }}><span className="chip chip--tag">Lobby coming soon</span></p>
       </div>
-    </>
+    </main>
   );
 }

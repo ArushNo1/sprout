@@ -5,21 +5,21 @@ export default async function UserHome({ params }: { params: Promise<{ userId: s
   const { userId } = await params;
   const id = encodeURIComponent(userId);
   return (
-    <>
-      <div className="crumbs">Sprout</div>
-      <h1>Your garden</h1>
-      <div className="grid">
-        <Link href={`/${id}/garden`} className="card">
-          <strong>Garden</strong>
-          <p className="muted">Every concept you study growing as a plant — seeds sprout, grow, bud, and flower as you master each one.</p>
+    <main className="wrap">
+      <p className="eyebrow">Welcome back</p>
+      <h1 className="title">Your garden</h1>
+      <div className="tiles">
+        <Link href={`/${id}/garden`} className="tile panel">
+          <h2>Garden</h2>
+          <p>Every concept you study as a plant. Seeds sprout, bud and flower as you master them, and wilt when a review is due.</p>
         </Link>
         {GAMES.map(g => (
-          <div className="card" key={g.slug}>
-            <strong>{g.name}</strong> <span className="pill">{g.players}</span>
-            <p className="muted">{g.blurb} Rooms open from a link Sprout sends you.</p>
+          <div className="tile panel" key={g.slug}>
+            <h2>{g.name}<span className="chip chip--tag">{g.players}</span></h2>
+            <p>{g.blurb} Rooms open from a link Sprout sends you.</p>
           </div>
         ))}
       </div>
-    </>
+    </main>
   );
 }

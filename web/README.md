@@ -6,8 +6,8 @@ The pages that don't fit in an ASI:One card: the garden, the knowledge graph, an
 |---|---|
 | `/` | Landing |
 | `/<user id>` | The learner's garden: links to the garden and games |
-| `/<user id>/garden` | Each course's concepts as plants arranged by prerequisite depth: seeds sprout, grow, bud and flower with mastery, and wilt when a review is due. `?course=<id>` picks a course. |
-| `/<user id>/garden` (several courses) | With two or more active courses and no `?course=`, an overview: what's due for review across all of them (soonest exam first) and one card per course with solid/tested/due counts. Each card opens that course's garden. |
+| `/<user id>/garden` | The garden as one interactive map that fits the screen. Plants sit by prerequisite depth with the lines between them. Tap a plant to light up its whole chain (green = what it builds on, gold = what it unlocks) and open its details. Drag to pan, scroll or pinch to zoom, double-tap to zoom to a chain, **Fit** and the flip button re-lay it out. Filter by due / growing / solid / not started, search by name, or use the arrow keys (up and down follow prerequisites). Switch courses from the dropdown. On a phone the details open as a sheet. |
+| `/<user id>/garden` (several courses) | With two or more active courses and no `?course=`, an overview with one card per course: its plants, solid/tested/due counts and weakest concept, soonest exam first. A card opens that course's map. |
 | `/<user id>/<game>/<room code>` | Placeholder lobby from `lib/games.ts`. The real games are the next three rows. |
 | `/play`, `/play/<code>` | Join a live Kahoot-style game. `?k=<key>` links the player's answers to their mastery. |
 | `/host/<code>?k=<key>` | Host screen for a live game. |

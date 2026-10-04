@@ -125,6 +125,8 @@ export type CourseSummary = {
   days: number | null;
   /** The lowest tested concept, if any. Untested concepts are never reported as weak. */
   weakest: { name: string; percent: number } | null;
+  /** One plant stage per concept, prerequisites first, for the little garden on the overview card. */
+  stages: { stage: Stage; wilted: boolean }[];
 };
 
 export function courseSummary(graph: CourseGraph, nowMs: number): CourseSummary {
@@ -141,6 +143,8 @@ export function courseSummary(graph: CourseGraph, nowMs: number): CourseSummary 
     examMs,
     days: examMs === null ? null : daysUntil(examMs, nowMs),
     weakest: weakest ? { name: weakest.name, percent: Math.floor(weakest.mastery * 100) } : null,
+    stages: [...graph.nodes].sort((a, b) => a.depth - b.depth || a.id - b.id)
+      .map(n => { const p = plantState(n.mastery, n.attempts, n.due); return { stage: p.stage, wilted: p.wilted }; }),
   };
 }
 
@@ -148,20 +152,4 @@ export function courseSummary(graph: CourseGraph, nowMs: number): CourseSummary 
 export function sortSummaries(list: CourseSummary[]): CourseSummary[] {
   return [...list].sort((a, b) =>
     (a.days ?? Infinity) - (b.days ?? Infinity) || a.name.localeCompare(b.name));
-}
-
-export type NextUp = { courseId: number; course: string; concept: string; percent: number; days: number | null };
-
-/** Concepts due for review across every course, soonest exam first, then weakest. */
-export function nextUp(graphs: CourseGraph[], nowMs: number, limit = 5): NextUp[] {
-  const items: NextUp[] = [];
-  for (const g of graphs) {
-    const days = g.course.examDate === null ? null : daysUntil(g.course.examDate, nowMs);
-    for (const n of g.nodes)
-      if (n.attempts > 0 && n.due)
-        items.push({ courseId: g.course.id, course: g.course.name, concept: n.name, percent: Math.floor(n.mastery * 100), days });
-  }
-  return items
-    .sort((a, b) => (a.days ?? Infinity) - (b.days ?? Infinity) || a.percent - b.percent)
-    .slice(0, limit);
 }
