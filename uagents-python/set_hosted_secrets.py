@@ -1,11 +1,11 @@
 """Sets each hosted agent's secrets on Agentverse from your local files. Run it yourself:
 
     python set_hosted_secrets.py              # all three
-    python set_hosted_secrets.py sprout       # or tutor / curriculum
+    python set_hosted_secrets.py sprout       # or tutor / curriculum / arcade / garden
 
 Reads AGENTVERSE_API_KEY, ASI_ONE_API_KEY, SPACETIMEDB_DB and TRUSTED_ORCHESTRATORS from
 uagents-python/.env, and each agent's database token from uagents-python/.env.agents
-(SPROUT_/TUTOR_/CURRICULUM_SPACETIMEDB_TOKEN). Prints names only, never values.
+(<AGENT>_SPACETIMEDB_TOKEN, one per agent). Prints names only, never values.
 """
 
 import os
@@ -19,8 +19,7 @@ import deploy_hosted as d
 HERE = Path(__file__).parent
 load_dotenv(HERE / ".env")
 local, agents = dotenv_values(HERE / ".env"), dotenv_values(HERE / ".env.agents")
-TOKEN_VAR = {"sprout": "SPROUT_SPACETIMEDB_TOKEN", "tutor": "TUTOR_SPACETIMEDB_TOKEN",
-             "curriculum": "CURRICULUM_SPACETIMEDB_TOKEN"}
+TOKEN_VAR = {name: f"{name.upper()}_SPACETIMEDB_TOKEN" for name in d.ADDRESSES}
 
 if __name__ == "__main__":
     key = os.getenv("AGENTVERSE_API_KEY") or sys.exit("Set AGENTVERSE_API_KEY in uagents-python/.env")

@@ -2,8 +2,14 @@ import json
 import unittest
 from unittest import mock
 
-from tutor import gardens as G
-from tutor.cards import gardens_card, gardens_link
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from cardkit import gardens_link
+from garden import insights as G
+from garden.cards import gardens_card
 
 NOW = 1_800_000_000
 DAY = 86_400 * 1_000_000
@@ -26,8 +32,8 @@ def fake_sql(query):
     raise AssertionError(query)
 
 
-@mock.patch("tutor.gardens.sql", fake_sql)
-@mock.patch("tutor.learning.sql", fake_sql)
+@mock.patch("garden.insights.sql", fake_sql)
+@mock.patch("learning.sql", fake_sql)
 class GardensTest(unittest.TestCase):
     def test_summaries_sorted_by_exam(self):
         gs = G.gardens("agent1qx", now=NOW)

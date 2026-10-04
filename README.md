@@ -15,11 +15,13 @@ Open [ASI:One](https://asi1.ai) and message **Sprout** (`@blank-agent-184`). Tap
 
 | Agent | Handle | Address | What it does |
 | --- | --- | --- | --- |
-| **Sprout** (talk to this one) | `@blank-agent-184` | `agent1q27e9dntmewremft08ehnpdd7davz8kgy7dz744gr87q9jfqvewuq2h7q4g` | Chat Protocol agent students use. Routes each turn to the curriculum or tutor logic and runs it in-process. [Code](uagents-python/orchestrator) |
-| Sprout Tutor | `@blank-agent-183` | `agent1qfd9vn03a5udss62gpl9nag9r6qljz9td0ngmrdfzea70csvk04hwpc5upy` | Diagnostics, lessons, flashcards, reviews, the journey map, live multiplayer games. Also runs standalone. [Code](uagents-python/tutor) |
+| **Sprout** (talk to this one) | `@blank-agent-184` | `agent1q27e9dntmewremft08ehnpdd7davz8kgy7dz744gr87q9jfqvewuq2h7q4g` | The orchestrator: the Chat Protocol agent students use. Routes each turn and each card tap to the specialist that owns it and runs it in-process. [Code](uagents-python/orchestrator) |
+| Sprout Tutor | `@blank-agent-183` | `agent1qfd9vn03a5udss62gpl9nag9r6qljz9td0ngmrdfzea70csvk04hwpc5upy` | Teaching: diagnostics, lessons, flashcards, reviews, session summaries. Also runs standalone. [Code](uagents-python/tutor) |
+| Sprout Arcade | `Sprout Arcade` | `agent1qdvszkqcf6xz6frmegrtk95uymzayfvdcu7m8cpuajjr3vyj5zqlsxwj6dz` | Game creator: picks the concepts a student needs, writes and double-checks questions, opens live rooms and solo arcade games, reports results back into mastery. [Code](uagents-python/arcade) |
+| Sprout Garden | `Sprout Garden` | `agent1qwxlahz0xv67shp4eawqh76f5le7u5hqy9tkafntaz9d4w0es07jjdary93` | Progress and the knowledge graph: the learning journey map, every course's garden, and tool-calling answers to questions across courses. Read-only. [Code](uagents-python/garden) |
 | Sprout Curriculum | `@blank-agent-181` | `agent1qtddszc00qe3jgkpsu652wvp0nm4j4tywcpjt554ct5acn09gs3lu3nk8nh` | Syllabus to concept map, saved to the database. Also answers `GetConceptMap` / `ParseSyllabusRequest` from other agents. [Code](uagents-python/curriculum) |
 
-All three are hosted on Agentverse and use the Agent Chat Protocol with ASI:One interactive cards.
+All five are hosted on Agentverse and use the Agent Chat Protocol with ASI:One interactive cards. Each has one job and its own README; they share the database and a small card toolkit, not each other's code.
 
 ## The other pieces
 
@@ -35,8 +37,10 @@ All three are hosted on Agentverse and use the Agent Chat Protocol with ASI:One 
 
 ```
 ASI:One ──chat──► Sprout (Agentverse)
-                    ├─ curriculum skill: syllabus → concept map → create_course / ingest_concept_graph
-                    └─ tutor skill: compute_next_step → question or lesson → record_attempt
+                    ├─ Curriculum: syllabus or topic → concept map → create_course / ingest_concept_graph
+                    ├─ Tutor:      compute_next_step → question or lesson → record_attempt
+                    ├─ Arcade:     weakest concepts → checked questions → create_game → results
+                    └─ Garden:     journey map, all gardens, cross-course questions (read-only)
                                │
                                ▼
                     SpacetimeDB sprout-live  ◄── garden page subscribes live
@@ -44,7 +48,7 @@ ASI:One ──chat──► Sprout (Agentverse)
                     mastery/fit_params.py fits per-concept BKT parameters offline
 ```
 
-Sprout runs the tutor and curriculum logic in the same process, so a card tap is one hosted-agent hop. The same code also runs as the two standalone agents above, and the relay protocol in [`relay.py`](uagents-python/relay.py) lets any orchestrator use them remotely.
+Sprout runs the four specialists' logic in the same process, so a card tap is one hosted-agent hop. The same code also runs as the standalone agents above, and the relay protocol in [`relay.py`](uagents-python/relay.py) lets any orchestrator use them remotely.
 
 More detail: [docs/architecture.md](docs/architecture.md).
 
@@ -65,7 +69,7 @@ Each agent prints an inspector link; connect it to a mailbox to reach it from AS
 ## Tests
 
 ```bash
-cd uagents-python && python -m unittest orchestrator.test_routing orchestrator.test_inprocess tutor.test_tutor tutor.test_game curriculum.test_concept_map
+cd uagents-python && python -m unittest orchestrator.test_routing orchestrator.test_inprocess tutor.test_tutor arcade.test_arcade garden.test_garden curriculum.test_concept_map
 python -m pytest mastery                 # from the repo root
 cd spacetimedb && npm test               # database algorithms and game scoring
 cd web && npm test                       # graph helpers and play-site routing

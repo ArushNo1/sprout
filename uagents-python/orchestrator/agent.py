@@ -1,13 +1,18 @@
 """Sprout orchestrator: the one agent students talk to in ASI:One.
 
 It decides which specialist handles each message and runs that specialist's chat logic
-in-process (tutor/skill.py, curriculum/skill.py), so a card tap costs one hosted-agent hop.
+in-process (curriculum, tutor, arcade and garden skill.py), so a card tap costs one hosted-agent hop.
 With SPROUT_IN_PROCESS=0 it relays to the separately hosted specialist agents instead
 (see ../relay.py), which is slower: three hops per tap.
 - Curriculum agent: new students, pasted syllabi, "add a course", and the
   upload and map cards.
 - Tutor agent: everything about studying ("let's keep going", quizzes,
   reviews) and its progress, question and lesson cards.
+- Arcade agent: builds multiplayer study games (live rooms and solo arcade) and
+  reports the results.
+- Garden agent: the learning journey map, the all-courses overview, and
+  questions about progress across courses.
+Card taps go to whichever agent owns the button (routing.ACTION_OWNER).
 
 A brand-new chat goes to the tutor when the student already has an active
 course in Sprout's database, so it opens with where they left off, what's due
@@ -16,8 +21,8 @@ After a student confirms a course map, the orchestrator hands them to the tutor.
 
 Run from uagents-python/:  python -m orchestrator.agent
 Env (from .env): ORCHESTRATOR_SEED, ASI_ONE_API_KEY (the in-process specialists call the model),
-SPACETIMEDB_HOST / SPACETIMEDB_DB / SPACETIMEDB_TOKEN; for relaying, CURRICULUM_ADDRESS and
-TUTOR_ADDRESS.
+SPACETIMEDB_HOST / SPACETIMEDB_DB / SPACETIMEDB_TOKEN; for relaying, CURRICULUM_ADDRESS,
+TUTOR_ADDRESS, ARCADE_ADDRESS and GARDEN_ADDRESS.
 """
 
 import asyncio
@@ -40,8 +45,10 @@ from uagents_core.contrib.protocols.chat import (  # noqa: E402
     chat_protocol_spec,
 )
 
+from arcade.skill import on_chat as arcade_chat  # noqa: E402
 from curriculum.skill import forget as forget_map, on_chat as curriculum_chat  # noqa: E402
-from orchestrator.routing import CURRICULUM, TUTOR, card_action, choose_route  # noqa: E402
+from garden.skill import on_chat as garden_chat  # noqa: E402
+from orchestrator.routing import ARCADE, CURRICULUM, GARDEN, TUTOR, card_action, choose_route  # noqa: E402
 from relay import StudentReplies, StudentTurn, fresh, is_card, run_in_process  # noqa: E402
 from sprout_db import STATS, DbError, enabled, sql, sql_str  # noqa: E402
 from tutor.skill import on_chat as tutor_chat  # noqa: E402
@@ -49,11 +56,13 @@ from tutor.skill import on_chat as tutor_chat  # noqa: E402
 # Python 3.14 no longer creates a default event loop, which uagents expects.
 asyncio.set_event_loop(asyncio.new_event_loop())
 
-SKILLS = {CURRICULUM: curriculum_chat, TUTOR: tutor_chat}
+SKILLS = {CURRICULUM: curriculum_chat, TUTOR: tutor_chat, ARCADE: arcade_chat, GARDEN: garden_chat}
 IN_PROCESS = os.getenv("SPROUT_IN_PROCESS", "1") != "0"
 ADDRESSES = {
     CURRICULUM: os.getenv("CURRICULUM_ADDRESS", "agent1qtddszc00qe3jgkpsu652wvp0nm4j4tywcpjt554ct5acn09gs3lu3nk8nh"),
     TUTOR: os.getenv("TUTOR_ADDRESS", ""),
+    ARCADE: os.getenv("ARCADE_ADDRESS", ""),
+    GARDEN: os.getenv("GARDEN_ADDRESS", ""),
 }
 
 agent = Agent(

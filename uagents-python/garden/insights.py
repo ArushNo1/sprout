@@ -7,15 +7,13 @@ chatting, so the model can only ever read that student's own data, and nothing h
 
 import json
 import os
-import re
 import time
 
-import requests
 
 from sprout_db import sql, sql_str
-from .cards import garden_link
-from .content import ASI_URL, plain_math, post_with_retry
-from .learning import MASTERED, PREREQ_SOLID, active_courses, days_until, micros
+from cardkit import garden_link
+from content import ASI_URL, plain_math, post_with_retry
+from learning import MASTERED, PREREQ_SOLID, active_courses, days_until, micros
 
 TOOL_MODEL = os.getenv("ASI_ONE_TOOL_MODEL", "asi1")
 MAX_ROUNDS = 4

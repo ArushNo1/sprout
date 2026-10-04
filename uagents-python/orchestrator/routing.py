@@ -4,15 +4,23 @@ import json
 import re
 from dataclasses import dataclass
 
-CURRICULUM, TUTOR = "curriculum", "tutor"
+CURRICULUM, TUTOR, ARCADE, GARDEN = "curriculum", "tutor", "arcade", "garden"
+
+# Who handles each card button. Taps go by what they ask for, not by who sent the card, so one card
+# can hold buttons for several agents (the progress card offers lessons, games and the journey map).
+ACTION_OWNER = {
+    **dict.fromkeys(["build_map", "sample", "edit_map", "confirm_map", "new_course"], CURRICULUM),
+    **dict.fromkeys(["game", "arcade", "game_results"], ARCADE),
+    **dict.fromkeys(["journey", "gardens"], GARDEN),
+    **dict.fromkeys(["open", "home", "diagnostic", "review", "teach", "reteach", "flash", "flash_misses", "flip",
+                     "mark", "check", "next", "answer", "done", "forget_ask", "forget_confirm", "start"], TUTOR),
+}
 
 COURSE_WORDS = re.compile(r"\b(syllabus|new course|add (a )?course|another course|different course|upload|"
                           r"my class(es)?|course map)\b", re.I)
 STUDY_WORDS = re.compile(r"\b(keep going|continue|study|quiz|review|teach|learn|practice|progress|"
                          r"diagnostic|where (was|did) i|pick up|let'?s go|ready)\b", re.I)
 FORGET_WORDS = re.compile(r"\b(forget|delete|remove|erase)\b.*\b(course|class|progress|data|history)\b", re.I)
-GARDEN_WORDS = re.compile(r"\b(gardens?|all my (courses|classes)|every course|which (course|class)|weakest|"
-                          r"strongest|most behind|how am i doing|how('?s| is) my|compare|across|biggest gap)\b", re.I)
 GAME_WORDS = re.compile(r"\b(games?|kahoot|gimkit|blooket|quiz (my|with) friends|play with|arcade|nexus|runner|meteor|blaster|video ?games?)\b", re.I)
 # Plain chatter that says nothing about a subject. (curriculum/skill.py has the same list for the standalone agent.)
 SMALLTALK = re.compile(r"^\W*(hi+|hello|hey|yo|sup|start|menu|help|thanks?( you)?|ok(ay)?|cool|test|"
@@ -21,6 +29,11 @@ SMALLTALK = re.compile(r"^\W*(hi+|hello|hey|yo|sup|start|menu|help|thanks?( you)
 # here because they usually mean the course the student already has.
 NEW_SUBJECT = re.compile(r"\b(i (want|need|'?d like|wanna) to (learn|study|master)|help me (learn|study)|"
                          r"i'?m (studying|learning|taking))\s+(?!(this|that|it|more|next|the next|again|for)\b)\S", re.I)
+# Questions about progress across courses, and the learning map: the garden agent's.
+GARDEN_WORDS = re.compile(r"\b(gardens|all my (courses|classes)|my (courses|classes)|every course|switch course|"
+                          r"journey|roadmap|learning map|which (course|class)|weakest|strongest|most behind|"
+                          r"how am i doing|how('?s| is) my|what('?s| is| should).*(due|first|priority)|compare|"
+                          r"across|biggest gap)\b", re.I)
 SYLLABUS_HINTS = re.compile(r"\b(week|unit|chapter|lecture|module|midterm|final|exam)\b", re.I)
 
 
@@ -61,14 +74,14 @@ def choose_route(text: str, new_chat: bool, cards_from, has_course: bool) -> Rou
     if action == "new_course":
         return Route(CURRICULUM, start=True, why="card tap 'new_course'")
     if action:
-        owner = cards_from or CURRICULUM
+        owner = ACTION_OWNER.get(action) or cards_from or CURRICULUM
         # Confirming a course map hands the student to the tutor to start studying it.
         then = TUTOR if owner == CURRICULUM and action == "confirm_map" else ""
         return Route(owner, text=text, then=then, why=f"card tap '{action}'")
     if FORGET_WORDS.search(text) and not looks_like_syllabus(text):
         return Route(TUTOR, text=text, why="forget a course")
     if has_course and GARDEN_WORDS.search(text) and not looks_like_syllabus(text):
-        return Route(TUTOR, text=text, why="gardens and cross-course questions")
+        return Route(GARDEN, text=text, why="gardens and cross-course questions")
     if looks_like_syllabus(text) or COURSE_WORDS.search(text):
         return Route(CURRICULUM, text=text if looks_like_syllabus(text) else "", start=not looks_like_syllabus(text),
                      why="course setup")
@@ -80,8 +93,7 @@ def choose_route(text: str, new_chat: bool, cards_from, has_course: bool) -> Rou
             return Route(CURRICULUM, text=text, why="topic, no course yet")
         return Route(CURRICULUM, start=True, why="no course yet")
     if GAME_WORDS.search(text):
-        return Route(TUTOR, text=text, why="live game")
-
+        return Route(ARCADE, text=text, why="game")
     if new_chat or not text or STUDY_WORDS.search(text):
         return Route(TUTOR, start=True, why="studying")
     return Route(TUTOR, start=True, why="default to studying")

@@ -6,10 +6,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from cardkit import parse_selection
+from content import clean_question, parse_lesson, plain_math, qa_pairs
+from learning import days_until, format_insight
 from tutor.cards import (feedback_card, flashcard_back, flashcard_front, flashcard_summary, home_card, lesson_card,
-                         parse_selection, question_card, snapshot_image, snapshot_rows)
-from tutor.content import clean_question, parse_lesson, plain_math, qa_pairs
-from tutor.learning import days_until, format_insight
+                         question_card, snapshot_image, snapshot_rows)
 
 SNAP = {"concepts": [{"name": "Big-O", "p": 0.35, "attempts": 2}, {"name": "Arrays", "p": 0.92, "attempts": 4},
                      {"name": "Heaps", "p": 0.1, "attempts": 3}, {"name": "Graphs", "p": None, "attempts": 0}],

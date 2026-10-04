@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from orchestrator.routing import CURRICULUM, TUTOR, card_action, choose_route
+from orchestrator.routing import ARCADE, CURRICULUM, GARDEN, TUTOR, card_action, choose_route
 
 tap = lambda action, **extra: "@agent1qx " + json.dumps({"selection": {"action": action, **extra}, "approved": True})
 
@@ -61,22 +61,29 @@ class RoutingTest(unittest.TestCase):
 
     def test_games(self):
         r = choose_route("let's play a kahoot game with my friends", False, TUTOR, True)
-        self.assertEqual((r.specialist, r.text, r.start), (TUTOR, "let's play a kahoot game with my friends", False))
+        self.assertEqual((r.specialist, r.text, r.start), (ARCADE, "let's play a kahoot game with my friends", False))
         self.assertEqual(choose_route("play a game", False, TUTOR, False).specialist, CURRICULUM)  # no course yet
-        self.assertEqual(choose_route(tap("game"), False, TUTOR, True).specialist, TUTOR)
+        self.assertEqual(choose_route(tap("game"), False, TUTOR, True).specialist, ARCADE)
         for text in ("let's play meteor blaster", "quiz runner please", "make me a video game"):
             r = choose_route(text, False, TUTOR, True)
-            self.assertEqual((r.specialist, r.text), (TUTOR, text))
+            self.assertEqual((r.specialist, r.text), (ARCADE, text))
 
     def test_gardens_and_cross_course_questions(self):
         for text in ("show my gardens", "which course is my weakest?", "how am I doing across my classes",
                      "all my courses", "compare my courses"):
             r = choose_route(text, False, TUTOR, True)
-            self.assertEqual((r.specialist, r.text, r.start), (TUTOR, text, False), text)
+            self.assertEqual((r.specialist, r.text, r.start), (GARDEN, text, False), text)
         # No course yet: still the curriculum agent's job.
         self.assertEqual(choose_route("show my gardens", False, None, False).specialist, CURRICULUM)
         # A new course is still a new course.
         self.assertEqual(choose_route("add another course", False, TUTOR, True).specialist, CURRICULUM)
+
+    def test_taps_go_by_what_they_ask_for(self):
+        # One progress card holds buttons for several agents, so the owner of the last card doesn't decide.
+        for action, owner in (("teach", TUTOR), ("game", ARCADE), ("arcade", ARCADE), ("game_results", ARCADE),
+                              ("journey", GARDEN), ("gardens", GARDEN), ("open", TUTOR), ("home", TUTOR)):
+            self.assertEqual(choose_route(tap(action), False, ARCADE, True).specialist, owner, action)
+            self.assertEqual(choose_route(tap(action), False, TUTOR, True).specialist, owner, action)
 
     def test_card_action(self):
         self.assertEqual(card_action(tap("sample")), "sample")

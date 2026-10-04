@@ -6,8 +6,9 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from tutor import game
-from tutor.cards import arcade_card, game_card, ordinal, parse_selection, results_card
+from arcade import game
+from arcade.cards import arcade_card, game_card, results_card
+from cardkit import ordinal, parse_selection
 
 CONCEPTS = [
     {"id": 1, "name": "Arrays", "summary": "", "p": 0.97, "attempts": 5, "due": False},
@@ -148,7 +149,7 @@ class ArcadeChoiceTest(unittest.TestCase):
         from datetime import datetime, timezone
         from uuid import uuid4
         from uagents_core.contrib.protocols.chat import ChatMessage, TextContent
-        from tutor import skill
+        from arcade import skill
         seen = []
         async def fake_handle(ctx, sender, action, sel):
             seen.append((action, sel.get("template")))

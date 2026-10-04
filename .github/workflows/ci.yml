@@ -20,7 +20,7 @@ jobs:
       - run: pip install -r requirements.txt -r mastery/requirements.txt
       - name: Agent tests
         working-directory: uagents-python
-        run: python -m unittest orchestrator.test_routing orchestrator.test_inprocess tutor.test_tutor tutor.test_game curriculum.test_concept_map
+        run: python -m unittest orchestrator.test_routing orchestrator.test_inprocess tutor.test_tutor arcade.test_arcade garden.test_garden curriculum.test_concept_map
       - name: Mastery tests
         run: python -m pytest mastery
 

@@ -9,22 +9,21 @@ Teaches from each student's course in Sprout's SpacetimeDB database, so a new ch
 
 ## What a student sees
 
-1. **Progress card.** Mastery bars (tested concepts weakest first; untested ones show a dash, never a made-up number), days to the exam, what's due, last session's recap, the best teaching format once there's evidence, and a link to the live knowledge garden. A returning student with reviews due is told so first.
-2. **Journey map.** The concept they're on, its prerequisites and what it unlocks, drawn by `cards/` at `/api/journey`, with a button for each next topic.
-3. **Diagnostic quiz.** 5 questions on the concepts `compute_next_step('diagnostic')` picks.
-4. **Lessons.** The big idea, how it works, a core section in the format the bandit picks (worked example, diagram, analogy or flashcards), common mistakes, key takeaways, then "Practice 4 flashcards", "Check my understanding" or "Explain it another way".
-5. **Flashcards.** One at a time: question, Show answer, then Knew it / Didn't know, recorded as practice so mastery updates. A summary offers to go over the misses.
-6. **Reviews.** Up to 3 questions on concepts SM-2 says are due.
-7. **Done for today.** A session summary card (score, what moved, next review) and a recap saved for the next chat.
-8. **Forget my course.** A confirmation card, then `forget_course` deletes the course and its history.
+1. **Progress card.** Mastery bars (tested concepts weakest first; untested ones show a dash, never a made-up number), days to the exam, what's due, last session's recap, the best teaching format once there's evidence, and a link to the live knowledge garden. Its game, arcade and journey buttons go to the Arcade and Garden agents. A returning student with reviews due is told so first.
+2. **Diagnostic quiz.** 5 questions on the concepts `compute_next_step('diagnostic')` picks.
+3. **Lessons.** The big idea, how it works, a core section in the format the bandit picks (worked example, diagram, analogy or flashcards), common mistakes, key takeaways, then "Practice 4 flashcards", "Check my understanding" or "Explain it another way".
+4. **Flashcards.** One at a time: question, Show answer, then Knew it / Didn't know, recorded as practice so mastery updates. A summary offers to go over the misses.
+5. **Reviews.** Up to 3 questions on concepts SM-2 says are due.
+6. **Done for today.** A session summary card (score, what moved, next review) and a recap saved for the next chat.
+7. **Forget my course.** A confirmation card, then `forget_course` deletes the course and its history.
 
 ## Files
 
 - `skill.py`: the chat flow (`on_chat`) and each student's place in it
-- `learning.py`: database reads and writes through `../sprout_db.py`, including the journey neighborhood
-- `content.py`: question and lesson prompts; questions are validated and shuffled, lessons parsed into sections, math kept as plain text
 - `cards.py`: every tutor card
 - `agent.py`: runs `skill.py` as a standalone agent
+
+Shared with the other agents, one level up: `learning.py` (database reads and writes), `content.py` (question and lesson prompts; questions are validated and shuffled, lessons parsed into sections, math kept as plain text), `cardkit.py`, `sprout_db.py`.
 
 ## Run and test
 
@@ -36,8 +35,3 @@ python -m unittest tutor.test_tutor
 ```
 
 `python build_hosted.py tutor` writes `dist/tutor/agent.py` for the hosted copy.
-
-## All gardens, and questions across courses
-
-- **"My gardens" / "all my courses"** (or the "All my gardens" button on the progress card when a student has several courses) shows one card: every course with solid and due counts, exam countdown, and a link to each garden plus the all-courses overview on the web (`gardens.py`, `gardens_card`).
-- **Cross-course questions** ("which course is my weakest?", "what's due across everything?") are answered by the ASI:One model with tool calling. `gardens.py` gives it three read-only tools (`list_courses`, `course_progress`, `due_reviews`). The student's address is never a tool argument, so the model can only read the person it is talking to, nothing is written, and untested concepts are reported as "not tested" instead of a number. Model: `ASI_ONE_TOOL_MODEL` (default `asi1`; the others default to `asi1-mini`).

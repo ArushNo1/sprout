@@ -1,7 +1,7 @@
 """Uploads the hosted builds to Agentverse: build, stop the agent, replace its files, start it again.
 
     python deploy_hosted.py                 # all three
-    python deploy_hosted.py sprout          # or tutor / curriculum
+    python deploy_hosted.py sprout          # or tutor / curriculum / arcade / garden
     python deploy_hosted.py --dry-run       # build and list the files, change nothing
 
 Needs AGENTVERSE_API_KEY (agentverse.ai > Profile > API Keys) in uagents-python/.env or the
@@ -28,6 +28,9 @@ ADDRESSES = {
     "sprout": os.getenv("SPROUT_ADDRESS", "agent1q27e9dntmewremft08ehnpdd7davz8kgy7dz744gr87q9jfqvewuq2h7q4g"),
     "tutor": os.getenv("TUTOR_ADDRESS", "agent1qfd9vn03a5udss62gpl9nag9r6qljz9td0ngmrdfzea70csvk04hwpc5upy"),
     "curriculum": os.getenv("CURRICULUM_ADDRESS", "agent1qtddszc00qe3jgkpsu652wvp0nm4j4tywcpjt554ct5acn09gs3lu3nk8nh"),
+    # Created by create_hosted_agents.py; set these (or edit the defaults) once the agents exist.
+    "arcade": os.getenv("ARCADE_ADDRESS", ""),
+    "garden": os.getenv("GARDEN_ADDRESS", ""),
 }
 
 
@@ -46,7 +49,7 @@ def merged(address: str, built: list, token: str) -> list:
     r = request("GET", f"/v1/hosting/agents/{address}/code", token)
     r.raise_for_status()
     current = r.json()["code"]
-    current = json.loads(current) if isinstance(current, str) else current
+    current = (json.loads(current) if isinstance(current, str) else current) or []  # a new agent has no files
     names = {f["name"] for f in built}
     kept = [f for f in current if f["name"] not in names]
     return [{**f, "id": i} for i, f in enumerate(built + kept)]
@@ -75,10 +78,13 @@ def deploy(target: str, token: str):
 
 if __name__ == "__main__":
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    targets = args or ["sprout", "tutor", "curriculum"]
+    targets = args or list(ADDRESSES)
     unknown = [t for t in targets if t not in ADDRESSES]
     if unknown:
-        sys.exit(f"unknown target {unknown}; use sprout, tutor or curriculum")
+        sys.exit(f"unknown target {unknown}; use {', '.join(ADDRESSES)}")
+    missing = [t for t in targets if not ADDRESSES[t] and "--dry-run" not in sys.argv]
+    if missing:
+        sys.exit(f"no address for {', '.join(missing)}: run create_hosted_agents.py, then set <NAME>_ADDRESS in .env")
     for t in targets:
         build_hosted.build_sprout() if t == "sprout" else build_hosted.build_specialist(t)
     if "--dry-run" in sys.argv:

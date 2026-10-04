@@ -37,6 +37,22 @@ def active_courses(address: str) -> list:
     return sorted(rows, key=lambda r: micros(r["created_at"]), reverse=True)
 
 
+def current_course(address: str, course_id=None):
+    """The course a request is about: the one named (if it's the student's), else the one they last
+    studied, else their newest. None when they have no active course. Agents that don't hold the
+    tutor's session state (arcade, garden) use this to know which course to work on."""
+    mine = active_courses(address)
+    named = [c for c in mine if course_id is not None and str(c["id"]) == str(course_id)]
+    if named:
+        return named[0]
+    recent = sql(f"SELECT course_id, started_at FROM session WHERE user_address = {sql_str(address)}")
+    for r in sorted((r for r in recent if r["course_id"]), key=lambda r: micros(r["started_at"]), reverse=True):
+        hit = [c for c in mine if c["id"] == r["course_id"]]
+        if hit:
+            return hit[0]
+    return mine[0] if mine else None
+
+
 def course(course_id: int) -> dict:
     return sql(f"SELECT id, name, exam_date FROM course WHERE id = {int(course_id)}")[0]
 

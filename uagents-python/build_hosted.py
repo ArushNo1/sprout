@@ -1,14 +1,15 @@
 """Builds the code to paste into Agentverse hosted agents.
 
     python build_hosted.py            # all three
-    python build_hosted.py sprout     # or tutor / curriculum
+    python build_hosted.py sprout     # or tutor / curriculum / arcade / garden
 
 - dist/sprout/: the agent students talk to, as a multi-file hosted agent. agent.py is the
-  orchestrator; tutor_skill.py and curriculum_skill.py are the specialists' chat logic, run
-  in-process; sprout_db.py, relay.py and routing.py are copied as they are. Create each file in
+  orchestrator; tutor_skill.py, curriculum_skill.py, arcade_skill.py and garden_skill.py are the
+  specialists' chat logic, run in-process; sprout_db.py, relay.py, cardkit.py, content.py,
+  learning.py and routing.py are copied as they are. Create each file in
   the agent's editor (+ New File) with the same name.
-- dist/tutor/agent.py and dist/curriculum/agent.py: the standalone specialist agents, one file
-  each, for direct chats and for other orchestrators.
+- dist/<specialist>/agent.py (tutor, curriculum, arcade, garden): the standalone specialist agents,
+  one file each, for direct chats and for other orchestrators.
 
 Hosted agents provide their identity through `agent = Agent()` and read secrets from the editor's
 .env, so the local-only setup (seeds, ports, load_dotenv, the event loop line) is dropped.
@@ -21,10 +22,13 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 DIST = HERE / "dist"
-SHARED = ["sprout_db", "relay"]
+# Modules every agent imports. Listed in dependency order: standalone builds inline them in this order.
+SHARED = ["sprout_db", "relay", "cardkit", "content", "learning"]
 PACKAGES = {
-    "tutor": ["learning", "content", "cards", "game", "skill"],
+    "tutor": ["cards", "skill"],
     "curriculum": ["concept_map", "prompt", "cards", "skill"],
+    "arcade": ["game", "cards", "skill"],
+    "garden": ["insights", "cards", "skill"],
 }
 
 
@@ -39,10 +43,23 @@ def body(path: Path) -> str:
     return re.sub(r'^""".*?"""\n', "", path.read_text(encoding="utf-8"), count=1, flags=re.S).lstrip("\n")
 
 
+def needed_shared(package: str) -> list:
+    """The shared modules a package imports, directly or through another shared module, in SHARED order."""
+    def imports(path: Path) -> set:
+        return set(re.findall(rf"^from ({'|'.join(SHARED)}) import", path.read_text(encoding="utf-8"), flags=re.M))
+    need = set()
+    for mod in PACKAGES[package]:
+        need |= imports(HERE / package / f"{mod}.py")
+    for mod in reversed(SHARED):  # a module's own imports are earlier in the list
+        if mod in need:
+            need |= imports(HERE / f"{mod}.py")
+    return [m for m in SHARED if m in need or m in ("sprout_db", "relay")]  # relay: the agent's own wiring uses it
+
+
 def bundle(package: str, inline_shared: bool) -> str:
     """One package's modules in dependency order, with their package-relative imports removed."""
     local = [rf"\.{m}" for m in PACKAGES[package]] + [rf"{package}\.{m}" for m in PACKAGES[package]]
-    shared = SHARED if inline_shared else []
+    shared = needed_shared(package) if inline_shared else []
     parts = []
     for mod in shared:
         parts.append((mod, body(HERE / f"{mod}.py")))
@@ -95,7 +112,7 @@ def build_sprout():
     for package in PACKAGES:
         wiring = wiring.replace(f"from {package}.skill import", f"from {package}_skill import")
     needs = ("Needs ASI_ONE_API_KEY, SPACETIMEDB_TOKEN and SPACETIMEDB_DB in the editor's .env, and the files\n"
-             "sprout_db.py, relay.py, routing.py, tutor_skill.py and curriculum_skill.py next to it.")
+             "sprout_db.py, relay.py, cardkit.py, content.py, learning.py, routing.py and the four *_skill.py files next to it.")
     write(folder / "agent.py", header("Sprout orchestrator", needs) + wiring)
 
 
@@ -107,6 +124,6 @@ def write(path: Path, text: str):
 
 
 if __name__ == "__main__":
-    targets = sys.argv[1:] or ["sprout", "tutor", "curriculum"]
+    targets = sys.argv[1:] or ["sprout", *PACKAGES]
     for target in targets:
         build_sprout() if target == "sprout" else build_specialist(target)

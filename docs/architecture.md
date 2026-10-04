@@ -1,15 +1,16 @@
 # Architecture
 
-What shipped, as of October 3, 2026. The product plan described five agents; this is the three-agent version that's live.
+What shipped, as of October 3, 2026. The product plan described five agents; this is the version that's live: an orchestrator plus four specialists, each with one job.
 
 ## Request path
 
 1. A student messages **Sprout** in ASI:One (Agent Chat Protocol). Sprout acknowledges right away, in the background, because a hosted agent's acknowledgement takes seconds to deliver.
 2. `orchestrator/routing.py` picks a specialist:
-   - **Card taps** go back to whoever sent the card. There's no database lookup, since taps are most of the traffic.
+   - **Card taps** go to whichever agent owns the button (`ACTION_OWNER`), so one card can offer lessons, a game and the journey map. There's no database lookup, since taps are most of the traffic.
    - **"Looks right" on a course map** goes to the curriculum, then the tutor opens the new course.
    - **A pasted syllabus** or "add a course" goes to the curriculum.
    - **"Forget my course"** goes to the tutor's confirmation card.
+   - **Games** ("make a game", "arcade") go to the arcade agent; **the journey map, "my gardens" and questions across courses** go to the garden agent.
    - **Everything else** goes to the tutor if the student has an active course, otherwise to the curriculum.
 3. Sprout runs that specialist's `on_chat` in-process (`relay.run_in_process`). The specialist's messages go straight to the student, minus its own acknowledgement.
 4. The specialist reads and writes **SpacetimeDB** over HTTP (`sprout_db.py`):
@@ -18,6 +19,17 @@ What shipped, as of October 3, 2026. The product plan described five agents; thi
    - Retries are safe: a write is only repeated when it provably didn't reach the database.
 
 Each turn logs its time and how much of it went to the database, e.g. `-> tutor (card tap 'home') in 4.3s, 5 database calls taking 0.7s`.
+
+## The agents
+
+| Agent | Job | Writes to the database? |
+| --- | --- | --- |
+| Curriculum | Turns a syllabus, topic list or one-line subject into a concept map | Creates and confirms courses |
+| Tutor | Teaches: diagnostics, lessons, flashcards, reviews | Records every answer (BKT, SM-2, bandit) |
+| Arcade | Builds and runs multiplayer study games | Creates game rooms; game answers update mastery through the same reducers |
+| Garden | Shows progress: journey map, all gardens, cross-course questions | Never |
+
+Shared plumbing, not shared logic: `sprout_db.py` (database client), `learning.py` (database reads), `content.py` (model calls), `cardkit.py` (card building blocks), `relay.py` (in-process and cross-agent turns).
 
 ## Why in-process
 
@@ -40,8 +52,10 @@ The agents never compute mastery themselves: they call reducers and display what
 
 | Card | Built by |
 | --- | --- |
-| Upload, concept map | `curriculum/cards.py` |
-| Progress (with a link to the garden), journey map with tappable next topics, question, feedback, lesson, one-at-a-time flashcards, session summary, course mastered, forget-course confirmation | `tutor/cards.py` |
+| Upload, concept map (a row of seeds per unit) | `curriculum/cards.py` |
+| Progress (with a link to the garden), question, feedback, lesson, one-at-a-time flashcards, session summary, course mastered, forget-course confirmation | `tutor/cards.py` |
+| Journey map with tappable next topics, all-gardens overview | `garden/cards.py` |
+| Game and arcade invites, results podium | `arcade/cards.py` |
 | Progress, map and journey images | `cards/` on Vercel (`/api/card`, `/api/journey`), drawn with @vercel/og |
 | Knowledge garden | `web/` (Next.js on Vercel) at `/<learner>/garden`; reads `sprout-live` on the server |
 
@@ -49,7 +63,7 @@ The agents never compute mastery themselves: they call reducers and display what
 
 `uagents-python/build_hosted.py` builds what each hosted agent runs:
 
-- **Sprout:** six files (`agent.py`, `tutor_skill.py`, `curriculum_skill.py`, `sprout_db.py`, `relay.py`, `routing.py`).
+- **Sprout:** eleven files (`agent.py`, the four `*_skill.py`, the shared `sprout_db.py`, `relay.py`, `cardkit.py`, `content.py`, `learning.py`, and `routing.py`).
 - **Standalone specialists:** one file each.
 
-Hosted agents read secrets from the `.env` in their editor.
+`deploy_hosted.py` uploads them through the Agentverse API, `create_hosted_agents.py` creates new agents, and `set_hosted_secrets.py` sets their secrets.
