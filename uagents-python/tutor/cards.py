@@ -104,7 +104,32 @@ def garden_link(address: str, course_id: int) -> str:
     return f"{WEB_URL.rstrip('/')}/{quote(address, safe='')}/garden?{urlencode({'course': course_id})}"
 
 
-def home_card(course_name: str, snap: dict, exam_days, insight=None, opener: str = "", garden: str = "") -> ChatMessage:
+def gardens_link(address: str) -> str:
+    """The all-courses garden overview (web/)."""
+    return f"{WEB_URL.rstrip('/')}/{quote(address, safe='')}/garden"
+
+
+def gardens_card(address: str, gardens: list) -> ChatMessage:
+    """Every course with its progress and a link to its garden. `gardens` comes from tutor.gardens.gardens()."""
+    lines = []
+    for g in gardens:
+        bits = [f"{g['solid']} of {g['concepts']} solid"]
+        if g["due"]:
+            bits.append(f"{g['due']} due for review")
+        if g["exam_in_days"] is not None:
+            bits.append(f"exam in {g['exam_in_days']} day{'s' if g['exam_in_days'] != 1 else ''}")
+        lines.append(f"**{g['name']}**: {', '.join(bits)}. [Garden]({garden_link(address, g['course_id'])})")
+    root = _section(
+        {"type": "heading", "value": "Your gardens", "level": 2},
+        *[{"type": "text", "style": "body", "value": ln} for ln in lines],
+        _row(*[_button(f"Study {g['name']}"[:40], "open", len(gardens) == 1, course_id=g["course_id"]) for g in gardens[:3]]),
+    )
+    text = "Your gardens:\n\n" + "\n".join(f"- {ln}" for ln in lines) + f"\n\n[All gardens]({gardens_link(address)})"
+    return _card(text, root)
+
+
+def home_card(course_name: str, snap: dict, exam_days, insight=None, opener: str = "", garden: str = "",
+              many_courses: bool = False) -> ChatMessage:
     src, ratio = snapshot_image(course_name, snap, exam_days)
     root = _section(
         {"type": "image", "src": src, "alt": f"{course_name} progress", "aspect_ratio": ratio},
@@ -115,7 +140,7 @@ def home_card(course_name: str, snap: dict, exam_days, insight=None, opener: str
         _row(_button("See my journey", "journey"),
              _button(f"Review ({snap['due']} due)", "review") if snap["due"] else None),
         _row(_button("Live game with friends", "game"), _button("Arcade game", "arcade")),
-        _row(_button("Done for today", "done")),
+        _row(_button("Done for today", "done"), _button("All my gardens", "gardens") if many_courses else None),
     )
     text = opener or f"Here's where you are in {course_name}."
     return _card(f"{text} [Open your garden]({garden})" if garden else text, root)

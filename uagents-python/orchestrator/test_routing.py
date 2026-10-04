@@ -68,6 +68,16 @@ class RoutingTest(unittest.TestCase):
             r = choose_route(text, False, TUTOR, True)
             self.assertEqual((r.specialist, r.text), (TUTOR, text))
 
+    def test_gardens_and_cross_course_questions(self):
+        for text in ("show my gardens", "which course is my weakest?", "how am I doing across my classes",
+                     "all my courses", "compare my courses"):
+            r = choose_route(text, False, TUTOR, True)
+            self.assertEqual((r.specialist, r.text, r.start), (TUTOR, text, False), text)
+        # No course yet: still the curriculum agent's job.
+        self.assertEqual(choose_route("show my gardens", False, None, False).specialist, CURRICULUM)
+        # A new course is still a new course.
+        self.assertEqual(choose_route("add another course", False, TUTOR, True).specialist, CURRICULUM)
+
     def test_card_action(self):
         self.assertEqual(card_action(tap("sample")), "sample")
         self.assertIsNone(card_action("hello"))

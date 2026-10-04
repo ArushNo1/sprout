@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Sprout launch</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: "Instrument Serif";
+        src: url("assets/InstrumentSerif-Regular.ttf") format("truetype");
+        font-weight: 400;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: "Instrument Serif";
+        src: url("assets/InstrumentSerif-Italic.ttf") format("truetype");
+        font-weight: 400;
+        font-style: italic;
+      }
+      :root {
+        --cream: #f4eadf;
+        --tan: #dccbb2;
+        --green: #0b6122;
+        --primary: #0a4d17;
+        --mid: #4e8a5e;
+        --vein: #a4d7a2;
+        --ink: #222222;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: #f6efe3; }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: "Instrument Serif", Georgia, serif;
+        color: var(--ink);
+      }
+
+      /* ---- shared background: soft light gradient + drifting leaves ---- */
+      #bg {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(1300px 900px at 18% 12%, #ffffff 0%, rgba(255, 255, 255, 0) 70%),
+          radial-gradient(1200px 900px at 92% 95%, #dcebd3 0%, rgba(220, 235, 211, 0) 70%),
+          #f3ebdd;
+      }
+      .leaf { position: absolute; width: 330px; height: auto; opacity: 0.9; }
+      #leaf-a { left: -70px; top: -60px; transform-origin: 0% 0%; }
+      #leaf-b { right: -80px; bottom: -70px; transform-origin: 100% 100%; }
+      #leaf-c { right: -150px; top: -130px; width: 260px; opacity: 0.35; }
+      #leaf-d { left: -130px; bottom: -120px; width: 260px; opacity: 0.35; }
+
+      /* ---- frosted cards ---- */
+      .frost {
+        background: rgba(255, 255, 255, 0.62);
+        backdrop-filter: blur(22px);
+        border: 2px solid rgba(11, 97, 34, 0.16);
+        border-radius: 40px;
+        box-shadow: 0 34px 90px rgba(11, 97, 34, 0.16), inset 0 2px 0 rgba(255, 255, 255, 0.85);
+      }
+
+      .scene { position: absolute; inset: 0; }
+
+      /* ---- scene 1: intro ---- */
+      #intro { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      .wordmark {
+        position: relative;
+        font-size: 330px;
+        line-height: 1;
+        letter-spacing: -6px;
+        color: var(--green);
+        padding-right: 60px;
+      }
+      #word-mask { display: block; overflow: hidden; padding: 0 30px 40px 0; }
+      #word { display: block; }
+      #word-leaf { position: absolute; right: 2px; top: 38px; width: 70px; height: 70px; }
+      .tagline { font-style: italic; font-size: 92px; color: var(--green); margin-top: 6px; }
+
+      /* ---- feature scenes ---- */
+      .feat { display: grid; grid-template-columns: 720px 1fr; column-gap: 90px; align-items: center; padding: 0 110px 0 130px; }
+      .kicker { font-style: italic; font-size: 54px; color: var(--mid); display: flex; align-items: center; gap: 22px; }
+      .kicker i { display: block; width: 90px; height: 4px; background: var(--vein); transform-origin: 0 50%; }
+      .head { font-size: 112px; line-height: 1.02; letter-spacing: -2px; color: var(--green); margin-top: 26px; }
+      .sub { font-size: 44px; line-height: 1.2; color: var(--ink); margin-top: 30px; opacity: 0.85; max-width: 640px; }
+      .panel { position: relative; height: 760px; padding: 48px 54px; }
+      .chip {
+        display: inline-flex; align-items: center; gap: 12px;
+        font-size: 34px; color: var(--green); background: rgba(164, 215, 162, 0.35);
+        border-radius: 999px; padding: 6px 24px 8px;
+      }
+      .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--mid); display: inline-block; }
+
+      /* f1 */
+      #f1-form, #f1-graph { position: absolute; left: 54px; right: 54px; top: 120px; bottom: 48px; }
+      .field {
+        background: #fff; border: 2px solid rgba(11, 97, 34, 0.2); border-radius: 22px;
+        padding: 18px 28px 20px; margin-bottom: 22px;
+      }
+      .field small { display: block; font-size: 26px; color: var(--mid); font-style: italic; }
+      .field b { font-weight: 400; font-size: 44px; color: var(--ink); }
+      .lines span { display: block; height: 14px; border-radius: 7px; background: var(--tan); margin-top: 14px; }
+      #btn {
+        position: relative; margin-top: 30px; height: 112px; border-radius: 999px; background: var(--primary);
+        color: var(--cream); font-size: 52px; display: flex; align-items: center; justify-content: center;
+      }
+      #ripple { position: absolute; width: 60px; height: 60px; border-radius: 50%; border: 4px solid var(--vein); left: 0; top: 0; opacity: 0; }
+      #cursor { position: absolute; width: 56px; height: 56px; z-index: 5; }
+      #f1-graph svg { width: 100%; height: 100%; overflow: visible; }
+      .gn text { font-family: "Instrument Serif", Georgia, serif; font-size: 26px; fill: var(--ink); text-anchor: middle; paint-order: stroke; stroke: #fff; stroke-width: 6px; }
+      .ge { stroke: #7fa88a; stroke-width: 3.5; fill: none; }
+
+      /* f2 */
+      .rows { margin-top: 62px; }
+      .row { display: grid; grid-template-columns: 330px 1fr 130px; align-items: center; column-gap: 24px; height: 72px; }
+      .row .lab { font-size: 42px; color: var(--ink); }
+      .row .track { height: 26px; border-radius: 13px; background: var(--tan); overflow: hidden; }
+      .row .fill { display: block; height: 100%; width: 100%; border-radius: 13px; transform-origin: 0 50%; }
+      .row .val { font-size: 46px; text-align: right; }
+      .neg .fill { background: #c0766b; } .neg .val { color: #b0584c; }
+      .pos .fill { background: var(--mid); } .pos .val { color: var(--mid); }
+      .base .fill { background: #9fb7a4; }
+      .total { position: absolute; left: 54px; right: 54px; bottom: 44px; border-top: 3px solid rgba(11, 97, 34, 0.2); padding-top: 14px; display: flex; align-items: flex-end; justify-content: space-between; }
+      .total .lab { font-size: 40px; font-style: italic; color: var(--mid); }
+      .total .num { font-size: 140px; line-height: 0.95; color: var(--green); letter-spacing: -4px; }
+      .total .num small { font-size: 90px; letter-spacing: 0; }
+      .plantbox { position: relative; width: 170px; height: 212px; }
+      .plantbox img { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+      /* f3 */
+      #f3 .panel { background: transparent; border: none; box-shadow: none; backdrop-filter: none; }
+      #sun {
+        position: absolute; right: -30px; top: -50px; width: 520px; height: 520px; border-radius: 50%;
+        background: radial-gradient(circle, #ffd98a 0%, rgba(255, 217, 138, 0.7) 42%, rgba(255, 217, 138, 0) 72%);
+      }
+      #notif { position: absolute; left: 0; right: 0; top: 30px; padding: 34px 54px 36px; }
+      .nhead { display: flex; align-items: center; gap: 18px; font-size: 36px; color: var(--mid); }
+      .nhead img { width: 54px; height: 54px; border-radius: 14px; object-fit: cover; background: var(--green); }
+      .nhead span { margin-left: auto; }
+      #bignum { font-size: 230px; line-height: 1.05; color: var(--green); letter-spacing: -6px; margin-top: 26px; }
+      .nline { font-size: 54px; color: var(--ink); }
+      .nmuted { font-size: 40px; font-style: italic; color: var(--mid); margin-top: 6px; }
+      #garden { position: absolute; left: 0; right: 0; bottom: 6px; display: flex; justify-content: space-between; padding: 0 40px; }
+      #garden img { width: 130px; height: 162px; }
+
+      /* ---- end card ---- */
+      #end { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      #end .wordmark { font-size: 240px; }
+      #end .tagline { font-size: 70px; margin-top: 0; }
+      #cta {
+        margin-top: 64px; height: 130px; padding: 0 90px; border-radius: 999px; background: var(--primary); color: var(--cream);
+        font-size: 74px; display: flex; align-items: center; gap: 22px; box-shadow: 0 24px 60px rgba(10, 77, 23, 0.35);
+      }
+      #garden-end { display: flex; gap: 26px; margin-top: 54px; align-items: flex-end; }
+      #garden-end img { width: 110px; height: 138px; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="12" data-width="1920" data-height="1080">
+      <div id="bg">
+        <img id="leaf-a" class="leaf" src="assets/leaf.png" alt="" />
+        <img id="leaf-b" class="leaf" src="assets/leaf.png" alt="" />
+        <img id="leaf-c" data-layout-allow-overflow class="leaf" src="assets/leaf.png" alt="" />
+        <img id="leaf-d" data-layout-allow-overflow class="leaf" src="assets/leaf.png" alt="" />
+      </div>
+
+      <!-- 1. Reveal: 0-2s -->
+      <section id="intro" class="scene clip" data-start="0" data-duration="2" data-track-index="1">
+        <div class="wordmark">
+          <span id="word-mask"><span id="word">sprout</span></span>
+          <svg id="word-leaf" viewBox="0 0 70 70"><path d="M5 62 C5 28 30 6 66 4 C66 38 44 64 5 62Z" fill="#0b6122"/><path d="M12 56 L52 18" stroke="#a4d7a2" stroke-width="3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="tagline" id="tag">It grows with you</div>
+      </section>
+
+      <!-- 2a. connects in one click: 2-4.33s -->
+      <section id="f1" class="scene feat clip" data-start="2" data-duration="2.34" data-track-index="2">
+        <div class="copy">
+          <div class="kicker"><span>01</span><i></i></div>
+          <h2 class="head" id="f1-head">Connects to your course in one click</h2>
+          <p class="sub" id="f1-sub">Paste a syllabus. Sprout maps every concept and what comes first.</p>
+        </div>
+        <div class="panel frost" id="f1-panel">
+          <span class="chip" id="f1-chip"><span class="dot"></span><span id="f1-chip-t">Add a course</span></span>
+          <div id="f1-form">
+            <div class="field"><small>Course</small><b>CS 201: Data Structures</b></div>
+            <div class="field"><small>Syllabus</small><div class="lines"><span style="width:92%"></span><span style="width:78%"></span><span style="width:86%"></span></div></div>
+            <div id="btn"><span>Connect my course</span><span id="ripple"></span></div>
+          </div>
+          <div id="f1-graph">
+            <svg viewBox="0 0 760 560" id="gsvg"></svg>
+          </div>
+          <svg id="cursor" viewBox="0 0 56 56"><path d="M8 4 L8 44 L19 34 L27 52 L35 48 L27 31 L42 31Z" fill="#222" stroke="#fff" stroke-width="3" stroke-linejoin="round"/></svg>
+        </div>
+      </section>
+
+      <!-- 2b. profit-style: what you actually know: 4.33-6.67s -->
+      <section id="f2" class="scene feat clip" data-start="4.34" data-duration="2.33" data-track-index="2">
+        <div class="copy">
+          <div class="kicker"><span>02</span><i></i></div>
+          <h2 class="head" id="f2-head">Shows what you actually know</h2>
+          <p class="sub" id="f2-sub">After forgetting, quiz misses and reviews. Not what you read once.</p>
+        </div>
+        <div class="panel frost" id="f2-panel">
+          <span class="chip"><span class="dot"></span>Mastery · CS 201</span>
+          <div class="rows">
+            <div class="row base" id="r0"><span class="lab">Studied</span><span class="track"><span class="fill"></span></span><span class="val">100%</span></div>
+            <div class="row neg" id="r1"><span class="lab">Forgotten</span><span class="track"><span class="fill" style="width:24%"></span></span><span class="val">−24</span></div>
+            <div class="row neg" id="r2"><span class="lab">Quiz misses</span><span class="track"><span class="fill" style="width:11%"></span></span><span class="val">−11</span></div>
+            <div class="row pos" id="r3"><span class="lab">Reviewed</span><span class="track"><span class="fill" style="width:9%"></span></span><span class="val">+9</span></div>
+          </div>
+          <div class="total" id="tot">
+            <div><div class="lab">Really know</div><div class="num"><span id="num">100</span><small>%</small></div></div>
+            <div class="plantbox"><img id="pl-a" src="assets/plant-1.svg" alt="" /><img id="pl-b" src="assets/plant-4.svg" alt="" /></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2c. one number every morning: 6.67-9s -->
+      <section id="f3" class="scene feat clip" data-start="6.67" data-duration="2.33" data-track-index="2">
+        <div class="copy">
+          <div class="kicker"><span>03</span><i></i></div>
+          <h2 class="head" id="f3-head">Sends you one number every morning</h2>
+          <p class="sub" id="f3-sub">Know exactly what to study today. Nothing else to open.</p>
+        </div>
+        <div class="panel" id="f3-panel">
+          <div id="sun"></div>
+          <div id="notif" class="frost">
+            <div class="nhead"><img src="assets/leaf.png" alt="" /><b style="font-weight:400">Sprout</b><span>7:00 AM</span></div>
+            <div id="bignum">4</div>
+            <div class="nline">concepts due today</div>
+            <div class="nmuted">7 days to your midterm</div>
+          </div>
+          <div id="garden">
+            <img src="assets/plant-4.svg" alt="" /><img src="assets/plant-3.svg" alt="" /><img src="assets/plant-2.svg" alt="" /><img src="assets/plant-4.svg" alt="" /><img src="assets/plant-1.svg" alt="" />
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. End card: 9-12s -->
+      <section id="end" class="scene clip" data-start="9" data-duration="3" data-track-index="3">
+        <div class="wordmark" id="end-word">sprout</div>
+        <div class="tagline" id="end-tag">Study buddy that grows with you</div>
+        <div id="cta"><span>Join the waitlist</span><svg width="58" height="58" viewBox="0 0 58 58"><path d="M10 29 H46 M32 14 L47 29 L32 44" stroke="#f4eadf" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div id="garden-end">
+          <img id="ge0" src="assets/plant-0.svg" alt="" /><img id="ge1" src="assets/plant-1.svg" alt="" /><img id="ge2" src="assets/plant-2.svg" alt="" /><img id="ge3" src="assets/plant-3.svg" alt="" /><img id="ge4" src="assets/plant-4.svg" alt="" />
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      const E = { out: "power3.out", back: "back.out(1.7)", soft: "power2.inOut", expo: "expo.out" };
+
+      /* concept-map nodes for the connect scene */
+      const NODES = {
+        bigo: [380, 50, "Big-O"], arr: [210, 160, "Arrays"], rec: [550, 160, "Recursion"],
+        ll: [100, 280, "Linked Lists"], stk: [330, 280, "Stacks"], tree: [570, 280, "Trees"],
+        hash: [200, 420, "Hash Tables"], bst: [440, 420, "BSTs"], graph: [660, 420, "Graphs"],
+      };
+      const EDGES = [["bigo","arr"],["bigo","rec"],["arr","ll"],["arr","stk"],["rec","stk"],["rec","tree"],["stk","hash"],["stk","bst"],["tree","bst"],["tree","graph"]];
+      const svg = document.getElementById("gsvg");
+      const NS = "http://www.w3.org/2000/svg";
+      EDGES.forEach(([a, b], i) => {
+        const [x1, y1] = NODES[a], [x2, y2] = NODES[b];
+        const len = Math.hypot(x2 - x1, y2 - y1);
+        const l = document.createElementNS(NS, "line");
+        l.setAttribute("x1", x1); l.setAttribute("y1", y1); l.setAttribute("x2", x2); l.setAttribute("y2", y2);
+        l.setAttribute("class", "ge"); l.setAttribute("id", "e" + i);
+        l.setAttribute("stroke-dasharray", len); l.setAttribute("stroke-dashoffset", len);
+        svg.appendChild(l);
+      });
+      const COLORS = { bigo: "#e8a33d", arr: "#e8a33d", rec: "#4caf50", ll: "#4caf50", stk: "#9ccc65", tree: "#9ccc65", hash: "#4caf50", bst: "#b9a98a", graph: "#b9a98a" };
+      Object.entries(NODES).forEach(([k, [x, y, name]]) => {
+        const g = document.createElementNS(NS, "g");
+        g.setAttribute("class", "gn"); g.setAttribute("id", "n-" + k);
+        g.innerHTML = `<circle cx="${x}" cy="${y}" r="26" fill="${COLORS[k]}" stroke="#fff" stroke-width="4"/><text x="${x}" y="${y + 56}">${name}</text>`;
+        svg.appendChild(g);
+      });
+      Object.keys(NODES).forEach(k => { document.getElementById("n-" + k).style.transformOrigin = NODES[k][0] + "px " + NODES[k][1] + "px"; });
+
+      /* ---------- background: ambient drift across the whole film ---------- */
+      tl.fromTo("#leaf-a", { rotate: -14, x: -60, y: -40 }, { rotate: 2, x: 0, y: 0, duration: 1.4, ease: E.out }, 0);
+      tl.fromTo("#leaf-b", { rotate: 194, x: 60, y: 40 }, { rotate: 178, x: 0, y: 0, duration: 1.4, ease: E.out }, 0.15);
+      tl.fromTo("#leaf-c", { rotate: 140, y: -30 }, { rotate: 150, y: 20, duration: 12, ease: "sine.inOut" }, 0);
+      tl.fromTo("#leaf-d", { rotate: -40, y: 30 }, { rotate: -50, y: -20, duration: 12, ease: "sine.inOut" }, 0);
+      tl.to("#leaf-a", { rotate: -6, duration: 7.4, ease: "sine.inOut" }, 1.5);
+      tl.to("#leaf-b", { rotate: 186, duration: 7.4, ease: "sine.inOut" }, 1.5);
+
+      /* ---------- 1. reveal (0-2s) ---------- */
+      tl.fromTo("#word", { yPercent: 105, rotate: 4 }, { yPercent: 0, rotate: 0, duration: 0.8, ease: E.expo }, 0.15);
+      tl.fromTo("#word-leaf", { scale: 0, rotate: -60, opacity: 0 }, { scale: 1, rotate: 0, opacity: 1, duration: 0.55, ease: E.back }, 0.72);
+      tl.fromTo("#tag", { y: 36, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: E.out }, 0.95);
+      tl.to("#intro", { opacity: 0, duration: 0.28, ease: "power1.in" }, 1.72);
+
+      /* helper: scene entrance/exit for the three feature scenes */
+      function featIn(id, t) {
+        tl.fromTo(`#${id} .kicker`, { x: -50, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: E.out }, t);
+        tl.fromTo(`#${id} .kicker i`, { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: E.soft }, t + 0.1);
+        tl.fromTo(`#${id} .head`, { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: E.expo }, t + 0.05);
+        tl.fromTo(`#${id} .sub`, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: E.out }, t + 0.25);
+        tl.fromTo(`#${id} .panel`, { x: 140, opacity: 0, scale: 0.94 }, { x: 0, opacity: 1, scale: 1, duration: 0.6, ease: E.expo }, t);
+      }
+      function featOut(id, t) {
+        tl.to(`#${id} .copy`, { x: -70, opacity: 0, duration: 0.26, ease: "power2.in" }, t);
+        tl.to(`#${id} .panel`, { y: -50, opacity: 0, duration: 0.26, ease: "power2.in" }, t);
+      }
+
+      /* ---------- 2a. one-click connect (2-4.33s) ---------- */
+      featIn("f1", 2.0);
+      tl.fromTo("#cursor", { x: 520, y: 640, opacity: 0 }, { x: 330, y: 468, opacity: 1, duration: 0.55, ease: "power2.out" }, 2.45);
+      tl.to("#cursor", { scale: 0.86, duration: 0.09, ease: "power1.in" }, 3.0);
+      tl.to("#btn", { scale: 0.96, duration: 0.09, ease: "power1.in" }, 3.0);
+      tl.to("#btn", { scale: 1, duration: 0.18, ease: E.back }, 3.09);
+      tl.to("#cursor", { scale: 1, duration: 0.12 }, 3.09);
+      tl.fromTo("#ripple", { x: 351, y: 26, scale: 0.4, opacity: 0.9 }, { scale: 4.5, opacity: 0, duration: 0.5, ease: "power2.out" }, 3.0);
+      tl.to("#f1-form", { opacity: 0, y: -24, duration: 0.18, ease: "power2.in" }, 3.1);
+      tl.to("#cursor", { opacity: 0, duration: 0.15 }, 3.15);
+      tl.set("#f1-chip-t", { textContent: "Connected" }, 3.3);
+      tl.fromTo("#f1-graph", { opacity: 0 }, { opacity: 1, duration: 0.15 }, 3.3);
+      Object.keys(NODES).forEach((k, i) => {
+        tl.fromTo("#n-" + k, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: E.back }, 3.3 + i * 0.065);
+      });
+      EDGES.forEach((_, i) => {
+        tl.to("#e" + i, { strokeDashoffset: 0, duration: 0.3, ease: "power1.out" }, 3.36 + i * 0.065);
+      });
+      featOut("f1", 4.06);
+
+      /* ---------- 2b. what you actually know (4.34-6.67s) ---------- */
+      featIn("f2", 4.34);
+      [["r0", 4.86], ["r1", 5.12], ["r2", 5.34], ["r3", 5.56]].forEach(([id, t]) => {
+        tl.fromTo(`#${id}`, { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.3, ease: E.out }, t);
+        tl.fromTo(`#${id} .fill`, { scaleX: 0 }, { scaleX: 1, duration: 0.45, ease: "power2.out" }, t + 0.05);
+      });
+      const counter = { v: 100 };
+      tl.fromTo("#tot", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: E.out }, 4.8);
+      tl.to(counter, { v: 74, duration: 1.0, ease: "power2.inOut", onUpdate: () => { document.getElementById("num").textContent = Math.round(counter.v); } }, 5.1);
+      tl.fromTo("#pl-a", { opacity: 1, scale: 1 }, { opacity: 0, scale: 0.9, duration: 0.3 }, 6.0);
+      tl.fromTo("#pl-b", { opacity: 0, scale: 0.7, y: 20 }, { opacity: 1, scale: 1, y: 0, duration: 0.45, ease: E.back }, 6.0);
+      featOut("f2", 6.4);
+
+      /* ---------- 2c. one number every morning (6.67-9s) ---------- */
+      featIn("f3", 6.67);
+      tl.fromTo("#sun", { y: 220, scale: 0.6, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.9, ease: "power2.out" }, 6.8);
+      tl.fromTo("#notif", { y: -240, opacity: 0, rotate: -3 }, { y: 0, opacity: 1, rotate: 0, duration: 0.65, ease: "back.out(1.4)" }, 7.15);
+      tl.fromTo("#bignum", { scale: 0.4, opacity: 0, transformOrigin: "0% 60%" }, { scale: 1, opacity: 1, duration: 0.5, ease: E.back }, 7.45);
+      tl.fromTo("#notif .nline, #notif .nmuted", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: E.out, stagger: 0.12 }, 7.75);
+      tl.fromTo("#garden img", { y: 50, opacity: 0, scale: 0.7 }, { y: 0, opacity: 1, scale: 1, duration: 0.4, ease: E.back, stagger: 0.07 }, 7.85);
+      tl.to("#bignum", { scale: 1.06, duration: 0.25, ease: "sine.inOut", yoyo: true, repeat: 1, transformOrigin: "0% 60%" }, 8.15);
+      featOut("f3", 8.72);
+
+      /* ---------- 3. end card (9-12s) ---------- */
+      tl.fromTo("#end-word", { y: 70, opacity: 0, scale: 0.92 }, { y: 0, opacity: 1, scale: 1, duration: 0.7, ease: E.expo }, 9.05);
+      tl.fromTo("#end-tag", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: E.out }, 9.4);
+      tl.fromTo("#cta", { y: 50, opacity: 0, scale: 0.85 }, { y: 0, opacity: 1, scale: 1, duration: 0.55, ease: E.back }, 9.75);
+      tl.fromTo("#garden-end img", { y: 40, opacity: 0, scale: 0.6 }, { y: 0, opacity: 1, scale: 1, duration: 0.4, ease: E.back, stagger: 0.09 }, 10.0);
+      tl.to("#cta", { scale: 1.04, duration: 0.4, ease: "sine.inOut", yoyo: true, repeat: 3 }, 10.4);
+      tl.to("#end", { opacity: 0, duration: 0.3, ease: "power1.in" }, 11.7);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

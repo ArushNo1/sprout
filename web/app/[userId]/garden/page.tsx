@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import GardenOverview from '@/components/GardenOverview';
 import GardenView from '@/components/GardenView';
 import { loadGraphs, type CourseGraph } from '@/lib/graph';
 import { StdbError } from '@/lib/stdb';
@@ -34,6 +35,19 @@ export default async function GardenPage({
   }
   if (!graphs) notFound();
 
+  // Several courses and none picked: show them all. One course (or one picked): straight to its garden.
+  const live = graphs.filter(g => g.course.status === 'active');
+  if (!course && live.length > 1) {
+    return (
+      <>
+        <div className="crumbs">
+          <Link href={`/${id}`}>Sprout</Link> / Garden
+        </div>
+        <GardenOverview graphs={live} userId={userId} now={Date.now()} />
+      </>
+    );
+  }
+
   const active = graphs.find(g => String(g.course.id) === course) ?? graphs.find(g => g.course.status === 'active') ?? graphs[0];
 
   return (
@@ -50,6 +64,7 @@ export default async function GardenPage({
         <>
           {graphs.length > 1 && (
             <nav className="tabs" aria-label="Courses">
+              <Link className="tab" href={`/${id}/garden`}>All courses</Link>
               {graphs.map(g => (
                 <Link
                   key={g.course.id}

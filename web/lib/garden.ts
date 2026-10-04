@@ -107,3 +107,61 @@ export function examCountdown(examMs: number, nowMs: number): string {
   if (d === 0) return 'Exam today';
   return 'Exam has passed';
 }
+
+// ── Overview across courses ──────────────────────────────────────────────────
+
+import type { CourseGraph } from '@/lib/graph';
+
+export type CourseSummary = {
+  id: number;
+  name: string;
+  total: number;
+  tested: number;
+  /** Tested concepts at 70% or better, the same cut-off the garden legend uses for "budding". */
+  solid: number;
+  due: number;
+  examMs: number | null;
+  /** Whole days to the exam, null without one. */
+  days: number | null;
+  /** The lowest tested concept, if any. Untested concepts are never reported as weak. */
+  weakest: { name: string; percent: number } | null;
+};
+
+export function courseSummary(graph: CourseGraph, nowMs: number): CourseSummary {
+  const tested = graph.nodes.filter(n => n.attempts > 0);
+  const weakest = [...tested].sort((a, b) => a.mastery - b.mastery)[0];
+  const examMs = graph.course.examDate;
+  return {
+    id: graph.course.id,
+    name: graph.course.name,
+    total: graph.nodes.length,
+    tested: tested.length,
+    solid: tested.filter(n => n.mastery >= 0.7).length,
+    due: tested.filter(n => n.due).length,
+    examMs,
+    days: examMs === null ? null : daysUntil(examMs, nowMs),
+    weakest: weakest ? { name: weakest.name, percent: Math.floor(weakest.mastery * 100) } : null,
+  };
+}
+
+/** Soonest exam first; courses without an exam go last, then by name so the order is stable. */
+export function sortSummaries(list: CourseSummary[]): CourseSummary[] {
+  return [...list].sort((a, b) =>
+    (a.days ?? Infinity) - (b.days ?? Infinity) || a.name.localeCompare(b.name));
+}
+
+export type NextUp = { courseId: number; course: string; concept: string; percent: number; days: number | null };
+
+/** Concepts due for review across every course, soonest exam first, then weakest. */
+export function nextUp(graphs: CourseGraph[], nowMs: number, limit = 5): NextUp[] {
+  const items: NextUp[] = [];
+  for (const g of graphs) {
+    const days = g.course.examDate === null ? null : daysUntil(g.course.examDate, nowMs);
+    for (const n of g.nodes)
+      if (n.attempts > 0 && n.due)
+        items.push({ courseId: g.course.id, course: g.course.name, concept: n.name, percent: Math.floor(n.mastery * 100), days });
+  }
+  return items
+    .sort((a, b) => (a.days ?? Infinity) - (b.days ?? Infinity) || a.percent - b.percent)
+    .slice(0, limit);
+}

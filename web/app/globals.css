@@ -168,3 +168,16 @@ h1 { font-size: 1.6rem; margin: 0 0 4px; }
 .garden-message { display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 420px; margin: 40px auto 0; }
 .garden-message__title { margin-top: 10px; color: var(--garden-green); font-weight: 400; font-size: clamp(28px, 6vw, 40px); line-height: 1.08; }
 .garden-message__body  { margin-top: 10px; font-size: 18px; color: var(--garden-ink); }
+
+/* ── Garden overview (all courses) ───────────────────────────────────────── */
+.ov-h { font-size: 22px; font-style: italic; color: var(--garden-green); margin: 0 0 8px; }
+.ov-next { margin-top: 24px; }
+.ov-next ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ov-next a { display: block; padding: 10px 14px; border-radius: 12px; border: 1.5px solid var(--garden-track); color: var(--garden-ink); text-decoration: none; }
+.ov-next a:hover, .ov-next a:focus-visible { border-color: var(--garden-bar-fill); }
+.ov-grid { display: grid; gap: 16px; margin-top: 28px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.ov-card { display: block; padding: 20px 22px 22px; border-radius: 18px; border: 1.5px solid var(--garden-track); color: var(--garden-ink); text-decoration: none; }
+.ov-card:hover, .ov-card:focus-visible { border-color: var(--garden-bar-fill); box-shadow: 0 10px 30px rgba(11, 97, 34, 0.12); }
+.ov-name { font-size: 28px; line-height: 1.1; margin: 0 0 4px; color: var(--garden-green); }
+.ov-due { color: #b0584c; }
+.ov-weak { margin: 12px 0 0; font-size: 16px; }

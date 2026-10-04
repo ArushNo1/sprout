@@ -36,3 +36,8 @@ python -m unittest tutor.test_tutor
 ```
 
 `python build_hosted.py tutor` writes `dist/tutor/agent.py` for the hosted copy.
+
+## All gardens, and questions across courses
+
+- **"My gardens" / "all my courses"** (or the "All my gardens" button on the progress card when a student has several courses) shows one card: every course with solid and due counts, exam countdown, and a link to each garden plus the all-courses overview on the web (`gardens.py`, `gardens_card`).
+- **Cross-course questions** ("which course is my weakest?", "what's due across everything?") are answered by the ASI:One model with tool calling. `gardens.py` gives it three read-only tools (`list_courses`, `course_progress`, `due_reviews`). The student's address is never a tool argument, so the model can only read the person it is talking to, nothing is written, and untested concepts are reported as "not tested" instead of a number. Model: `ASI_ONE_TOOL_MODEL` (default `asi1`; the others default to `asi1-mini`).

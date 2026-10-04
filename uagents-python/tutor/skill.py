@@ -25,10 +25,11 @@ from uagents_core.contrib.protocols.chat import (
 )
 
 from sprout_db import DbError, enabled
-from .cards import (course_picker_card, feedback_card, flashcard_back, flashcard_front, flashcard_summary,
+from .cards import (gardens_card, course_picker_card, feedback_card, flashcard_back, flashcard_front, flashcard_summary,
                    arcade_card, forget_card, game_card, garden_link, results_card, home_card, journey_card, lesson_card, mastered_card,
                    parse_selection, question_card, summary_card, text_message)
 from .content import make_lesson, make_question
+from .gardens import answer_question, gardens
 from .game import (ARCADE, GAME_QUESTIONS, SECONDS_PER_QUESTION, create_game, game_questions, interleave, pick_concepts,
                    results, split)
 from .learning import (FORMATS, active_courses, concept, course, days_until, end_session, forget_course, format_insight,
@@ -38,6 +39,10 @@ CURRICULUM_HANDLE = os.getenv("CURRICULUM_HANDLE", "@blank-agent-181")
 QUESTIONS = {"diagnostic": 5, "review": 3, "check": 2}
 FORGET = re.compile(r"\b(forget|delete|remove|erase)\b.*\b(course|class|progress|data|history)\b", re.I)
 ARCADE_WORDS = re.compile(r"\b(arcade|runner|meteor|nexus|video ?games?|solo game)\b", re.I)
+GARDENS = re.compile(r"\b(gardens|all my (courses|classes)|my (courses|classes)|every course|switch course)\b", re.I)
+# A question about progress that needs reading data across courses, answered with ASI:One tool calling.
+INSIGHT = re.compile(r"\b(which (course|class)|weakest|strongest|most behind|how am i doing|how('?s| is) my|"
+                     r"what('?s| is| should).*(due|first|priority)|compare|across|biggest gap|least)\b", re.I)
 GAME = re.compile(r"\b(games?|kahoot|gimkit|blooket|quiz (my|with) friends|play with)\b", re.I)
 
 
@@ -61,11 +66,14 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
     text = "".join(c.text for c in msg.content if isinstance(c, TextContent)).strip()
     sel = {} if any(isinstance(c, StartSessionContent) for c in msg.content) else parse_selection(text)
     action = sel.get("action") or ("forget_ask" if FORGET.search(text) else "arcade" if ARCADE_WORDS.search(text)
-                                   else "game" if GAME.search(text) else "start")
+                                   else "game" if GAME.search(text) else "gardens" if GARDENS.search(text)
+                                   else "insight" if INSIGHT.search(text) else "start")
     if action == "arcade" and not sel.get("template"):
         # "play meteor blaster" / "quiz runner": honor a game named in the message.
         named = "meteor" if re.search(r"\b(meteor|blaster)\b", text, re.I) else "runner" if re.search(r"\brunner\b", text, re.I) else ""
         sel = {**sel, "template": named}
+    if action == "insight":
+        sel = {**sel, "question": text}
     try:
         await handle(ctx, sender, action, sel)
     except DbError as err:
@@ -82,7 +90,13 @@ async def on_ack(ctx: Context, sender: str, msg: ChatAcknowledgement):
 
 async def handle(ctx: Context, sender: str, action: str, sel: dict):
     state = load(ctx, sender)
-    if action == "open" and sel.get("course_id"):
+    if action == "gardens":
+        mine = await run(gardens, sender)
+        await ctx.send(sender, gardens_card(sender, mine) if mine else text_message(
+            f"You don't have a course yet. Paste your syllabus to Sprout Curriculum ({CURRICULUM_HANDLE}) to grow your first garden."))
+    elif action == "insight":
+        await ctx.send(sender, text_message(await run(answer_question, sender, sel.get("question") or "")))
+    elif action == "open" and sel.get("course_id"):
         await open_course(ctx, sender, int(sel["course_id"]))
     elif action == "start" or not state.get("course_id"):
         await start(ctx, sender, state)
@@ -166,7 +180,8 @@ async def show_home(ctx: Context, sender: str, state: dict, welcome: bool = Fals
             opener += f" {snap['due']} concept{'s are' if snap['due'] != 1 else ' is'} due for review, so let's start there."
     state["course_name"] = c["name"]
     save(ctx, sender, state)
-    await ctx.send(sender, home_card(c["name"], snap, days, insight, opener, garden_link(sender, state["course_id"])))
+    many = len(await run(active_courses, sender)) > 1
+    await ctx.send(sender, home_card(c["name"], snap, days, insight, opener, garden_link(sender, state["course_id"]), many))
 
 
 async def start_game(ctx: Context, sender: str, state: dict, arcade=None):

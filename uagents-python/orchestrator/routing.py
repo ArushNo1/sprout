@@ -11,6 +11,8 @@ COURSE_WORDS = re.compile(r"\b(syllabus|new course|add (a )?course|another cours
 STUDY_WORDS = re.compile(r"\b(keep going|continue|study|quiz|review|teach|learn|practice|progress|"
                          r"diagnostic|where (was|did) i|pick up|let'?s go|ready)\b", re.I)
 FORGET_WORDS = re.compile(r"\b(forget|delete|remove|erase)\b.*\b(course|class|progress|data|history)\b", re.I)
+GARDEN_WORDS = re.compile(r"\b(gardens?|all my (courses|classes)|every course|which (course|class)|weakest|"
+                          r"strongest|most behind|how am i doing|how('?s| is) my|compare|across|biggest gap)\b", re.I)
 GAME_WORDS = re.compile(r"\b(games?|kahoot|gimkit|blooket|quiz (my|with) friends|play with|arcade|nexus|runner|meteor|blaster|video ?games?)\b", re.I)
 # Plain chatter that says nothing about a subject. (curriculum/skill.py has the same list for the standalone agent.)
 SMALLTALK = re.compile(r"^\W*(hi+|hello|hey|yo|sup|start|menu|help|thanks?( you)?|ok(ay)?|cool|test|"
@@ -65,6 +67,8 @@ def choose_route(text: str, new_chat: bool, cards_from, has_course: bool) -> Rou
         return Route(owner, text=text, then=then, why=f"card tap '{action}'")
     if FORGET_WORDS.search(text) and not looks_like_syllabus(text):
         return Route(TUTOR, text=text, why="forget a course")
+    if has_course and GARDEN_WORDS.search(text) and not looks_like_syllabus(text):
+        return Route(TUTOR, text=text, why="gardens and cross-course questions")
     if looks_like_syllabus(text) or COURSE_WORDS.search(text):
         return Route(CURRICULUM, text=text if looks_like_syllabus(text) else "", start=not looks_like_syllabus(text),
                      why="course setup")
@@ -77,6 +81,7 @@ def choose_route(text: str, new_chat: bool, cards_from, has_course: bool) -> Rou
         return Route(CURRICULUM, start=True, why="no course yet")
     if GAME_WORDS.search(text):
         return Route(TUTOR, text=text, why="live game")
+
     if new_chat or not text or STUDY_WORDS.search(text):
         return Route(TUTOR, start=True, why="studying")
     return Route(TUTOR, start=True, why="default to studying")
