@@ -1,10 +1,13 @@
-"""Lets the orchestrator speak to specialist agents on a student's behalf.
+"""Lets the orchestrator speak to specialists on a student's behalf, in-process or across agents.
 
-Students only chat with the orchestrator. It sends a specialist a StudentTurn
-(the student's address plus what they typed or tapped); the specialist runs its
-normal chat handler as if the student had messaged it directly, and returns the
-chat messages it would have sent (cards included) in a StudentReplies. The
-orchestrator passes those on to the student.
+In-process (the fast path Sprout uses): the orchestrator imports a specialist's chat handler and
+runs it with an InProcessContext, so the student's messages go straight out and a card tap costs
+one hosted-agent hop instead of three.
+
+Across agents (still supported, for other orchestrators): the orchestrator sends a specialist a
+StudentTurn (the student's address plus what they typed or tapped); the specialist runs its normal
+chat handler as if the student had messaged it directly, and returns the chat messages it would
+have sent (cards included) in a StudentReplies. The orchestrator passes those on to the student.
 
 Specialists keep keying state and database rows by the student's address, and
 only accept turns from addresses listed in TRUSTED_ORCHESTRATORS.
@@ -15,7 +18,13 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from uagents import Context, Model, Protocol
-from uagents_core.contrib.protocols.chat import ChatMessage, StartSessionContent, TextContent
+from uagents_core.contrib.protocols.chat import (
+    ChatAcknowledgement,
+    ChatMessage,
+    MetadataContent,
+    StartSessionContent,
+    TextContent,
+)
 
 
 class StudentTurn(Model):
@@ -64,6 +73,40 @@ class CaptureContext:
                 self.messages.append(message.model_dump_json())
             return None  # acknowledgements to the student are the orchestrator's job
         return await self._ctx.send(destination, message, *args, **kwargs)
+
+
+def is_card(msg: ChatMessage) -> bool:
+    return any(isinstance(c, MetadataContent) and c.metadata.get("card_kind") for c in msg.content)
+
+
+class InProcessContext:
+    """Stands in for the handler's Context when the orchestrator runs a specialist itself.
+
+    Messages to the student go out right away through the real context, except acknowledgements
+    (the orchestrator already sent one). Remembers whether a card went out, so the next tap can be
+    routed back to the same specialist.
+    """
+
+    def __init__(self, ctx: Context, user: str):
+        self._ctx, self._user, self.sent_card = ctx, user, False
+
+    def __getattr__(self, name):
+        return getattr(self._ctx, name)
+
+    async def send(self, destination: str, message, *args, **kwargs):
+        if destination == self._user:
+            if isinstance(message, ChatAcknowledgement):
+                return None
+            if isinstance(message, ChatMessage) and is_card(message):
+                self.sent_card = True
+        return await self._ctx.send(destination, message, *args, **kwargs)
+
+
+async def run_in_process(ctx: Context, on_chat, turn: StudentTurn) -> bool:
+    """Runs a specialist's chat handler for one student turn. Returns whether it sent a card."""
+    inner = InProcessContext(ctx, turn.user)
+    await on_chat(inner, turn.user, turn_message(turn))
+    return inner.sent_card
 
 
 async def handle_turn(ctx: Context, sender: str, turn: StudentTurn, on_chat):

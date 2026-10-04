@@ -1,7 +1,9 @@
 """Sprout orchestrator: the one agent students talk to in ASI:One.
 
-It decides which specialist handles each message and relays their replies,
-cards included (see ../relay.py):
+It decides which specialist handles each message and runs that specialist's chat logic
+in-process (tutor/skill.py, curriculum/skill.py), so a card tap costs one hosted-agent hop.
+With SPROUT_IN_PROCESS=0 it relays to the separately hosted specialist agents instead
+(see ../relay.py), which is slower: three hops per tap.
 - Curriculum agent: new students, pasted syllabi, "add a course", and the
   upload and map cards.
 - Tutor agent: everything about studying ("let's keep going", quizzes,
@@ -12,40 +14,43 @@ course in Sprout's database, so it opens with where they left off, what's due
 and days to the exam; otherwise it goes to the curriculum agent's upload card.
 After a student confirms a course map, the orchestrator hands them to the tutor.
 
-Env (from .env): ORCHESTRATOR_SEED, CURRICULUM_ADDRESS, TUTOR_ADDRESS,
-SPACETIMEDB_HOST / SPACETIMEDB_DB / SPACETIMEDB_TOKEN.
+Run from uagents-python/:  python -m orchestrator.agent
+Env (from .env): ORCHESTRATOR_SEED, ASI_ONE_API_KEY (the in-process specialists call the model),
+SPACETIMEDB_HOST / SPACETIMEDB_DB / SPACETIMEDB_TOKEN; for relaying, CURRICULUM_ADDRESS and
+TUTOR_ADDRESS.
 """
 
 import asyncio
 import os
-import sys
+import time
 from datetime import datetime, timezone
-from pathlib import Path
 from uuid import uuid4
 
 from dotenv import load_dotenv
-from uagents import Agent, Context, Protocol
-from uagents_core.contrib.protocols.chat import (
+
+load_dotenv()  # before the specialist modules read their settings
+
+from uagents import Agent, Context, Protocol  # noqa: E402
+from uagents_core.contrib.protocols.chat import (  # noqa: E402
     ChatAcknowledgement,
     ChatMessage,
     EndSessionContent,
-    MetadataContent,
     StartSessionContent,
     TextContent,
     chat_protocol_spec,
 )
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # shared sprout_db.py and relay.py
-
-from sprout_db import DbError, enabled, sql, sql_str
-from relay import StudentReplies, StudentTurn, fresh
-from routing import CURRICULUM, TUTOR, choose_route
-
-load_dotenv()
+from curriculum.skill import forget as forget_map, on_chat as curriculum_chat  # noqa: E402
+from orchestrator.routing import CURRICULUM, TUTOR, card_action, choose_route  # noqa: E402
+from relay import StudentReplies, StudentTurn, fresh, is_card, run_in_process  # noqa: E402
+from sprout_db import STATS, DbError, enabled, sql, sql_str  # noqa: E402
+from tutor.skill import on_chat as tutor_chat  # noqa: E402
 
 # Python 3.14 no longer creates a default event loop, which uagents expects.
 asyncio.set_event_loop(asyncio.new_event_loop())
 
+SKILLS = {CURRICULUM: curriculum_chat, TUTOR: tutor_chat}
+IN_PROCESS = os.getenv("SPROUT_IN_PROCESS", "1") != "0"
 ADDRESSES = {
     CURRICULUM: os.getenv("CURRICULUM_ADDRESS", "agent1qtddszc00qe3jgkpsu652wvp0nm4j4tywcpjt554ct5acn09gs3lu3nk8nh"),
     TUTOR: os.getenv("TUTOR_ADDRESS", ""),
@@ -83,7 +88,21 @@ def say(text: str) -> ChatMessage:
 
 
 async def forward(ctx: Context, user: str, specialist: str, text: str = "", start: bool = False, then: str = ""):
-    """Sends the student's turn to a specialist. `then` names a specialist to start after it replies."""
+    """Hands the student's turn to a specialist. `then` names a specialist to start after it replies."""
+    if IN_PROCESS:
+        try:
+            sent_card = await run_in_process(ctx, SKILLS[specialist], StudentTurn(user=user, text=text, start=start))
+        except Exception as err:  # a specialist bug shouldn't leave the student without a reply
+            ctx.logger.error(f"{specialist} failed: {err}")
+            await ctx.send(user, say("Something went wrong on my side. Say \"hi\" to pick up where you were."))
+            return
+        if sent_card:
+            state = load(ctx, user)
+            state["cards_from"] = specialist  # the next card tap goes back to whoever sent the card
+            save(ctx, user, state)
+        if then:
+            await forward(ctx, user, then, start=True)
+        return
     address = ADDRESSES.get(specialist)
     if not address:
         await ctx.send(user, say("That part of Sprout isn't connected yet. Try again soon."))
@@ -99,15 +118,30 @@ chat = Protocol(spec=chat_protocol_spec)
 
 @chat.on_message(ChatMessage)
 async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
-    await ctx.send(sender, ChatAcknowledgement(timestamp=datetime.now(timezone.utc), acknowledged_msg_id=msg.msg_id))
+    # The acknowledgement takes seconds to deliver from a hosted agent, so it goes out alongside the work.
+    ack = asyncio.create_task(ctx.send(sender, ChatAcknowledgement(timestamp=datetime.now(timezone.utc),
+                                                                    acknowledged_msg_id=msg.msg_id)))
+    try:
+        await handle_turn(ctx, sender, msg)
+    finally:
+        await ack
+
+
+async def handle_turn(ctx: Context, sender: str, msg: ChatMessage):
     if any(isinstance(c, EndSessionContent) for c in msg.content) and not any(isinstance(c, TextContent) for c in msg.content):
         return
     text = "".join(c.text for c in msg.content if isinstance(c, TextContent)).strip()
     new_chat = any(isinstance(c, StartSessionContent) for c in msg.content)
+    started, db_calls, db_seconds = time.monotonic(), STATS["calls"], STATS["seconds"]
     state = load(ctx, sender)
-    route = choose_route(text, new_chat, state.get("cards_from"), await asyncio.to_thread(has_course, sender))
-    ctx.logger.info(f"{sender[:16]} -> {route.specialist} ({route.why})")
+    # Card taps never need the course lookup, and they're most of the traffic.
+    known = True if card_action(text) else await asyncio.to_thread(has_course, sender)
+    route = choose_route(text, new_chat, state.get("cards_from"), known)
     await forward(ctx, sender, route.specialist, route.text, route.start, route.then)
+    if card_action(text) == "forget_confirm":
+        forget_map(ctx, sender)
+    ctx.logger.info(f"{sender[:16]} -> {route.specialist} ({route.why}) in {time.monotonic() - started:.1f}s, "
+                    f"{STATS['calls'] - db_calls} database calls taking {STATS['seconds'] - db_seconds:.1f}s")
 
 
 @chat.on_message(ChatAcknowledgement)
@@ -127,7 +161,7 @@ async def on_replies(ctx: Context, sender: str, replies: StudentReplies):
     state = load(ctx, replies.user)
     for raw in replies.messages:
         msg = fresh(raw)
-        if any(isinstance(c, MetadataContent) and c.metadata.get("card_kind") for c in msg.content):
+        if is_card(msg):
             state["cards_from"] = specialist  # the next card tap goes back to whoever sent the card
         await ctx.send(replies.user, msg)
     then = state.get("then")

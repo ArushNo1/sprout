@@ -71,6 +71,24 @@ def start_session(address: str, course_id: int) -> int:
     return max(open_sessions, key=lambda s: micros(s["started_at"]))["id"]
 
 
+def upcoming_review(address: str, course_id: int, now=None):
+    """(date, concept name) of the student's next scheduled review in this course, or None."""
+    now_us = int((now or time.time()) * 1_000_000)
+    rows = sql(f"SELECT concept_id, next_review FROM mastery "
+               f"WHERE user_address = {sql_str(address)} AND course_id = {int(course_id)}")
+    upcoming = [(micros(r["next_review"]), r["concept_id"]) for r in rows if r.get("next_review")]
+    upcoming = [u for u in upcoming if u[0] > now_us]
+    if not upcoming:
+        return None
+    when, cid = min(upcoming)
+    return datetime.fromtimestamp(when / 1_000_000, timezone.utc).date(), concept(cid)["name"]
+
+
+def forget_course(address: str, course_id: int):
+    """Deletes the course and everything tied to it (mastery, attempts, sessions)."""
+    call("forget_course", address, int(course_id))
+
+
 def end_session(address: str, session_id: int, summary: str, last_concept_id=None):
     call("end_session", address, int(session_id), summary, opt(last_concept_id))
 
@@ -84,7 +102,55 @@ def next_step(address: str, course_id: int, mode: str) -> dict:
 
 
 def concept(concept_id: int) -> dict:
-    return sql(f"SELECT id, name, summary FROM concept WHERE id = {int(concept_id)}")[0]
+    return sql(f"SELECT id, course_id, name, summary FROM concept WHERE id = {int(concept_id)}")[0]
+
+
+def journey(address: str, course_id: int, current_id=None) -> dict:
+    """The neighborhood of the student's path around the concept they're on: its prerequisites,
+    the concept itself, what it unlocks, and a teaser for what comes after.
+
+    Only the database decides state: a prerequisite is done when its mastery is at least
+    PREREQ_SOLID, the same cut-off compute_next_step uses.
+    """
+    names = {c["id"]: c["name"] for c in sql(f"SELECT id, name FROM concept WHERE course_id = {int(course_id)}")}
+    edges = sql(f"SELECT concept_id, requires_id FROM prerequisite WHERE course_id = {int(course_id)}")
+    p = {m["concept_id"]: m["p_mastered"] for m in sql(
+        f"SELECT concept_id, p_mastered, attempts FROM mastery "
+        f"WHERE user_address = {sql_str(address)} AND course_id = {int(course_id)}") if m["attempts"] > 0}
+    requires, unlocks = {}, {}
+    for e in edges:
+        if e["concept_id"] in names and e["requires_id"] in names:
+            requires.setdefault(e["concept_id"], set()).add(e["requires_id"])
+            unlocks.setdefault(e["requires_id"], set()).add(e["concept_id"])
+    solid = lambda c: p.get(c, 0) >= PREREQ_SOLID
+    open_ = [c for c in sorted(names) if p.get(c, 0) < MASTERED and all(solid(r) for r in requires.get(c, ()))]
+    current = current_id if current_id in names else (open_[0] if open_ else min(names, default=None))
+    if current is None:
+        return {"nodes": [], "edges": [], "current": None, "choices": []}
+
+    before = sorted(requires.get(current, ()))[:3]
+    after = sorted(unlocks.get(current, ())) or [c for c in open_ if c != current]
+    after = after[:3]
+    shown = set(before) | {current} | set(after)
+    later = sorted({c for a in after for c in unlocks.get(a, ())} - shown)
+
+    nodes, index = [], {}
+    def add(cid, row, state, label=None):
+        index[cid] = len(nodes)
+        nodes.append({"id": cid, "row": row, "state": state, "label": label or names[cid]})
+    for c in before:
+        add(c, 0, "done" if solid(c) else "next")
+    add(current, 1, "current")
+    for c in after:
+        add(c, 2, "next")
+    links = [(index[c], index[current]) for c in before] + [(index[current], index[c]) for c in after]
+    if later:
+        add("later", 3, "later", names[later[0]] if len(later) == 1 else f"{len(later)} more topics")
+        links += [(index[a], index["later"]) for a in after if unlocks.get(a, set()) & set(later)]
+    # Anything not yet solid that's on screen can be studied next: the unlocked concepts first,
+    # then prerequisites that still need work.
+    choices = [(c, names[c]) for c in after] + [(c, names[c]) for c in before if not solid(c)]
+    return {"nodes": nodes, "edges": links, "current": (current, names[current]), "choices": choices}
 
 
 def record(address: str, concept_id: int, correct: bool, kind: str, fmt, session_id, question: str) -> tuple:

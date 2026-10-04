@@ -1,7 +1,11 @@
 import json
+import sys
 import unittest
+from pathlib import Path
 
-from routing import CURRICULUM, TUTOR, card_action, choose_route
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from orchestrator.routing import CURRICULUM, TUTOR, card_action, choose_route
 
 tap = lambda action, **extra: "@agent1qx " + json.dumps({"selection": {"action": action, **extra}, "approved": True})
 
@@ -28,6 +32,11 @@ class RoutingTest(unittest.TestCase):
         r = choose_route(tap("confirm_map"), False, CURRICULUM, True)
         self.assertEqual((r.specialist, r.then), (CURRICULUM, TUTOR))
         self.assertEqual(choose_route(tap("edit_map"), False, CURRICULUM, True).then, "")
+
+    def test_new_course_and_forget(self):
+        self.assertEqual(choose_route(tap("new_course"), False, TUTOR, True).specialist, CURRICULUM)
+        r = choose_route("please forget my course", False, TUTOR, True)
+        self.assertEqual((r.specialist, r.text, r.start), (TUTOR, "please forget my course", False))
 
     def test_card_action(self):
         self.assertEqual(card_action(tap("sample")), "sample")

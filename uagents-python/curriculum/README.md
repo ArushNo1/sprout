@@ -1,20 +1,25 @@
-# Curriculum agent
+# Sprout Curriculum
 
-Turns a pasted syllabus or notes into a concept map: concepts (nodes) and prerequisite links (edges), as JSON. No UI yet.
+![tag:innovationlab](https://img.shields.io/badge/innovationlab-3D8BD3)
+![tag:hackathon](https://img.shields.io/badge/hackathon-5F43F1)
 
-- `agent.py`: the uAgent. Takes `ParseSyllabusRequest` from the orchestrator and replies with `ConceptMapResponse`. It also speaks the Agent Chat Protocol, so you can paste a syllabus to it in ASI:One and get the map back.
+Hosted agent `@blank-agent-181` (`agent1qtddszc00qe3jgkpsu652wvp0nm4j4tywcpjt554ct5acn09gs3lu3nk8nh`). Its chat logic (`skill.py`) also runs inside the Sprout agent.
+
+Turns a pasted syllabus or notes into a concept map: concepts (nodes) and prerequisite links (edges), saved to the shared database.
+
+- `skill.py`: the chat flow: upload card, map card, "Looks right" / "Edit", plain pasted syllabi, "json".
+- `agent.py`: runs `skill.py` as a standalone agent. Also answers `ParseSyllabusRequest` (replies `ConceptMapResponse`) and `GetConceptMap` from other agents.
 - `prompt.py`: the extraction prompt sent to the ASI:One LLM.
 - `concept_map.py`: cleans the LLM output (slug ids, no duplicate or dangling edges, no cycles) and adds `depth` and a teaching `order`.
 - `concept_map.schema.json`: the map format.
 - `examples/`: a sample data structures syllabus and the map it should produce.
-- `build_hosted.py`: bundles everything into `dist/hosted_agent.py`, the single file pasted into the Agentverse hosted agent "Sprout Curriculum". Re-run it after editing the source files.
 
 ## Shared database
 
 When `SPACETIMEDB_TOKEN` is set, the agent saves each student's course to Sprout's SpacetimeDB database through `../sprout_db.py`:
 
 1. Building a map calls `upsert_learner`, `create_course` (status `draft`) and `ingest_concept_graph` with the concepts and prerequisite links. Rebuilding after "Edit" updates the same draft course instead of making a new one.
-2. "Looks right" calls `confirm_course`, which makes the course active and creates the student's mastery rows, so the tutor and knowledge agents can start from it.
+2. "Looks right" calls `confirm_course`, which makes the course active and creates the student's mastery rows, so the tutor can start from it.
 
 Without a token the agent works the same and keeps maps in its own storage only. To test against a local database: `spacetime start`, then `spacetime publish sprout-local --server local --module-path spacetimedb/spacetimedb --no-config`, and set `SPACETIMEDB_HOST=http://127.0.0.1:3000`, `SPACETIMEDB_DB=sprout-local` and the local token from `spacetime login show --token`.
 
@@ -30,17 +35,16 @@ From the repo root (uses the root `requirements.txt`):
 pip install -r requirements.txt
 ```
 
-Copy `uagents-python/.env.example` to `uagents-python/.env` and fill in `ASI_ONE_API_KEY` and `CURRICULUM_SEED` (the file is gitignored), then:
+Copy `uagents-python/.env.example` to `uagents-python/.env` and fill in `ASI_ONE_API_KEY` and `CURRICULUM_SEED` (the file is gitignored), then from `uagents-python/`:
 
 ```bash
-cd uagents-python/curriculum
-python agent.py
-python -m unittest test_concept_map
+python -m curriculum.agent
+python -m unittest curriculum.test_concept_map
 ```
 
 ## Hosted copy on Agentverse
 
-The live agent is the hosted agent "Sprout Curriculum" (`agent1qtddszc00qe3jgkpsu652wvp0nm4j4tywcpjt554ct5acn09gs3lu3nk8nh`). Hosted agents run a single file, so `python build_hosted.py` writes `dist/hosted_agent.py` to paste into its editor. Stop the agent before editing (the editor is read-only while it runs), save, then start it. Its `ASI_ONE_API_KEY` lives in the editor's `.env` file.
+The live agent is the hosted agent "Sprout Curriculum" (`agent1qtddszc00qe3jgkpsu652wvp0nm4j4tywcpjt554ct5acn09gs3lu3nk8nh`). `python build_hosted.py curriculum` (from `uagents-python/`) writes `dist/curriculum/agent.py` to paste into its editor. Stop the agent before editing (the editor is read-only while it runs), save, then start it. Its `ASI_ONE_API_KEY` lives in the editor's `.env` file.
 
 ## Cards
 

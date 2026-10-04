@@ -5,6 +5,7 @@ Env: SPACETIMEDB_HOST (default Maincloud), SPACETIMEDB_DB, SPACETIMEDB_TOKEN.
 """
 
 import os
+import time as time_module
 from datetime import date, datetime, time, timezone
 
 import requests
@@ -52,12 +53,38 @@ def timestamp(value):
 
 # ---- calls ----
 
+RETRY_DELAYS = (0.3, 1.0)  # seconds before the 2nd and 3rd tries
+SESSION = requests.Session()  # keeps the HTTPS connection open between calls instead of a new TLS handshake each time
+STATS = {"calls": 0, "seconds": 0.0}  # running totals, for timing logs
+UNPROCESSED = (502, 503)   # the request never reached the database
+
+
+def _post(url: str, what: str, safe: bool, **kwargs) -> requests.Response:
+    """POST with retries. Reads are always safe to repeat; a reducer call is only repeated when it
+    can't have run (connection refused, 502/503), so an answer is never recorded twice."""
+    for attempt in range(len(RETRY_DELAYS) + 1):
+        started = time_module.monotonic()
+        try:
+            r = SESSION.post(url, headers=_headers(), timeout=TIMEOUT, **kwargs)
+            if r.status_code not in UNPROCESSED and not (safe and r.status_code >= 500):
+                return r
+            err = f"HTTP {r.status_code}"
+        except requests.ConnectionError as e:
+            err = e
+        except requests.RequestException as e:  # a timeout: a reducer may already have run
+            if not safe:
+                raise DbError(f"{what}: {e}") from e
+            err = e
+        finally:
+            STATS["calls"] += 1
+            STATS["seconds"] += time_module.monotonic() - started
+        if attempt < len(RETRY_DELAYS):
+            time_module.sleep(RETRY_DELAYS[attempt])
+    raise DbError(f"{what}: {err}")
+
+
 def call(reducer: str, *args):
-    try:
-        r = requests.post(f"{HOST}/v1/database/{DB}/call/{reducer}", json=list(args),
-                          headers=_headers(), timeout=TIMEOUT)
-    except requests.RequestException as err:
-        raise DbError(f"{reducer}: {err}") from err
+    r = _post(f"{HOST}/v1/database/{DB}/call/{reducer}", reducer, safe=False, json=list(args))
     if not r.ok:
         raise DbError(f"{reducer}: {r.text.strip()[:300]}")
 
@@ -70,10 +97,7 @@ def _decode(value):
 
 
 def sql(query: str) -> list:
-    try:
-        r = requests.post(f"{HOST}/v1/database/{DB}/sql", data=query, headers=_headers(), timeout=TIMEOUT)
-    except requests.RequestException as err:
-        raise DbError(f"sql: {err}") from err
+    r = _post(f"{HOST}/v1/database/{DB}/sql", "sql", safe=True, data=query)
     if not r.ok:
         raise DbError(f"sql: {r.text.strip()[:300]}")
     result = r.json()[0]

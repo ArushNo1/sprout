@@ -4,6 +4,7 @@ import json
 import os
 import random
 import re
+import time
 
 import requests
 
@@ -44,8 +45,23 @@ CORES = {
 }
 
 
+def post_with_retry(url: str, **kwargs) -> requests.Response:
+    """One retry after a short pause when the model API times out or is overloaded (429/5xx)."""
+    for attempt in (1, 2):
+        try:
+            r = requests.post(url, **kwargs)
+            if r.status_code != 429 and r.status_code < 500:
+                return r
+        except (requests.ConnectionError, requests.Timeout):
+            if attempt == 2:
+                raise
+        if attempt == 1:
+            time.sleep(1.5)
+    return r
+
+
 def call_llm(prompt: str, temperature: float = 0.4) -> str:
-    resp = requests.post(
+    resp = post_with_retry(
         ASI_URL,
         headers={"Authorization": f"Bearer {os.environ['ASI_ONE_API_KEY']}"},
         json={"model": MODEL, "temperature": temperature,

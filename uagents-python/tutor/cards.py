@@ -13,6 +13,7 @@ from uuid import uuid4
 from uagents_core.contrib.protocols.chat import ChatMessage, EndSessionContent, MetadataContent, TextContent
 
 CARDS_URL = os.getenv("SPROUT_CARDS_URL", "https://sprout-cards-six.vercel.app")
+GARDEN_URL = os.getenv("SPROUT_GARDEN_URL", "https://sprout-garden-seven.vercel.app")
 CARD_WIDTH = "560"
 MAX_ROWS = 8
 FORMAT_LABELS = {"worked_example": "Worked example", "flashcards": "Flashcards",
@@ -97,7 +98,12 @@ def snapshot_image(course_name: str, snap: dict, exam_days) -> tuple:
     return f"{CARDS_URL}/api/card?{urlencode(params, quote_via=quote)}", f"1080:{height}"
 
 
-def home_card(course_name: str, snap: dict, exam_days, insight=None, opener: str = "") -> ChatMessage:
+def garden_link(address: str, course_id: int) -> str:
+    """The live knowledge garden (spacetimedb/src) for this student and course."""
+    return f"{GARDEN_URL}/?{urlencode({'u': address, 'course': course_id})}"
+
+
+def home_card(course_name: str, snap: dict, exam_days, insight=None, opener: str = "", garden: str = "") -> ChatMessage:
     src, ratio = snapshot_image(course_name, snap, exam_days)
     root = _section(
         {"type": "image", "src": src, "alt": f"{course_name} progress", "aspect_ratio": ratio},
@@ -105,10 +111,86 @@ def home_card(course_name: str, snap: dict, exam_days, insight=None, opener: str
         {"type": "text", "style": "muted", "value": insight} if insight else None,
         _row(_button("Learn next", "teach", True),
              _button("Diagnostic quiz", "diagnostic", True) if snap["untested"] else None),
-        _row(_button(f"Review ({snap['due']} due)", "review") if snap["due"] else None,
-             _button("Done for today", "done")),
+        _row(_button("See my journey", "journey"),
+             _button(f"Review ({snap['due']} due)", "review") if snap["due"] else None),
+        _row(_button("Done for today", "done")),
     )
-    return _card(opener or f"Here's where you are in {course_name}.", root)
+    text = opener or f"Here's where you are in {course_name}."
+    return _card(f"{text} [Open your garden]({garden})" if garden else text, root)
+
+
+def journey_image(course_name: str, path: dict) -> tuple:
+    """The /api/journey picture for journey(): rows of boxes and the arrows between them."""
+    params = [("title", course_name), ("subtitle", "your learning journey")]
+    params += [("n", f"{n['row']}~{n['state']}~{n['label']}") for n in path["nodes"]]
+    params += [("e", f"{a}-{b}") for a, b in path["edges"]]
+    rows = len({n["row"] for n in path["nodes"]})
+    height = 40 + 80 + 44 + 44 + rows * 80 + (rows - 1) * 110 + 44  # journeyLayout() in cards/lib/render.js
+    return f"{CARDS_URL}/api/journey?{urlencode(params, quote_via=quote)}", f"1080:{height}"
+
+
+def journey_card(course_name: str, path: dict) -> ChatMessage:
+    """The map around where the student is, with a button for each topic they can take on next."""
+    src, ratio = journey_image(course_name, path)
+    cid, name = path["current"]
+    picks = [_button(clip_label(n), "teach", False, concept_id=c) for c, n in path["choices"][:4]]
+    root = _section(
+        {"type": "image", "src": src, "alt": f"{course_name} learning journey", "aspect_ratio": ratio},
+        _row(_button(f"Keep going: {clip_label(name)}", "teach", True, concept_id=cid)),
+        *[_row(*picks[i:i + 2]) for i in range(0, len(picks), 2)],
+        _row(_button("Back to overview", "home")),
+    )
+    return _card(f"Here's your path through {course_name}. Pick what to learn next.", root)
+
+
+def clip_label(text: str, n: int = 30) -> str:
+    return text if len(text) <= n else text[:n - 1].rstrip() + "…"
+
+
+def summary_card(course_name: str, summary: str, answered: int, right: int, known: int, cards: int,
+                 moved: list, next_review) -> ChatMessage:
+    """End of a session: score, what moved, and when to come back."""
+    badges = []
+    if answered:
+        badges.append({"type": "badge", "label": f"{right} of {answered} questions right",
+                       "variant": "success" if right * 2 >= answered else "warning"})
+    if cards:
+        badges.append({"type": "badge", "label": f"Knew {known} of {cards} flashcards", "variant": "info"})
+    when = None
+    if next_review:
+        day, name = next_review
+        when = f"Next review: {day.strftime('%A, %b')} {day.day} ({name})"
+    root = _section(
+        {"type": "heading", "value": "Session complete", "level": 2},
+        {"type": "group", "direction": "row", "gap": 8, "children": badges} if badges else None,
+        {"type": "heading", "value": "What moved", "level": 3} if moved else None,
+        {"type": "group", "direction": "column", "gap": 6, "children": [
+            {"type": "text", "style": "body", "value": f"{m['name']}: {m['from']:.0%} → {m['to']:.0%}"} for m in moved[:6]]}
+        if moved else None,
+        {"type": "text", "style": "muted", "value": when} if when else None,
+        _row(_button("Keep studying", "home")),
+    )
+    return _card(f"Nice work in {course_name}. {summary} Next time we'll pick up right here.", root)
+
+
+def mastered_card(course_name: str, concepts: int) -> ChatMessage:
+    root = _section(
+        {"type": "heading", "value": f"You've mastered {course_name}", "level": 2},
+        {"type": "badge", "label": f"{concepts} of {concepts} concepts", "variant": "success"},
+        {"type": "text", "style": "muted", "value": "Every concept is above 95%. Reviews keep it that way until your exam."},
+        _row(_button("Review anyway", "review", True), _button("Add another course", "new_course")),
+    )
+    return _card(f"You've mastered every concept in {course_name}.", root)
+
+
+def forget_card(course_name: str, course_id: int) -> ChatMessage:
+    root = _section(
+        {"type": "heading", "value": f"Forget {course_name}?", "level": 2},
+        {"type": "text", "style": "body",
+         "value": "This deletes the course, your mastery and your study history from Sprout. It can't be undone."},
+        _row(_button("Forget it", "forget_confirm", True, course_id=course_id), _button("Keep it", "home")),
+    )
+    return _card(f"Forget {course_name}?", root)
 
 
 def course_picker_card(courses: list) -> ChatMessage:

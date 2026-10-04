@@ -1,8 +1,11 @@
 import json
 import unittest
+import sys
 from pathlib import Path
 
-from concept_map import extract_json, mentions_exam_date, normalize
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from curriculum.concept_map import extract_json, mentions_exam_date, normalize
 
 EXAMPLE = Path(__file__).parent / "examples" / "data_structures.raw.json"
 

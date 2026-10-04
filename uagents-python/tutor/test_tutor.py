@@ -6,10 +6,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from cards import (feedback_card, flashcard_back, flashcard_front, flashcard_summary, home_card, lesson_card, parse_selection,
-                   question_card, snapshot_image, snapshot_rows)
-from content import clean_question, parse_lesson, plain_math, qa_pairs
-from learning import days_until, format_insight
+from tutor.cards import (feedback_card, flashcard_back, flashcard_front, flashcard_summary, home_card, lesson_card,
+                         parse_selection, question_card, snapshot_image, snapshot_rows)
+from tutor.content import clean_question, parse_lesson, plain_math, qa_pairs
+from tutor.learning import days_until, format_insight
 
 SNAP = {"concepts": [{"name": "Big-O", "p": 0.35, "attempts": 2}, {"name": "Arrays", "p": 0.92, "attempts": 4},
                      {"name": "Heaps", "p": 0.1, "attempts": 3}, {"name": "Graphs", "p": None, "attempts": 0}],
@@ -127,6 +127,10 @@ class CardTest(unittest.TestCase):
         self.assertIn("r=Heaps~0.10~10%25", url)
         self.assertIn("r=Graphs~0~%E2%80%93", url)  # untested: empty bar, no made-up percentage
         self.assertEqual(ratio, "1080:460")
+
+    def test_home_card_links_the_garden(self):
+        msg = home_card("DS", SNAP, 3, garden="https://garden.example/?u=agent1qx&course=7")
+        self.assertIn("[Open your garden](https://garden.example/?u=agent1qx&course=7)", msg.content[0].text)
 
     def test_cards_are_valid(self):
         q = {"question": "Which is O(1)?", "choices": ["a", "b", "c", "d"], "correct_index": 2, "explanation": "e"}

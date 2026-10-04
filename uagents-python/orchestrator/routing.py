@@ -10,6 +10,7 @@ COURSE_WORDS = re.compile(r"\b(syllabus|new course|add (a )?course|another cours
                           r"my class(es)?|course map)\b", re.I)
 STUDY_WORDS = re.compile(r"\b(keep going|continue|study|quiz|review|teach|learn|practice|progress|"
                          r"diagnostic|where (was|did) i|pick up|let'?s go|ready)\b", re.I)
+FORGET_WORDS = re.compile(r"\b(forget|delete|remove|erase)\b.*\b(course|class|progress|data|history)\b", re.I)
 SYLLABUS_HINTS = re.compile(r"\b(week|unit|chapter|lecture|module|midterm|final|exam)\b", re.I)
 
 
@@ -39,11 +40,15 @@ def looks_like_syllabus(text: str) -> bool:
 
 def choose_route(text: str, new_chat: bool, cards_from, has_course: bool) -> Route:
     action = card_action(text)
+    if action == "new_course":
+        return Route(CURRICULUM, start=True, why="card tap 'new_course'")
     if action:
         owner = cards_from or CURRICULUM
         # Confirming a course map hands the student to the tutor to start studying it.
         then = TUTOR if owner == CURRICULUM and action == "confirm_map" else ""
         return Route(owner, text=text, then=then, why=f"card tap '{action}'")
+    if FORGET_WORDS.search(text) and not looks_like_syllabus(text):
+        return Route(TUTOR, text=text, why="forget a course")
     if looks_like_syllabus(text) or COURSE_WORDS.search(text):
         return Route(CURRICULUM, text=text if looks_like_syllabus(text) else "", start=not looks_like_syllabus(text),
                      why="course setup")

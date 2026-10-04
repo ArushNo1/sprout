@@ -3,5 +3,5 @@
 !.env.example
 *.pyc
 __pycache__/
-uagents-python/curriculum/dist/
 node_modules/
+uagents-python/dist/
