@@ -35,7 +35,7 @@ Status vs. the Product Development Plan (Oct 3, 2026). Goal: a brand-new ASI:One
 - [x] **Monetization: dropped.** Payments and the store agent stay removed (old code is in git history before commit `6928a1c`). Don't claim the Payment Protocol in the pitch, README or Devpost.
 - [ ] **Publish `set_concept_params` and run the BKT fitter.** `mastery/` now reads and writes SpacetimeDB through `sprout_db.py` (no more Supabase). Publish the module so the new reducer exists, then run `python -m mastery.fit_params --course <id> --dry-run` once a course has 30+ answers per concept. See `mastery/README.md`.
 
-- [ ] **Turn on games.** Publish the module to `sprout-live` (adds the game tables, arcade mode and `set_concept_params`); Sprout's hosted files are already deployed. Then ask Sprout for a game and play it from two phones.
+- [x] **Turn on games.** Publish the module to `sprout-live` (adds the game tables, arcade mode and `set_concept_params`); Sprout's hosted files are already deployed. Then ask Sprout for a game and play it from two phones.
 - [x] **Game results in chat:** podium image, place, what moved, hardest concept, review / play again.
 
 ## P2: stretch
