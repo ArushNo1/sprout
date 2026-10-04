@@ -1,136 +1,394 @@
-.App {
-  display: grid;
-  /* 
-    3 rows: 
-      1) Profile
-      2) Main content (left = message, right = online)
-      3) New message
-  */
-  grid-template-rows: auto 1fr auto;
-  /* 2 columns: left for chat, right for online */
-  grid-template-columns: 2fr 1fr;
-
-  height: 100vh; /* fill viewport height */
-  width: clamp(300px, 100%, 1200px);
+.page {
+  max-width: 1120px;
   margin: 0 auto;
+  padding: 20px 16px 40px;
 }
 
-/* ----- Profile (Row 1, spans both columns) ----- */
-.profile {
-  grid-column: 1 / 3;
+@media (min-width: 720px) {
+  .page {
+    padding: 36px 40px 56px;
+  }
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
+.brand {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  border-bottom: 1px solid var(--theme-color);
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--green);
 }
 
-.profile h1 {
-  margin-right: auto; /* pushes name/edit form to the right */
+.brand__word {
+  font-size: 30px;
+  line-height: 1;
 }
 
-.profile form {
+.brand__who {
+  font-style: italic;
+  font-size: 19px;
+}
+
+.courses {
   display: flex;
-  flex-grow: 1;
-  align-items: center;
-  gap: 0.5rem;
-  max-width: 300px;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
 }
 
-.profile form input {
-  background-color: var(--textbox-color);
+.courses__link {
+  padding: 3px 14px 4px;
+  border-radius: 999px;
+  background: var(--track);
+  color: var(--green);
+  text-decoration: none;
+  font-size: 17px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* ----- Chat Messages (Row 2, Col 1) ----- */
-.message-panel {
-  grid-row: 2 / 3;
-  grid-column: 1 / 2;
+.courses__link--on {
+  background: var(--primary);
+  color: var(--card);
+}
 
-  /* Ensure this section scrolls if content is long */
-  overflow-y: auto;
-  padding: 1rem;
+.title {
+  margin-top: 22px;
+  color: var(--green);
+  font-weight: 400;
+  font-size: clamp(40px, 9vw, 72px);
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.subtitle {
+  margin-top: 6px;
+  color: var(--green);
+  font-style: italic;
+  font-size: clamp(21px, 4.4vw, 28px);
+}
+
+.stats {
+  margin-top: 24px;
+}
+
+.stats__row {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  gap: 28px;
+  flex-wrap: wrap;
 }
 
-.messages {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+.stats__row dt {
+  font-style: italic;
+  color: var(--green);
+  font-size: 17px;
 }
 
-.system-message {
-  background-color: var(--theme-color);
-  color: var(--theme-color-contrast);
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
+.stats__row dd {
+  font-size: 36px;
+  line-height: 1.05;
+  color: var(--ink);
+}
+
+.stats__of {
+  font-size: 20px;
+  color: var(--green);
   font-style: italic;
 }
 
-.user-message {
-  background-color: var(--textbox-color);
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
+/* Same track and fill as the chat card bars. */
+.track {
+  position: relative;
+  margin-top: 14px;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--track);
+  overflow: hidden;
 }
 
-.message h1 {
-  margin-right: 0.5rem;
+.track__tested,
+.track__solid {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 7px;
+  transition: width 600ms ease;
 }
 
-/* ----- Online Panel (Row 2, Col 2) ----- */
-.online {
-  grid-row: 2 / 3;
-  grid-column: 2 / 3;
-
-  /* Also scroll independently if needed */
-  overflow-y: auto;
-  padding: 1rem;
-  border-left: 1px solid var(--theme-color);
-  white-space: pre-wrap;
-  font-family: monospace;
+.track__tested {
+  background: var(--vein);
 }
 
-/* ----- New Message (Row 3, spans columns 1-2) ----- */
-.new-message {
-  grid-column: 1 / 3;
-  display: flex;
+.track__solid {
+  background: var(--bar-fill);
+}
+
+/* ── Garden beds ────────────────────────────────────────────────────────── */
+
+.beds {
+  position: relative;
+  margin-top: 36px;
+}
+
+.beds__lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.beds__lines path {
+  fill: none;
+  stroke: var(--track);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  opacity: 0.7;
+  transition:
+    opacity 200ms ease,
+    stroke 200ms ease;
+}
+
+.beds--focus .beds__lines path,
+.beds--busy .beds__lines path {
+  opacity: 0;
+}
+
+.beds__hint {
+  margin: -12px 0 18px;
+  font-style: italic;
+  font-size: 17px;
+  color: var(--green);
+  opacity: 0.8;
+}
+
+.beds--focus .beds__lines path.on {
+  stroke: var(--bar-fill);
+  stroke-width: 2;
+  opacity: 1;
+}
+
+.bed + .bed {
+  margin-top: 34px;
+}
+
+.bed__label {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 6px;
+  padding-right: 8px;
+  background: var(--card);
+  color: var(--green);
+  font-weight: 400;
+  font-style: italic;
+  font-size: 18px;
+}
+
+/* Each tile spans two rows (plant, label) of a subgrid, so plants in the same
+   line share one soil line and labels start level, whatever each plant's height. */
+.bed__plants {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 104px);
   justify-content: center;
-  align-items: center;
-  padding: 1rem;
-  border-top: 1px solid var(--theme-color);
+  gap: 26px 8px;
 }
 
-.new-message form {
+/* Tiles share the page color so connecting lines only show between them. */
+.tile {
+  position: relative;
+  grid-row: span 2;
+  display: grid;
+  grid-template-rows: subgrid;
+  row-gap: 0;
+  justify-items: center;
+  padding: 0 2px 4px;
+  border-radius: 14px;
+  background: var(--card);
+  text-align: center;
+  outline: none;
+  cursor: default;
+}
+
+.tile .plant {
+  align-self: end;
+  width: 92px;
+  height: auto;
+}
+
+.tile__label {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  width: 100%;
-  max-width: 600px;
+  align-items: center;
 }
 
-.new-message form h3 {
-  margin-bottom: 0.25rem;
+.tile > * {
+  transition: opacity 200ms ease;
 }
 
-/* Distinct background for the textarea */
-.new-message form textarea {
-  font-family: monospace;
-  font-weight: 400;
-  font-size: 1rem;
-  resize: vertical;
-  min-height: 80px;
-  background-color: var(--textbox-color);
-  color: inherit;
-
-  /* Subtle shadow for visibility */
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.12),
-    0 1px 2px rgba(0, 0, 0, 0.24);
+.beds--focus .tile:not(.tile--related) {
+  background: transparent;
 }
 
-@media (prefers-color-scheme: dark) {
-  .new-message form textarea {
-    box-shadow: 0 0 0 1px #17492b;
+.beds--focus .tile:not(.tile--related) > * {
+  opacity: 0.35;
+}
+
+.tile:focus-visible {
+  box-shadow: 0 0 0 2px var(--bar-fill);
+}
+
+@media (min-width: 720px) {
+  .bed__plants {
+    grid-template-columns: repeat(auto-fit, 124px);
+    gap: 30px 16px;
   }
+  .tile .plant {
+    width: 108px;
+  }
+}
+
+.tile__name {
+  margin-top: 2px;
+  font-size: 18px;
+  line-height: 1.1;
+  color: var(--ink);
+  overflow-wrap: break-word;
+}
+
+.tile__pct {
+  margin-top: 2px;
+  font-style: italic;
+  font-size: 17px;
+  color: var(--green);
+}
+
+/* ── Plants ─────────────────────────────────────────────────────────────── */
+
+.plant {
+  display: block;
+  overflow: visible;
+}
+
+.plant__body {
+  transform-box: view-box;
+  transform-origin: 40px 86px;
+  animation: grow 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.plant--wilted {
+  filter: saturate(0.3) brightness(1.04);
+  opacity: 0.78;
+}
+
+@keyframes grow {
+  from {
+    transform: scale(0.82);
+    opacity: 0.4;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plant__body {
+    animation: none;
+  }
+  .track__tested,
+  .track__solid {
+    transition: none;
+  }
+}
+
+/* ── Legend, messages, footer ───────────────────────────────────────────── */
+
+.legend {
+  margin-top: 44px;
+  padding-top: 18px;
+  border-top: 1.5px solid var(--track);
+}
+
+.legend ul {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+}
+
+.legend li {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  font-style: italic;
+  color: var(--green);
+  font-size: 17px;
+}
+
+.legend .plant__body {
+  animation: none;
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 460px;
+  margin: 12vh auto 0;
+}
+
+.beds .message,
+main > .message {
+  margin-top: 40px;
+}
+
+.message__title {
+  margin-top: 10px;
+  color: var(--green);
+  font-weight: 400;
+  font-size: clamp(32px, 7vw, 44px);
+  line-height: 1.08;
+}
+
+.message__body {
+  margin-top: 12px;
+  font-size: 20px;
+  color: var(--ink);
+}
+
+.loading {
+  margin-top: 18vh;
+  text-align: center;
+  font-style: italic;
+  color: var(--green);
+  font-size: 22px;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 28px;
+  font-style: italic;
+  font-size: 16px;
+  color: var(--green);
+  opacity: 0.8;
+}
+
+.live {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--track);
+}
+
+.live--on {
+  background: var(--bar-fill);
 }

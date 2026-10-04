@@ -5,3 +5,5 @@ dist
 .DS_Store
 
 spacetime.local.json
+.vercel
+.env*

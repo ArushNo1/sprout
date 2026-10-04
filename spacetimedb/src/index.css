@@ -1,4 +1,31 @@
-/* ----- CSS Reset & Global Settings ----- */
+/* Instrument Serif, same files the chat cards render with (cards/fonts). */
+@font-face {
+  font-family: 'Instrument Serif';
+  src: url('./assets/fonts/InstrumentSerif-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Instrument Serif';
+  src: url('./assets/fonts/InstrumentSerif-Italic.ttf') format('truetype');
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+}
+
+/* Palette from cards/lib/render.js COLORS; --vein is the light green in cards/public/leaf.png. */
+:root {
+  --card: #f4eadf;
+  --green: #0b6122;
+  --bar-fill: #4e8a5e;
+  --track: #dccbb2;
+  --ink: #222222;
+  --primary: #0a4d17;
+  --vein: #a4d7a2;
+  color-scheme: light;
+}
+
 *,
 *::before,
 *::after {
@@ -7,70 +34,22 @@
   padding: 0;
 }
 
-/* ----- Color Variables ----- */
-:root {
-  --theme-color: #3dc373;
-  --theme-color-contrast: #08180e;
-  --textbox-color: #edfef4;
-  color-scheme: light dark;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --theme-color: #4cf490;
-    --theme-color-contrast: #132219;
-    --textbox-color: #0f311d;
-  }
-}
-
-/* ----- Page Setup ----- */
 html,
-body,
-#root {
-  height: 100%;
-  margin: 0;
+body {
+  background: var(--card);
 }
 
 body {
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
-    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  font-size: 19px;
+  line-height: 1.35;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
-code {
-  font-family:
-    source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
-}
-
-/* ----- Buttons ----- */
-button {
-  padding: 0.5rem 0.75rem;
-  border: none;
-  border-radius: 0.375rem;
-  background-color: var(--theme-color);
-  color: var(--theme-color-contrast);
-  cursor: pointer;
-  font-weight: 600;
-  letter-spacing: 0.1px;
-  font-family: monospace;
-}
-
-/* ----- Inputs & Textareas ----- */
-input,
-textarea {
-  border: none;
-  border-radius: 0.375rem;
-  caret-color: var(--theme-color);
-  font-family: monospace;
-  font-weight: 600;
-  letter-spacing: 0.1px;
-  padding: 0.5rem 0.75rem;
-}
-
-input:focus,
-textarea:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--theme-color);
+a {
+  color: var(--green);
 }
