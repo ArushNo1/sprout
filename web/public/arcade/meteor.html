@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Meteor Blaster</title>
+  <style>
+    * { margin: 0; padding: 0; }
+    html, body { height: 100%; background: #0a2a16; overflow: hidden; touch-action: none; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <script src="kaplay.js"></script>
+  <script src="bridge.js"></script>
+  <script>
+    // METEOR BLASTER, adapted from Nexus's shoot-'em-up template (ArushNo1/Nexus,
+    // nexus-agent/templates/shootemup.html) for Sprout: each question sends one
+    // meteor per answer; shoot the right one before any reaches your ship.
+    // Arrow keys / A-D move, Space fires. On a phone, tap where to aim: the ship
+    // slides there and fires.
+    const P = Sprout.PALETTE;
+    const W = 480, H = 800;
+    const C = {
+      lives: 3,
+      fallTime: 11,         // seconds for meteors to reach the ship at the start
+      minFallTime: 6.5,
+      speedUp: 0.5,
+      shipY: H - 80,
+      shipSpeed: 420,
+      bulletSpeed: 900,
+      fireRate: 0.25,
+      radius: 56,
+      panelH: 170,
+    };
+
+    kaplay({ width: W, height: H, background: P.bg, letterbox: true, crisp: false, touchToMouse: true,
+      pixelDensity: Math.min(3, window.devicePixelRatio || 1) });
+
+    Sprout.questions().then(({ questions, answered }) => {
+      const firstRun = new Set(answered || []);
+
+      scene("game", ({ practice }) => {
+        let lives = C.lives, score = 0, streak = 0, qi = 0, busy = true, cooldown = 0, targetX = W / 2;
+        const fall = () => Math.max(C.minFallTime, C.fallTime - qi * C.speedUp);
+
+        // Stars
+        for (let i = 0; i < 50; i++) {
+          add([circle(rand(1, 2.5)), pos(rand(0, W), rand(C.panelH, H)), color(...P.card), opacity(rand(0.1, 0.4)), z(0), "star", { v: rand(20, 60) }]);
+        }
+        onUpdate("star", (s) => { s.pos.y += s.v * dt(); if (s.pos.y > H) s.pos.y = C.panelH; });
+
+        // Question panel
+        add([rect(W, C.panelH), pos(0, 0), color(...P.card), z(30)]);
+        const counter = add([text("", { size: 18, font: Sprout.FONT }), pos(16, 14), color(...P.fill), z(31)]);
+        const lifeText = add([text("", { size: 18, font: Sprout.FONT }), pos(W - 16, 14), anchor("topright"), color(...P.wrong), z(31)]);
+        const prompt = add([text("", { size: 22, width: W - 32, font: Sprout.FONT, lineSpacing: 4 }), pos(16, 46), color(30, 30, 30), z(31)]);
+        const scoreText = add([text("", { size: 20, font: Sprout.FONT }), pos(W / 2, H - 24), anchor("center"), color(...P.card), z(31)]);
+        if (practice) add([text("practice run", { size: 16, font: Sprout.FONT }), pos(16, H - 32), color(...P.tan), z(31)]);
+
+        // Ship
+        const ship = add([
+          polygon([vec2(0, -30), vec2(26, 22), vec2(0, 12), vec2(-26, 22)]), pos(W / 2, C.shipY),
+          color(...P.card), outline(3, rgb(...P.green)), area(), z(20), "ship",
+        ]);
+        const fire = () => {
+          if (cooldown > 0 || busy) return;
+          cooldown = C.fireRate;
+          add([rect(6, 22, { radius: 3 }), pos(ship.pos.x, ship.pos.y - 34), anchor("center"), color(...P.right), area(), z(15), "bullet"]);
+        };
+        onKeyDown(["left", "a"], () => { targetX = Math.max(30, ship.pos.x - C.shipSpeed * dt()); });
+        onKeyDown(["right", "d"], () => { targetX = Math.min(W - 30, ship.pos.x + C.shipSpeed * dt()); });
+        onKeyPress("space", fire);
+        let tapFire = false;
+        onMousePress(() => {
+          if (mousePos().y < C.panelH) return;
+          targetX = Math.max(30, Math.min(W - 30, mousePos().x));
+          tapFire = true;
+        });
+        onUpdate(() => {
+          cooldown -= dt();
+          ship.pos.x = lerp(ship.pos.x, targetX, Math.min(1, dt() * 16));
+          // Fire once the ship has reached where the player tapped.
+          if (tapFire && Math.abs(ship.pos.x - targetX) < 6) { tapFire = false; fire(); }
+        });
+        onUpdate("bullet", (b) => { b.pos.y -= C.bulletSpeed * dt(); if (b.pos.y < C.panelH) destroy(b); });
+
+        const hud = () => {
+          counter.text = `${Math.min(qi + 1, questions.length)} of ${questions.length}`;
+          lifeText.text = "♥ ".repeat(lives).trim();
+          scoreText.text = `${score.toLocaleString()} pts` + (streak >= 2 ? `  ·  ${streak} in a row` : "");
+        };
+
+        function spawnWave() {
+          if (qi >= questions.length) return finish(true);
+          const q = questions[qi];
+          prompt.text = q.prompt;
+          hud();
+          const n = q.choices.length;
+          const speed = (C.shipY - C.panelH - C.radius) / fall();
+          const order = q.choices.map((_, i) => i).sort(() => Math.random() - 0.5);  // slots shuffle every wave
+          order.forEach((choice, slot) => {
+            const x = (W / n) * slot + W / n / 2;
+            const m = add([
+              circle(C.radius), pos(x, C.panelH + C.radius + 10 + (slot % 2) * 36), anchor("center"),
+              color(...P.tiles[choice % P.tiles.length]), outline(3, rgb(...P.card)), area(), z(10), "meteor",
+              { qi, choice, vy: speed, vx: rand(-18, 18), home: x, room: Math.max(0, W / n / 2 - C.radius - 2) },
+            ]);
+            const label = q.choices[choice];
+            m.add([text(label, { size: label.length > 45 ? 14 : label.length > 24 ? 16 : 19, width: C.radius * 1.75, align: "center", font: Sprout.FONT }), anchor("center"), color(255, 255, 255)]);
+          });
+          busy = false;
+        }
+
+        onUpdate("meteor", (m) => {
+          m.pos.y += m.vy * dt();
+          m.pos.x += m.vx * dt();
+          if (Math.abs(m.pos.x - m.home) > m.room) { m.vx = -m.vx; m.pos.x = m.home + Math.sign(m.pos.x - m.home) * m.room; }  // wobble, never out of its slot
+        });
+
+        onCollide("bullet", "meteor", (b, m) => {
+          destroy(b);
+          if (busy || m.qi !== qi) return;
+          busy = true;
+          resolve(m.choice);
+        });
+
+        // A meteor reaching the ship costs a life; it isn't an answer.
+        onUpdate(() => {
+          if (busy) return;
+          if (get("meteor").some((m) => m.qi === qi && m.pos.y + C.radius > C.shipY - 20)) {
+            busy = true;
+            resolve(null);
+          }
+        });
+
+        function resolve(choice) {
+          const q = questions[qi];
+          const right = choice === q.correct;
+          if (choice !== null && !practice && !firstRun.has(qi)) Sprout.answer(qi, choice);
+          get("meteor").forEach((m) => {
+            m.vy = 0; m.vx = 0;
+            if (m.choice === q.correct) { m.color = rgb(...P.right); }
+            else { m.opacity = m.choice === choice ? 0.9 : 0.25; }
+            if (m.choice === choice) addKaboom(m.pos);
+          });
+          if (right) {
+            streak++;
+            score += 1000 + Math.min(500, 100 * Math.max(0, streak - 1));
+            flash(rgb(...P.right), 0.3);
+          } else {
+            streak = 0;
+            lives--;
+            shake(12);
+            flash(rgb(...P.wrong), 0.3);
+          }
+          const note = add([
+            text(right ? "Direct hit!" : choice === null ? `Too slow. Answer: ${q.choices[q.correct]}` : `Answer: ${q.choices[q.correct]}`,
+              { size: 22, width: W - 40, align: "center", font: Sprout.FONT }),
+            pos(W / 2, C.shipY - 120), anchor("center"), color(...(right ? P.right : P.card)), z(40),
+          ]);
+          hud();
+          wait(right ? 0.9 : 2.2, () => {
+            destroy(note);
+            destroyAll("meteor");
+            destroyAll("bullet");
+            qi++;
+            if (lives <= 0) return finish(false);
+            spawnWave();
+          });
+        }
+
+        function finish(won) {
+          Sprout.done(score, practice);
+          go("end", { won, score, practice, reached: qi, total: questions.length });
+        }
+
+        hud();
+        wait(0.8, spawnWave);
+      });
+
+      scene("end", ({ won, score, practice, reached, total }) => {
+        add([rect(W - 60, 330, { radius: 24 }), pos(W / 2, H / 2), anchor("center"), color(...P.card)]);
+        add([text(won ? "Sky's clear!" : "Ship down", { size: 40, font: Sprout.FONT }), pos(W / 2, H / 2 - 110), anchor("center"), color(...P.green)]);
+        add([text(`${score.toLocaleString()} points`, { size: 28, font: Sprout.FONT }), pos(W / 2, H / 2 - 50), anchor("center"), color(30, 30, 30)]);
+        add([text(won ? `All ${total} questions` : `Made it through ${reached} of ${total}`, { size: 20, font: Sprout.FONT }), pos(W / 2, H / 2 - 10), anchor("center"), color(...P.fill)]);
+        add([text(practice ? "Practice run: the board keeps your first run." : "Your first run is on the board.", { size: 16, width: W - 110, align: "center", font: Sprout.FONT }), pos(W / 2, H / 2 + 40), anchor("center"), color(...P.fill)]);
+        const again = add([rect(240, 56, { radius: 28 }), pos(W / 2, H / 2 + 110), anchor("center"), color(...P.green), area()]);
+        again.add([text("Practice again", { size: 22, font: Sprout.FONT }), anchor("center"), color(...P.card)]);
+        again.onClick(() => go("game", { practice: true }));
+        onKeyPress("space", () => go("game", { practice: true }));
+      });
+
+      go("game", { practice: false });
+    });
+  </script>
+</body>
+</html>
