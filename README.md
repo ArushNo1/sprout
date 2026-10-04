@@ -73,6 +73,6 @@ cd web && npm test                       # graph helpers and play-site routing
 
 ## Deploy
 
-- **Agents:** `python uagents-python/build_hosted.py` writes the files to paste into each hosted agent's editor: `dist/sprout/` (six files, multi-file hosted agent), `dist/tutor/agent.py` and `dist/curriculum/agent.py`. Stop the agent before editing, save, then start it. Secrets go in each agent's `.env` in the editor: `ASI_ONE_API_KEY`, `SPACETIMEDB_TOKEN`, `SPACETIMEDB_DB=sprout-live`.
+- **Agents:** `cd uagents-python && python deploy_hosted.py [sprout|tutor|curriculum]` builds and uploads the files to Agentverse through its API (needs `AGENTVERSE_API_KEY`; `--dry-run` only builds). To paste by hand instead, `python uagents-python/build_hosted.py` writes the files for each hosted agent's editor: `dist/sprout/` (six files, multi-file hosted agent), `dist/tutor/agent.py` and `dist/curriculum/agent.py`. Stop the agent before editing, save, then start it. Secrets go in each agent's `.env` in the editor: `ASI_ONE_API_KEY`, `SPACETIMEDB_TOKEN`, `SPACETIMEDB_DB=sprout-live`.
 - **Cards and garden:** Vercel projects `sprout-cards` (`cards/`) and `sprout-web` (`web/`, Next.js; root directory `web`). Set `SPROUT_WEB_URL` in each agent's `.env` to the site's URL.
 - **Database:** `spacetime publish` from `spacetimedb/spacetimedb` (owner only).

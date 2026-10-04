@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   GAME_CODE_ALPHABET,
+  arcadeStep,
   GAME_CODE_LENGTH,
   cleanPlayerName,
   gameCode,
@@ -52,5 +53,28 @@ describe('cleanPlayerName', () => {
 
   it('rejects names with nothing left', () => {
     expect(cleanPlayerName('   ')).toBeNull();
+  });
+});
+
+describe('arcadeStep', () => {
+  const fresh = { score: 0, streak: 0, answered: [] as number[] };
+
+  it('scores a run and keeps the larger of the old best and the run total', () => {
+    const a = arcadeStep(fresh, 0, true, 0);
+    expect(a).toMatchObject({ points: 1000, best: 1000, counted: true });
+    const b = arcadeStep(a.run, 1, true, a.best);
+    expect(b).toMatchObject({ points: 1100, best: 2100 });
+  });
+
+  it('ignores a repeat of the same question within a run', () => {
+    const a = arcadeStep(fresh, 0, true, 0);
+    expect(arcadeStep(a.run, 0, true, a.best)).toMatchObject({ counted: false, points: 0, best: 1000 });
+  });
+
+  it('a worse replay leaves the best alone, a better one raises it', () => {
+    const bad = arcadeStep(fresh, 0, false, 4200);
+    expect(bad).toMatchObject({ points: 0, best: 4200, counted: true });
+    const run = { score: 4000, streak: 3, answered: [0, 1, 2] };
+    expect(arcadeStep(run, 3, true, 4200).best).toBe(4000 + 1300);
   });
 });

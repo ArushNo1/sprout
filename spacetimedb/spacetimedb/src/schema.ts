@@ -242,6 +242,18 @@ const gameSecret = table(
   }
 );
 
+// A player's current arcade run. The board shows their best run, and each replay
+// starts a new one, so scoring a run needs somewhere to keep its running total.
+const arcadeRun = table(
+  { name: 'arcade_run' },
+  {
+    playerId: t.u64().primaryKey(),
+    score: t.u32(),
+    streak: t.u32(),
+    answered: t.array(t.u32()),
+  }
+);
+
 const player = table(
   { name: 'player', public: true },
   {
@@ -310,6 +322,7 @@ const spacetimedb = schema({
   game,
   gameQuestion,
   gameSecret,
+  arcadeRun,
   player,
   playerAnswer,
   gameChoice,

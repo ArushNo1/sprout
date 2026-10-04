@@ -45,6 +45,7 @@ function ArcadeStage({ g, code }: { g: GameState; code: string }) {
   const me = g.me!;
   const info = GAMES[game.template] ?? GAMES.runner;
   const answer = useReducer(reducers.arcadeAnswer);
+  const start = useReducer(reducers.arcadeStart);
   const frame = useRef<HTMLIFrameElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -79,6 +80,8 @@ function ArcadeStage({ g, code }: { g: GameState; code: string }) {
           { ...latest.current.payload, answered: latest.current.answered },
           '*'
         );
+      } else if (msg.type === 'sprout-start') {
+        start({ code }).catch(err => setError(errorText(err)));
       } else if (msg.type === 'sprout-answer' && Number.isInteger(msg.index) && Number.isInteger(msg.choice)) {
         answer({ code, questionIndex: msg.index, choice: msg.choice }).catch(err => setError(errorText(err)));
       } else if (msg.type === 'sprout-done') {
@@ -87,7 +90,7 @@ function ArcadeStage({ g, code }: { g: GameState; code: string }) {
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [answer, code]);
+  }, [answer, start, code]);
 
   const progress = (id: bigint) => g.answers.filter(a => a.playerId === id).length;
   const ready = g.questions.length === game.questionCount;

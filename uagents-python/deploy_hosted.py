@@ -6,7 +6,8 @@
 
 Needs AGENTVERSE_API_KEY (agentverse.ai > Profile > API Keys) in uagents-python/.env or the
 environment. Secrets in each agent's editor .env (ASI_ONE_API_KEY, SPACETIMEDB_TOKEN, ...) are not
-touched. The files are replaced as a set, so anything in the agent that isn't in dist/ is dropped.
+touched. The agent's file list is replaced as a whole by the API, so files already in the agent
+that the build doesn't produce (a `.env` file, anything added in the editor) are read first and kept.
 """
 
 import json
@@ -33,11 +34,22 @@ ADDRESSES = {
 def files_for(target: str) -> list:
     folder = build_hosted.DIST / target
     paths = sorted(folder.glob("*.py"), key=lambda p: (p.name != "agent.py", p.name))  # agent.py first
-    return [{"id": i, "name": p.name, "value": p.read_text(), "language": "python"} for i, p in enumerate(paths)]
+    return [{"id": i, "name": p.name, "value": p.read_text(encoding="utf-8"), "language": "python"} for i, p in enumerate(paths)]
 
 
 def request(method: str, path: str, token: str, **kwargs) -> requests.Response:
     return requests.request(method, f"{API}{path}", headers={"Authorization": f"Bearer {token}"}, timeout=60, **kwargs)
+
+
+def merged(address: str, built: list, token: str) -> list:
+    """The built files plus whatever else the agent already has (its `.env`, extra files)."""
+    r = request("GET", f"/v1/hosting/agents/{address}/code", token)
+    r.raise_for_status()
+    current = r.json()["code"]
+    current = json.loads(current) if isinstance(current, str) else current
+    names = {f["name"] for f in built}
+    kept = [f for f in current if f["name"] not in names]
+    return [{**f, "id": i} for i, f in enumerate(built + kept)]
 
 
 def upload(address: str, files: list, token: str):
@@ -51,6 +63,7 @@ def upload(address: str, files: list, token: str):
 
 def deploy(target: str, token: str):
     address, files = ADDRESSES[target], files_for(target)
+    files = merged(address, files, token)
     print(f"{target}: {len(files)} files -> {address[:20]}...")
     request("POST", f"/v1/hosting/agents/{address}/stop", token).raise_for_status()
     try:

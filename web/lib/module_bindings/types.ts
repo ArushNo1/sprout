@@ -17,6 +17,14 @@ export const Agent = __t.object("Agent", {
 });
 export type Agent = __Infer<typeof Agent>;
 
+export const ArcadeRun = __t.object("ArcadeRun", {
+  playerId: __t.u64(),
+  score: __t.u32(),
+  streak: __t.u32(),
+  answered: __t.array(__t.u32()),
+});
+export type ArcadeRun = __Infer<typeof ArcadeRun>;
+
 export const Attempt = __t.object("Attempt", {
   id: __t.u64(),
   userAddress: __t.string(),

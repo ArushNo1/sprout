@@ -36,7 +36,7 @@ def strip_imports(src: str, modules) -> str:
 
 def body(path: Path) -> str:
     """A module's source without its docstring."""
-    return re.sub(r'^""".*?"""\n', "", path.read_text(), count=1, flags=re.S).lstrip("\n")
+    return re.sub(r'^""".*?"""\n', "", path.read_text(encoding="utf-8"), count=1, flags=re.S).lstrip("\n")
 
 
 def bundle(package: str, inline_shared: bool) -> str:
@@ -75,7 +75,7 @@ def header(title: str, needs: str) -> str:
 
 
 def build_specialist(package: str):
-    wiring = hosted_wiring((HERE / package / "agent.py").read_text())
+    wiring = hosted_wiring((HERE / package / "agent.py").read_text(encoding="utf-8"))
     wiring = strip_imports(wiring, SHARED + [f"{package}.{m}" for m in PACKAGES[package]])
     needs = "Needs ASI_ONE_API_KEY, SPACETIMEDB_TOKEN and SPACETIMEDB_DB in the editor's .env (plus TRUSTED_ORCHESTRATORS)."
     out = header(f"Sprout {package} agent", needs) + bundle(package, inline_shared=True) + "# ---- agent.py ----\n" + wiring
@@ -85,12 +85,12 @@ def build_specialist(package: str):
 def build_sprout():
     folder = DIST / "sprout"
     for mod in SHARED:
-        write(folder / f"{mod}.py", (HERE / f"{mod}.py").read_text())
-    write(folder / "routing.py", (HERE / "orchestrator" / "routing.py").read_text())
+        write(folder / f"{mod}.py", (HERE / f"{mod}.py").read_text(encoding="utf-8"))
+    write(folder / "routing.py", (HERE / "orchestrator" / "routing.py").read_text(encoding="utf-8"))
     for package in PACKAGES:
         needs = f"The {package} chat logic, imported by agent.py and run in-process."
         write(folder / f"{package}_skill.py", header(f"Sprout {package} skill", needs) + bundle(package, inline_shared=False))
-    wiring = hosted_wiring((HERE / "orchestrator" / "agent.py").read_text())
+    wiring = hosted_wiring((HERE / "orchestrator" / "agent.py").read_text(encoding="utf-8"))
     wiring = wiring.replace("from orchestrator.routing import", "from routing import")
     for package in PACKAGES:
         wiring = wiring.replace(f"from {package}.skill import", f"from {package}_skill import")
@@ -102,7 +102,7 @@ def build_sprout():
 def write(path: Path, text: str):
     compile(text, str(path), "exec")  # a syntax error here would only show up after deploying
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text)
+    path.write_text(text, encoding="utf-8")
     print(f"wrote {path.relative_to(HERE)} ({len(text.splitlines())} lines)")
 
 

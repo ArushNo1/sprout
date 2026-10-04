@@ -39,10 +39,10 @@
     kaplay({ width: W, height: H, background: P.bg, letterbox: true, crisp: false, touchToMouse: true,
       pixelDensity: Math.min(3, window.devicePixelRatio || 1) });
 
-    Sprout.questions().then(({ title, questions, answered }) => {
-      const firstRun = new Set(answered || []);  // answered on an earlier visit: don't report again
+    Sprout.questions().then(({ title, questions }) => {
 
       scene("game", ({ practice }) => {
+        Sprout.start();
         let lives = C.lives, score = 0, streak = 0, qi = 0, lane = 1, busy = false;
         const fall = () => Math.max(C.minFallTime, C.fallTime - qi * C.speedUp);
 
@@ -57,7 +57,7 @@
         const lifeText = add([text("", { size: 18, font: Sprout.FONT }), pos(W - 16, 14), anchor("topright"), color(...P.wrong), z(31)]);
         const prompt = add([text("", { size: 22, width: W - 32, font: Sprout.FONT, lineSpacing: 4 }), pos(16, 46), color(30, 30, 30), z(31)]);
         const scoreText = add([text("", { size: 20, font: Sprout.FONT }), pos(W / 2, H - 24), anchor("center"), color(...P.card), z(31)]);
-        if (practice) add([text("practice run", { size: 16, font: Sprout.FONT }), pos(16, H - 32), color(...P.tan), z(31)]);
+        if (practice) add([text("replay", { size: 16, font: Sprout.FONT }), pos(16, H - 32), color(...P.tan), z(31)]);
 
         // Player
         const player = add([
@@ -115,7 +115,7 @@
         function resolve(choice) {
           const q = questions[qi];
           const right = choice === q.correct;
-          if (choice !== null && !practice && !firstRun.has(qi)) Sprout.answer(qi, choice);
+          if (choice !== null) Sprout.answer(qi, choice);  // the server counts each question once per run
           get("block").forEach((b) => {
             b.speed = 0;
             b.color = b.choice === q.correct ? rgb(...P.right) : rgb(60, 60, 60);
@@ -160,9 +160,9 @@
         add([text(won ? "Finish line!" : "Out of lives", { size: 40, font: Sprout.FONT }), pos(W / 2, H / 2 - 110), anchor("center"), color(...P.green)]);
         add([text(`${score.toLocaleString()} points`, { size: 28, font: Sprout.FONT }), pos(W / 2, H / 2 - 50), anchor("center"), color(30, 30, 30)]);
         add([text(won ? `All ${total} questions` : `Made it through ${reached} of ${total}`, { size: 20, font: Sprout.FONT }), pos(W / 2, H / 2 - 10), anchor("center"), color(...P.fill)]);
-        add([text(practice ? "Practice run: the board keeps your first run." : "Your first run is on the board.", { size: 16, width: W - 110, align: "center", font: Sprout.FONT }), pos(W / 2, H / 2 + 40), anchor("center"), color(...P.fill)]);
+        add([text(practice ? "Replay: the board keeps your best run." : "Your run is on the board. Replay to beat it.", { size: 16, width: W - 110, align: "center", font: Sprout.FONT }), pos(W / 2, H / 2 + 40), anchor("center"), color(...P.fill)]);
         const again = add([rect(240, 56, { radius: 28 }), pos(W / 2, H / 2 + 110), anchor("center"), color(...P.green), area()]);
-        again.add([text("Practice again", { size: 22, font: Sprout.FONT }), anchor("center"), color(...P.card)]);
+        again.add([text("Play again", { size: 22, font: Sprout.FONT }), anchor("center"), color(...P.card)]);
         again.onClick(() => go("game", { practice: true }));
         onKeyPress("space", () => go("game", { practice: true }));
       });

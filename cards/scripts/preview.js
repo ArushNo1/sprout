@@ -1,6 +1,6 @@
 // Renders sample PNGs into preview/ so the design can be checked without deploying.
 import { mkdirSync, writeFileSync } from "node:fs";
-import { GAME_SIZE, gameTree, parseGameQuery, parsePodiumQuery, podiumSize, podiumTree, journeyLayout, journeyTree, parseJourneyQuery, BUTTON_SIZE, PRODUCT_SIZE, PRODUCT_WIDE_SIZE, productWideTree, buttonTree, cardSize, cardTree, parseCardQuery, parseProductQuery, png, productTree } from "../lib/render.js";
+import { gardenSize, gardenTree, parseGardenQuery, GAME_SIZE, gameTree, parseGameQuery, parsePodiumQuery, podiumSize, podiumTree, journeyLayout, journeyTree, parseJourneyQuery, BUTTON_SIZE, PRODUCT_SIZE, PRODUCT_WIDE_SIZE, productWideTree, buttonTree, cardSize, cardTree, parseCardQuery, parseProductQuery, png, productTree } from "../lib/render.js";
 
 mkdirSync("preview", { recursive: true });
 const save = async (name, res) => writeFileSync(`preview/${name}.png`, Buffer.from(await res.arrayBuffer()));
@@ -13,6 +13,12 @@ const map = parseCardQuery(new URLSearchParams(
   "title=CS 1332 Data Structures and Algorithms&subtitle=CS 1332 · 26 concepts · exam in 19 days" +
   "&r=Foundations~1~6&r=Linear ADTs~0.5~3&r=Trees~1~6&r=Hashing and Sorting~1~7&r=Graphs~0.67~4"));
 await save("map", png(cardTree(map), cardSize(map.rows, true)));
+
+const garden = parseGardenQuery(new URLSearchParams(
+  "title=CS 1332 Data Structures&subtitle=26 concepts · exam in 19 days&u=Foundations~000000&u=Linear ADTs~000&u=Trees~000000&u=Hashing and Sorting~0000000&u=Graphs~0000&u=Dynamic Programming~000000000000"));
+await save("garden", png(gardenTree(garden), gardenSize(garden.units, true)));
+const mixed = parseGardenQuery(new URLSearchParams("title=Linear Algebra&subtitle=7 concepts&u=Systems~4321&u=Matrices~210"));
+await save("garden-mixed", png(gardenTree(mixed), gardenSize(mixed.units, true)));
 
 await save("button-primary", png(buttonTree({ label: "Looks right", variant: "primary" }), BUTTON_SIZE));
 await save("button-secondary", png(buttonTree({ label: "Edit", variant: "secondary" }), BUTTON_SIZE));

@@ -20,6 +20,7 @@ import {
   gameCode,
   normalizeCode,
   scorePoints,
+  arcadeStep,
   pickNextConcept,
   sm2Update,
   thompsonPick,
@@ -1027,7 +1028,10 @@ function deleteGame(ctx: Ctx, gameId: bigint) {
     ctx.db.gameChoice.answerId.delete(a.id);
     ctx.db.playerAnswer.id.delete(a.id);
   }
-  for (const pl of gamePlayers(ctx, gameId)) ctx.db.player.id.delete(pl.id);
+  for (const pl of gamePlayers(ctx, gameId)) {
+    ctx.db.arcadeRun.playerId.delete(pl.id);
+    ctx.db.player.id.delete(pl.id);
+  }
   for (const tick of [...ctx.db.gameTimer.iter()])
     if (tick.gameId === gameId) ctx.db.gameTimer.scheduledId.delete(tick.scheduledId);
   ctx.db.gameSecret.gameId.delete(gameId);
@@ -1372,28 +1376,68 @@ export const end_question = spacetimedb.reducer(
   }
 );
 
-// An answer from an arcade game. Each player plays at their own pace, so only
-// the first answer to each question counts (replays are practice). Scored like
-// a live game answered instantly: 1000 points plus the streak bonus.
+// Arcade games run at each player's own pace and can be replayed. Every run is
+// scored like a live game answered instantly (1000 points plus the streak
+// bonus) and the board keeps each player's best run. Only a question's first
+// answer ever counts for the question stats and for mastery.
+function arcadePlayer(ctx: Ctx, code: string) {
+  const game = findGame(ctx, code);
+  if (game.mode !== 'arcade') throw new SenderError('Not an arcade game');
+  if (game.status !== 'arcade') throw new SenderError('That game has ended');
+  const me = gamePlayers(ctx, game.id).find(pl => pl.identity.isEqual(ctx.sender));
+  if (!me) throw new SenderError('Join the game first');
+  return { game, me };
+}
+
+// The game calls this when a run begins, including the first.
+export const arcade_start = spacetimedb.reducer(
+  { code: t.string() },
+  (ctx, { code }) => {
+    const { me } = arcadePlayer(ctx, code);
+    const fresh = { playerId: me.id, score: 0, streak: 0, answered: [] as number[] };
+    if (ctx.db.arcadeRun.playerId.find(me.id)) ctx.db.arcadeRun.playerId.update(fresh);
+    else ctx.db.arcadeRun.insert(fresh);
+  }
+);
+
 export const arcade_answer = spacetimedb.reducer(
   { code: t.string(), questionIndex: t.u32(), choice: t.u32() },
   (ctx, { code, questionIndex, choice }) => {
-    const game = findGame(ctx, code);
-    if (game.mode !== 'arcade') throw new SenderError('Not an arcade game');
-    if (game.status !== 'arcade') throw new SenderError('That game has ended');
-    const me = gamePlayers(ctx, game.id).find(pl => pl.identity.isEqual(ctx.sender));
-    if (!me) throw new SenderError('Join the game first');
+    const { game, me } = arcadePlayer(ctx, code);
     const question = [...ctx.db.gameQuestion.gameId.filter(game.id)].find(
       q => q.index === questionIndex
     );
     if (!question) throw new SenderError('No such question');
     if (choice >= question.choices.length) throw new SenderError('No such choice');
-    if (questionAnswers(ctx, game.id, questionIndex).some(a => a.playerId === me.id)) return;
+
+    const earlier = questionAnswers(ctx, game.id, questionIndex).some(a => a.playerId === me.id);
+    // A player with no run row yet is mid-way through their first run.
+    const row = ctx.db.arcadeRun.playerId.find(me.id);
+    const run = row ?? {
+      playerId: me.id,
+      score: me.score,
+      streak: me.streak,
+      answered: [...ctx.db.playerAnswer.gameId.filter(game.id)]
+        .filter(a => a.playerId === me.id)
+        .map(a => a.questionIndex),
+    };
 
     const secret = ctx.db.gameSecret.gameId.find(game.id)!;
     const correct = choice === secret.answers[questionIndex];
-    const streak = correct ? me.streak + 1 : 0;
-    const points = scorePoints(correct, 0, 1, streak);
+    const step = arcadeStep(run, questionIndex, correct, me.score);
+    if (!step.counted) return;
+    const saved = { playerId: me.id, ...step.run };
+    if (row) ctx.db.arcadeRun.playerId.update(saved);
+    else ctx.db.arcadeRun.insert(saved);
+
+    const first = !earlier;
+    ctx.db.player.id.update({
+      ...me,
+      score: step.best,
+      streak: step.run.streak,
+      correctCount: me.correctCount + (first && correct ? 1 : 0),
+    });
+    if (!first) return;
     ctx.db.playerAnswer.insert({
       id: 0n,
       gameId: game.id,
@@ -1401,13 +1445,7 @@ export const arcade_answer = spacetimedb.reducer(
       questionIndex,
       answeredMs: Math.max(0, Number((ctx.timestamp.microsSinceUnixEpoch - me.joinedAt.microsSinceUnixEpoch) / 1000n)),
       correct,
-      points,
-    });
-    ctx.db.player.id.update({
-      ...me,
-      score: me.score + points,
-      streak,
-      correctCount: me.correctCount + (correct ? 1 : 0),
+      points: step.points,
     });
     const counts = question.choices.map((_, i) => question.choiceCounts[i] ?? 0);
     counts[choice]++;

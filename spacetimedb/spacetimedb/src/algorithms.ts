@@ -208,6 +208,26 @@ export function scorePoints(
   return base + Math.min(MAX_STREAK_BONUS, STREAK_BONUS * Math.max(0, streak - 1));
 }
 
+export type ArcadeRun = { score: number; streak: number; answered: number[] };
+
+/**
+ * One arcade answer inside the player's current run. A question counts once per
+ * run (`counted` is false for a repeat). The board keeps the best run, so
+ * `best` is the larger of the old best and this run's new total.
+ */
+export function arcadeStep(
+  run: ArcadeRun,
+  questionIndex: number,
+  correct: boolean,
+  best: number
+): { run: ArcadeRun; points: number; best: number; counted: boolean } {
+  if (run.answered.includes(questionIndex)) return { run, points: 0, best, counted: false };
+  const streak = correct ? run.streak + 1 : 0;
+  const points = scorePoints(correct, 0, 1, streak);
+  const next = { score: run.score + points, streak, answered: [...run.answered, questionIndex] };
+  return { run: next, points, best: Math.max(best, next.score), counted: true };
+}
+
 /** A join code from `randomIndex(n)`, which returns an integer in [0, n). */
 export function gameCode(randomIndex: (n: number) => number): string {
   let code = '';

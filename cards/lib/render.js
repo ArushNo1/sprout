@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ImageResponse } from "@vercel/og";
+import { plantSrc } from "./plants.js";
 
 export const COLORS = {
   card: "#F4EADF",      // cream card
@@ -59,6 +60,65 @@ export function cardTree({ title, subtitle, rows }) {
 
 export function cardSize(rows, hasSubtitle) {
   return { width: CARD_W, height: 40 + 80 + (hasSubtitle ? 44 : 0) + 34 + rows.length * 58 + 30 };
+}
+
+
+// Garden card: one row per unit, one little plant per concept (stage 0-4: seed to flower), and the
+// concept count on the right. A legend of the five stages explains what the plants will become.
+const G = { plantH: 88, rowH: 100, nameW: 260, countW: 72, maxPlants: 8, legendH: 200 };
+const STAGE_NAMES = ["seed", "sprout", "growing", "budding", "flower"];
+
+// The plant pictures are 4:5, so each takes 0.8 * height of width, plus a small gap.
+const plantImg = (stage, size) =>
+  ({ type: "img", props: { src: plantSrc(stage), width: Math.round(size * 0.8), height: size, style: { marginRight: 6 } } });
+
+export function gardenSize(units, hasSubtitle) {
+  return { width: CARD_W, height: 40 + 80 + (hasSubtitle ? 44 : 0) + 30 + units.length * G.rowH + 24 + G.legendH + 30 };
+}
+
+export function gardenTree({ title, subtitle, units }) {
+  const rows = units.map((u) => {
+    const shown = u.stages.slice(0, G.maxPlants), extra = u.stages.length - shown.length;
+    return h("div", { display: "flex", alignItems: "center", height: G.rowH }, [
+      h("div", { display: "flex", width: G.nameW, flexShrink: 0, fontSize: 36, color: COLORS.ink, whiteSpace: "nowrap", overflow: "hidden" }, u.name),
+      h("div", { display: "flex", flexGrow: 1, alignItems: "flex-end", height: G.plantH }, [
+        ...shown.map((st) => plantImg(st, G.plantH)),
+        ...(extra > 0 ? [h("div", { display: "flex", fontSize: 30, fontStyle: "italic", color: COLORS.barFill, marginBottom: 20 }, `+${extra}`)] : []),
+      ]),
+      h("div", { display: "flex", width: G.countW, flexShrink: 0, justifyContent: "flex-end", fontSize: 44, color: COLORS.green }, String(u.stages.length)),
+    ]);
+  });
+  const legend = h("div", { display: "flex", flexDirection: "column", marginTop: 24, paddingTop: 18, borderTop: `3px solid ${COLORS.track}` }, [
+    h("div", { display: "flex", fontSize: 32, fontStyle: "italic", color: COLORS.barFill, marginBottom: 8 }, "Each plant is one concept, and the number counts them."),
+    h("div", { display: "flex", fontSize: 32, fontStyle: "italic", color: COLORS.barFill, marginBottom: 8 }, "They grow as you master them:"),
+    h("div", { display: "flex", justifyContent: "space-between" }, STAGE_NAMES.map((name, i) =>
+      h("div", { display: "flex", flexDirection: "column", alignItems: "center", width: 150 }, [
+        plantImg(i, 64),
+        h("div", { display: "flex", fontSize: 28, color: COLORS.green, marginTop: 4 }, name),
+      ]))),
+  ]);
+  return h("div", {
+    display: "flex", width: "100%", height: "100%", backgroundColor: COLORS.card, borderRadius: 32,
+    flexDirection: "column", padding: `40px ${PAD_X}px 30px`, fontFamily: "Instrument Serif",
+  }, [
+    h("div", { display: "flex", height: 80, alignItems: "flex-end", fontSize: titleSize(title), color: COLORS.green, lineHeight: 1.05, whiteSpace: "nowrap" }, title),
+    ...(subtitle ? [h("div", { display: "flex", fontSize: 36, fontStyle: "italic", color: COLORS.green, marginTop: 4, whiteSpace: "nowrap" }, subtitle)] : []),
+    h("div", { display: "flex", flexDirection: "column", marginTop: 30 }, rows),
+    legend,
+  ]);
+}
+
+// Query: title, subtitle, repeated u=unit name~stages, where stages is one digit 0-4 per concept ("0000").
+export function parseGardenQuery(params) {
+  const units = params.getAll("u").slice(0, 12).map((raw) => {
+    const [name = "", stages = ""] = raw.split("~");
+    return { name: clip(name.trim(), 20), stages: [...stages].filter((c) => /[0-4]/.test(c)).map(Number) };
+  });
+  return {
+    title: clip(params.get("title") || "Your course", 46),
+    subtitle: clip(params.get("subtitle") || "", 60),
+    units,
+  };
 }
 
 export function buttonTree({ label, variant }) {

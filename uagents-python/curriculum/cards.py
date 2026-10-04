@@ -126,10 +126,10 @@ def _days_until(exam_date):
 
 
 def map_card_url(cmap: dict) -> str:
-    counts = {u["id"]: 0 for u in cmap["units"]}
+    """The /api/garden picture: a row of seeds per unit, one per concept, with the concept count."""
+    stages = {u["id"]: "" for u in cmap["units"]}
     for c in cmap["concepts"]:
-        counts[c["unit"]] = counts.get(c["unit"], 0) + 1
-    most = max(counts.values()) or 1
+        stages[c["unit"]] = stages.get(c["unit"], "") + "0"
     course = cmap["course"]
     days = _days_until(course.get("exam_date"))
     code = course.get("code")
@@ -139,13 +139,13 @@ def map_card_url(cmap: dict) -> str:
         f"exam in {days} days" if days is not None else None,
     ]))
     params = [("title", course["name"]), ("subtitle", subtitle)]
-    params += [("r", f"{u['name']}~{counts[u['id']] / most:.2f}~{counts[u['id']]}") for u in cmap["units"][:MAX_ROWS]]
-    return f"{CARDS_URL}/api/card?{urlencode(params, quote_via=quote)}"
+    params += [("u", f"{u['name']}~{stages[u['id']]}") for u in cmap["units"][:MAX_ROWS]]
+    return f"{CARDS_URL}/api/garden?{urlencode(params, quote_via=quote)}"
 
 
 def map_card(cmap: dict) -> ChatMessage:
     rows = min(len(cmap["units"]), MAX_ROWS)
-    height = 40 + 80 + 44 + 34 + rows * 58 + 30  # matches cardSize() in cards/lib/render.js
+    height = 40 + 80 + 44 + 30 + rows * 100 + 24 + 200 + 30  # matches gardenSize() in cards/lib/render.js
     names = {c["id"]: c["name"] for c in cmap["concepts"]}
     starts = [names[cid] for cid in cmap["order"] if next(
         c for c in cmap["concepts"] if c["id"] == cid)["depth"] == 0][:3]

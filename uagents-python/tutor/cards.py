@@ -227,7 +227,7 @@ def arcade_card(course_name: str, game: dict, questions: int, topics: list, othe
     root = _section(
         {"type": "image", "src": src, "alt": f"{game['arcade']}, code {game['code']}", "aspect_ratio": ratio},
         {"type": "text", "style": "muted",
-         "value": "Everyone plays at their own pace. The first run counts; replays are practice."},
+         "value": "Everyone plays at their own pace. Replay as often as you like: the board keeps your best run."},
         _row(_button("High scores", "game_results", True, code=game["code"]),
              _button(f"Try {other_name}", "arcade", template=other_key)),
         _row(_button("Live game with friends", "game"), _button("Back to my course", "home")),

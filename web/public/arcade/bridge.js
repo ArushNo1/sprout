@@ -3,7 +3,7 @@
 // iframe is sandboxed without same-origin, so postMessage is the only channel.
 //
 //   page -> game: {type: "sprout-questions", title, questions: [{prompt, choices, correct, explanation}], answered: [index]}
-//   game -> page: {type: "sprout-ready"} | {type: "sprout-answer", index, choice} | {type: "sprout-done", score, practice}
+//   game -> page: {type: "sprout-ready"} | {type: "sprout-start"} | {type: "sprout-answer", index, choice} | {type: "sprout-done", score, practice}
 window.Sprout = (() => {
   let resolveQuestions;
   const ready = new Promise((r) => (resolveQuestions = r));
@@ -27,6 +27,8 @@ window.Sprout = (() => {
     FONT,
     // Resolves with the questions once the page sends them.
     questions: () => ready,
+    // Call when a run begins (the first and every replay): the board keeps the best run.
+    start: () => send({ type: "sprout-start" }),
     answer: (index, choice) => send({ type: "sprout-answer", index, choice }),
     done: (score, practice) => send({ type: "sprout-done", score, practice }),
   };
